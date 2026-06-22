@@ -1,5 +1,13 @@
 # CATAS (Centralized Agent Task Automation System)
 
+## Equipe
+
+- Rafael Ildefonso Furtado
+- Lucas Salman Resende
+- Henrique Santos Tavares
+- Miguel Teixeira Valadao
+- Lucas Nunes Araujo
+
 Agente de Automação Inteligente baseado em Linguagem Natural que **executa ações** no mundo real através de uma interface de chat multiplataforma.
 
 ## Arquitetura
