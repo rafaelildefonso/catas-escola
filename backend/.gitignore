@@ -1,0 +1,41 @@
+# Ambientes Virtuais
+venv/
+env/
+.venv/
+
+# Arquivos de configuração
+.env
+.env.production
+.env.dev
+utils/keys/**
+
+# Python Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribuição e Build
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Testes e Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Pytest
+.pytest_cache/
+
+# Mypy
+.mypy_cache/
+
+# Jupyter
+.ipynb_checkpoints
+
+# Logs
+*.log

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "248821129291",
+    "project_id": "catas-firebase",
+    "storage_bucket": "catas-firebase.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:248821129291:android:6b9b5b85d9d284cb52adce",
+        "android_client_info": {
+          "package_name": "com.catas.catas"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCf5RbYHtX_GKkdHPewYr6kHoSUODottXA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

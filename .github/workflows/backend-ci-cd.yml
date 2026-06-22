@@ -1,0 +1,91 @@
+# name: Backend CI/CD (CATAS)
+
+# on:
+#   push:
+#     paths:
+#       - 'backend/**'
+#     branches: [ "main", "develop" ]
+#   pull_request:
+#     paths:
+#       - 'backend/**'
+#     branches: [ "main", "develop" ]
+
+# jobs:
+#   test-and-lint:
+#     name: Lint & Pytest
+#     runs-on: ubuntu-latest
+#     defaults:
+#       run:
+#         working-directory: ./backend
+        
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+
+#       - name: Set up Python
+#         uses: actions/setup-python@v5
+#         with:
+#           python-version: '3.11'
+#           cache: 'pip'
+          
+#       - name: Install dependencies
+#         run: |
+#           python -m pip install --upgrade pip
+#           pip install -r requirements.txt
+#           pip install -r requirements-dev.txt
+
+#       - name: Lint with Ruff
+#         run: |
+#           ruff check .
+
+#       - name: Run Tests with Pytest
+#         run: |
+#           PYTHONPATH=. pytest tests/ --cov=app --cov-report=term-missing
+#         env:
+#           SUPABASE_URL: "https://test.supabase.co"
+#           SUPABASE_SERVICE_ROLE_KEY: "test-key"
+#           OPENAI_API_KEY: "test-key"
+#           STRIPE_SECRET_KEY: "test-key"
+#           STRIPE_WEBHOOK_SECRET: "test-key"
+#           ENVIRONMENT: "testing"
+
+#   deploy-staging:
+#     name: Deploy to Staging (Dev)
+#     needs: [test-and-lint]
+#     if: ${{ github.event_name == 'push' && github.ref_name == 'develop' && success() }}
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Trigger Staging API Deploy
+#         run: |
+#           if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_STAGING_API }}" ]; then
+#             curl -X POST -d "" "${{ secrets.RENDER_DEPLOY_HOOK_STAGING_API }}"
+#           else
+#             echo "RENDER_DEPLOY_HOOK_STAGING_API não configurado."
+#           fi
+#       - name: Trigger Staging Worker Deploy
+#         continue-on-error: true
+#         run: |
+#           if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_STAGING_WORKER }}" ]; then
+#             curl -X POST -d "" "${{ secrets.RENDER_DEPLOY_HOOK_STAGING_WORKER }}"
+#           fi
+
+#   deploy-production:
+#     name: Deploy to Production (Main)
+#     needs: [test-and-lint]
+#     if: ${{ github.event_name == 'push' && github.ref_name == 'main' && success() }}
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Trigger Production API Deploy
+#         run: |
+#           if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_PROD_API }}" ]; then
+#             curl -X POST -d "" "${{ secrets.RENDER_DEPLOY_HOOK_PROD_API }}"
+#           else
+#             echo "RENDER_DEPLOY_HOOK_PROD_API não configurado."
+#             exit 1
+#           fi
+#       - name: Trigger Production Worker Deploy
+#         continue-on-error: true
+#         run: |
+#           if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_PROD_WORKER }}" ]; then
+#             curl -X POST -d "" "${{ secrets.RENDER_DEPLOY_HOOK_PROD_WORKER }}"
+#           fi

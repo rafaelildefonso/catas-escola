@@ -1,0 +1,45 @@
+services:
+
+  # ── API Server ──────────────────────────────────────
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: catas_server
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./.env
+    environment:
+      - WORKER_URL=http://catas_worker:8001
+    volumes:
+      - .:/app
+    networks:
+      - catas_network
+    restart: unless-stopped
+    depends_on:
+      - worker
+
+  # ── Worker (execução standalone — recebe tarefas via HTTP) ─
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: catas_worker
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./.env
+    environment:
+      - PYTHONPATH=/app/worker:/app
+      - WORKER_PORT=8001
+    restart: unless-stopped
+    networks:
+      - catas_network
+
+volumes:
+  postgres_data:
+
+networks:
+  catas_network:
+    driver: bridge

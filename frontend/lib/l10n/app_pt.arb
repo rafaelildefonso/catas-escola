@@ -1,0 +1,342 @@
+{
+  "@@locale": "pt",
+  "appTitle": "CATAS",
+  "chatTitle": "Chat",
+  "settingsTitle": "Configurações da Conta",
+  "languageLabel": "Idioma",
+  "languageSubLabel": "Escolha seu idioma de preferência",
+  "languageEnglish": "Inglês",
+  "languagePortuguese": "Português",
+  "basicInfo": "INFORMAÇÕES BÁSICAS",
+  "fullName": "Nome Completo",
+  "dangerZone": "ZONA DE PERIGO",
+  "deleteAccount": "Excluir Conta Permanentemente",
+  "saveChanges": "Salvar Alterações",
+  "profileUpdated": "Perfil atualizado com sucesso",
+  "systemLanguage": "Padrão do Sistema",
+  "selectLanguage": "Selecionar Idioma",
+  "actionRename": "Renomear",
+  "actionPin": "Fixar",
+  "actionUnpin": "Desafixar",
+  "actionDelete": "Excluir",
+  "actionCancel": "Cancelar",
+  "cancel": "Cancelar",
+  "deleteAccountConfirmation": "Tem certeza que deseja excluir sua conta? Esta ação é permanente e não pode ser desfeita.",
+  "actionSave": "Salvar",
+  "drawerNewChat": "Novo Chat",
+  "drawerAutomations": "Automações",
+  "drawerIntegrations": "Integrações",
+  "drawerDashboard": "Dashboard",
+  "drawerRecentChats": "Conversas recentes",
+  "drawerSeeAll": "Ver todos",
+  "drawerLoading": "Carregando...",
+  "drawerNoRecentChats": "Nenhum chat recente",
+  "drawerNoResults": "Nenhum resultado",
+  "renameChatTitle": "Renomear chat",
+  "renameChatHint": "Novo nome",
+  "deleteChatTitle": "Excluir chat?",
+  "deleteChatContent": "Essa ação não pode ser desfeita.",
+  "upgradeRequired": "Upgrade necessário",
+  "viewPlans": "Ver Planos",
+  "fileAttached": "Arquivo '{fileName}' anexado ao Chat",
+  "@fileAttached": {
+    "placeholders": {
+      "fileName": {
+        "type": "String"
+      }
+    }
+  },
+  "logOutTitle": "Sair da conta?",
+  "logOutContent": "Você precisará fazer login novamente.",
+  "logOutAction": "Sair",
+  "connectIntegrationFirst": "Conecte o {integrationName} nas configurações primeiro.",
+  "@connectIntegrationFirst": {
+    "placeholders": {
+      "integrationName": {
+        "type": "String"
+      }
+    }
+  },
+  "text": "Texto",
+  "close": "Fechar",
+  "copy": "Copiar",
+  "edit": "Editar",
+  "selectText": "Selecionar texto",
+  "share": "Compartilhar",
+  "grantAccess": "Liberar Acesso",
+  "automationRemoved": "\"{title}\" removida das automações",
+  "@automationRemoved": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "deleteAutomation": "Excluir automação",
+  "deleteAutomationTitle": "Excluir automação?",
+  "loginGoogleFailed": "Falha ao autenticar com Google. Tente novamente.",
+  "loginAppleFailed": "Falha ao autenticar com Apple. Tente novamente.",
+  "loginEmailSoon": "Login com email em breve. Use o Google por enquanto.",
+  "openingCheckout": "Abrindo checkout no navegador seguro...",
+  "paymentError": "Erro ao processar pagamento: {error}",
+  "@paymentError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "cancelSubscriptionTitle": "Cancelar Assinatura?",
+  "cancelPlan": "Cancelar plano",
+  "paymentMethod": "Forma de Pagamento",
+  "addNewCard": "Adicionar novo cartão",
+  "upgrade": "Fazer Upgrade",
+  "feedbackThanks": "Obrigado pelo seu feedback!",
+  "openingLink": "Abrindo {title}...",
+  "@openingLink": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "configPermissions": "Configurar Permissões",
+  "sendFeedback": "Enviar Feedback",
+  "termsOfService": "Termos de Serviço",
+  "privacyPolicy": "Política de Privacidade",
+  "sendSupportEmail": "Enviar Email de Suporte",
+  "accessDocs": "Acessar Documentação",
+  "joinDiscordBrowser": "Entrar no Discord via Navegador",
+  "couldNotLoadImage": "Não foi possível carregar a imagem",
+  "imageUnavailable": "Imagem indisponível",
+  "themeLight": "Claro",
+  "themeDark": "Escuro",
+  "themeSystem": "Sistema",
+  "settingsPreferences": "Preferências",
+  "settingsNotifications": "Notificações",
+  "settingsNotificationsSub": "Receber notificações",
+  "settingsNotifAll": "Todas",
+  "settingsNotifImportant": "Importantes",
+  "settingsNotifNone": "Nenhuma",
+  "settingsAppearance": "Aparência",
+  "settingsAppearanceSub": "Tema da interface",
+  "settingsLanguage": "Idioma",
+  "settingsLanguageSub": "Idioma da interface",
+  "settingsAccountSubsciption": "Conta & Assinatura",
+  "settingsAccountConfig": "Configurações da Conta",
+  "settingsManageSub": "Gerenciar Assinatura",
+  "settingsConnections": "Conexões",
+  "settingsScheduledTasks": "Tarefas Agendadas",
+  "settingsAutomations": "Automações",
+  "settingsIntegrations": "Integrações",
+  "settingsInfoSupport": "Informações e Suporte",
+  "settingsAbout": "Sobre",
+  "settingsGetHelp": "Obter Ajuda",
+  "settingsLogout": "Sair da Conta",
+  "settingsCancel": "Cancelar",
+  "integrationsConnectors": "Conectores",
+  "integrationsManage": "Gerenciar conectores",
+  "integrationsConfigure": "Configurar",
+  "thinkingProcessing": "Processando...",
+  "thinkingReasoning": "Raciocinando...",
+  "thinkingPlanning": "Planejando...",
+  "thinkingExecuting": "Executando automação...",
+  "copied": "Copiado",
+  "textDialogTitle": "Texto",
+  "errorSelectDocument": "Erro ao selecionar documento:",
+  "errorSelectImage": "Erro ao selecionar imagem:",
+  "goodMorning": "Bom dia {name}!",
+  "@goodMorning": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "goodAfternoon": "Boa tarde {name}!",
+  "@goodAfternoon": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "goodEvening": "Boa noite {name}!",
+  "@goodEvening": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "noMessages": "Nenhuma mensagem",
+  "aiExclusive": "O uso da IA é exclusivo para assinantes.",
+  "unlockAccess": "Liberar Acesso",
+  "askAnything": "Pergunte o que quiser...",
+  "addAttachment": "Adicionar anexo",
+  "addIntegrations": "Adicionar Integrações",
+  "generationInterrupted": "Geração interrompida",
+  "stopGeneration": "Parar geração",
+  "camera": "Câmera",
+  "gallery": "Galeria",
+  "files": "Arquivos",
+  "tools": "Ferramentas",
+  "webSearch": "Busca na Web",
+  "integrations": "Integrações",
+  "navigationContext": "Contexto de Navegação",
+  "audioComingSoon": "Áudio em breve",
+  "recordAudio": "Gravar áudio",
+  "executingAutomation": "Executando Automação:",
+  "actionExecuted": "Ação Executada",
+  "dataComplete": "Dados Completos",
+  "waitingForInfo": "Aguardando Informações...",
+  "howCanIHelp": "Como posso facilitar seu dia hoje?",
+  "like": "Gostei",
+  "dislike": "Não gostei",
+  "feedbackTitle": "Por que esta resposta foi boa?",
+  "feedbackTitleBad": "Por que esta resposta não foi boa?",
+  "feedbackAutomationWorked": "Automação executou corretamente",
+  "feedbackClearAnswer": "Resposta clara e objetiva",
+  "feedbackUsefulInfo": "Informação útil e completa",
+  "feedbackResolvedDoubt": "Resolveu minha dúvida",
+  "feedbackFastResponse": "Resposta rápida",
+  "feedbackAutomationFailed": "Automação falhou / não executou",
+  "feedbackConfusing": "Resposta confusa ou difícil de entender",
+  "feedbackIncorrectInfo": "Informação incorreta",
+  "feedbackIncomplete": "Resposta incompleta (faltou algo)",
+  "feedbackNotAnswered": "Não respondeu minha pergunta",
+  "feedbackSkip": "Não quero responder",
+  "feedbackSent": "Obrigado pelo feedback!",
+  "loginSubtitle": "Sua IA não apenas fala.",
+  "loginSubtitleExecution": "Ela executa.",
+  "continueWithGoogle": "Continue com Google",
+  "continueWithApple": "Continue com Apple",
+  "loginWithEmail": "Entrar com Email",
+  "signingIn": "Entrando...",
+  "loginEmailFailed": "Falha no login. Verifique seu email e senha.",
+  "signingUp": "Criando conta...",
+  "signUpSuccess": "Conta criada! Verifique seu email para confirmar sua conta.",
+  "signUpFailed": "Falha ao criar conta. Tente novamente.",
+  "email": "Email",
+  "password": "Senha",
+  "emailHint": "Digite seu email",
+  "passwordHint": "Digite sua senha",
+  "signIn": "Entrar",
+  "signUp": "Criar conta",
+  "dontHaveAccount": "Não tem uma conta?",
+  "alreadyHaveAccount": "Já tem uma conta?",
+  "backToLogin": "Voltar para login",
+  "googleConnecting": "Conectando com Google...",
+  "appleConnecting": "Conectando com Apple...",
+  "termsAgreementPrefix": "Ao continuar, você concorda com nossos\n",
+  "andLabel": " e ",
+  "historyTitle": "Histórico",
+  "historyEmpty": "Nenhum histórico de conversa ainda.",
+  "automationActive": "Ativa",
+  "automationPaused": "Pausada",
+  "automationFailed": "Falha",
+  "automationActivated": "{title} ativada",
+  "@automationActivated": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "automationPausadaFeedback": "{title} pausada",
+  "@automationPausadaFeedback": {
+    "placeholders": {
+      "title": { "type": "String" }
+    }
+  },
+  "automationOptions": "Opções",
+  "automationCreatedOn": "Criado em {date} às {time}",
+  "@automationCreatedOn": {
+    "placeholders": {
+      "date": { "type": "String" },
+      "time": { "type": "String" }
+    }
+  },
+  "automationIntegrations": "Integrações:",
+  "automationViewDetails": "Ver detalhes",
+  "automationPause": "Pausar automação",
+  "automationActivate": "Ativar automação",
+  "integrationsSearchHint": "Buscar integrações (ex: Gmail, Slack...)",
+  "integrationsConnected": "Conectado",
+  "integrationsDisconnected": "Desconectado",
+  "integrationsBlocked": "Bloqueado",
+  "integrationsCategoryAll": "Todas",
+  "integrationsCategoryGoogle": "Google",
+  "integrationsCategoryProductivity": "Produtividade",
+  "integrationsCategoryCommunication": "Comunicação",
+  "integrationsCategoryCRM": "CRM/Vendas",
+  "integrationsDisconnect": "Desconectar",
+  "integrationsConnect": "Conectar",
+  "appBrandName": "CATAS",
+  "planSuffix": "PLANO",
+  "defaultUserName": "Usuário",
+  "dropFileHint": "Solte o arquivo para anexar",
+  "viewAction": "Ver",
+  "searchConversations": "Pesquisar conversas...",
+  "modifiedAt": "Modificado",
+  "featureInDevelopment": "Recurso em desenvolvimento",
+  "pageTitleChat": "Chat",
+  "pageTitleAutomations": "Automações",
+  "pageTitleIntegrations": "Integrações",
+  "pageTitleSettings": "Configurações",
+  "pageTitleHistory": "Histórico",
+  "pageTitlePricing": "Planos",
+  "pageTitleDashboard": "Dashboard",
+  "manageBillingStripe": "Gerenciar Assinatura e Faturas no Stripe",
+  "changeProfilePhoto": "Toque para alterar a foto de perfil",
+  "account": "Conta",
+  "logout": "Sair",
+  "nameLabel": "Nome",
+  "emailLabel": "Email",
+  "magicLinkButton": "Receber link por email",
+  "magicLinkSent": "Enviamos um link para seu email. Abra-o para entrar.",
+  "magicLinkFailed": "Não foi possível enviar o link.",
+  "onboardingHeadline": "O que você quer automatizar?",
+  "onboardingPage1Body": "Escolha tarefas repetitivas: email, agenda, planilhas e muito mais.",
+  "onboardingPage2Body": "Descreva em linguagem natural. O CATAS monta o plano e executa com segurança.",
+  "onboardingPage3Body": "Acompanhe cada passo no chat em tempo real.",
+  "onboardingNext": "Próximo",
+  "onboardingStart": "Começar no chat",
+  "onboardingSkip": "Pular",
+  "onboardingSelectToolsTitle": "Selecione suas ferramentas",
+  "onboardingSelectToolsSubtitle": "Escolha as integrações que você deseja conectar para automatizar sua rotina",
+  "dashboardEstimatedROI": "ROI Estimado",
+  "dashboardSavedInTasks": "economizado em tarefas",
+  "dashboardTasksExecuted": "Tarefas Executadas",
+  "dashboardCredits": "Créditos",
+  "dashboardOfCredits": "de {limit} créditos",
+  "@dashboardOfCredits": {
+    "placeholders": {
+      "limit": { "type": "int" }
+    }
+  },
+  "dashboardYouSaved": "Você já economizou ",
+  "dashboardHoursThisMonth": " horas este mês com o CATAS.",
+  "dashboardTopIntegrations": "Top Integrações",
+  "dashboardMostUsedTools": "Suas ferramentas mais utilizadas",
+  "dashboardUnlock": "Desbloqueie o {plan}",
+  "@dashboardUnlock": {
+    "placeholders": {
+      "plan": { "type": "String" }
+    }
+  },
+  "dashboardUpgrade": "Fazer Upgrade",
+  "dashboardMaxPlanActive": "Plano MAX Ativo",
+  "dashboardMaxPlanDescription": "Você tem acesso total a todos os modelos de IA, workflows customizados e prioridade máxima de execução.",
+  "dashboardUsed": "usado",
+  "dashboardSeeMore": "Ver mais...",
+  "dashboardExplorePrompts": "Explore mais prompts",
+  "dashboardWeeklyDayMon": "Seg",
+  "dashboardWeeklyDayTue": "Ter",
+  "dashboardWeeklyDayWed": "Qua",
+  "dashboardWeeklyDayThu": "Qui",
+  "dashboardWeeklyDayFri": "Sex",
+  "dashboardWeeklyDaySat": "Sáb",
+  "dashboardWeeklyDaySun": "Dom",
+  "dashboardAutomationsExecuted": "Automações Executadas",
+  "dashboardLast7Days": "Últimos 7 dias",
+  "dashboardTasks": "tarefas"
+}

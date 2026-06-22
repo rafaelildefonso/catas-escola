@@ -1,0 +1,31 @@
+# Sistema Operacional
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDEs e Editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+
+# Arquivos de log gerais
+*.log
+
+# Arquivos de ambiente
+enviroments_setup.txt
+generate-env-script.ps1
+
+# Flutter / Dart
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.js.deps
+*.js.map
+
+# Pasta de clone aninhado (CATAS dentro de CATAS)
+catas-app/

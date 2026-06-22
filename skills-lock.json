@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "skills": {
+    "code-reviewer": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/code-reviewer/SKILL.md",
+      "computedHash": "20cc3ad7431ddaa86a8560b65afde7ba016d14c37ddafa4eeb441e7fec77be1b"
+    },
+    "data-analyst": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/data-analyst/SKILL.md",
+      "computedHash": "b927391093b9e04f091c9c04da47096e2217deb7acaccbfbc9690261626085b6"
+    },
+    "debugger": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/debugger/SKILL.md",
+      "computedHash": "23565496cf079e75ef18f4f06d7703dad0d96b2a2be29f5b9da159fc50278b78"
+    },
+    "decision-helper": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/decision-helper/SKILL.md",
+      "computedHash": "41ac0d04df62d35b04d2526f892afbf2a4a4f47c752ca2fb6a7856124552e1b2"
+    },
+    "editor": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/editor/SKILL.md",
+      "computedHash": "fcb8aa2aacaded8a0f873fde081a7103d5dbbecadbc715faef407019ec9c6c0d"
+    },
+    "fullstack-developer": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/fullstack-developer/SKILL.md",
+      "computedHash": "92f6f4f9bbdde529237f1840d94c4269abb62ad1d5e41d9c76bd14266001cbe8"
+    },
+    "project-planner": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/project-planner/SKILL.md",
+      "computedHash": "24c15eb0dd79411a7d78250dbf1dc96ecadbab7b2a23ee5e52bff65ed62b0487"
+    },
+    "python-expert": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/python-expert/SKILL.md",
+      "computedHash": "63800ddcf406ccfb4d7dec69b1b7026de6ad465512b95ffdbe955e4e5728483f"
+    },
+    "technical-writer": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/technical-writer/SKILL.md",
+      "computedHash": "10ad42d28d4a1fabc7407af3fe5f55767b7b4272d6598bedf866ba4a0fe3dca1"
+    },
+    "ui-ux-pro-max": {
+      "source": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "sourceType": "github",
+      "skillPath": ".claude/skills/ui-ux-pro-max/SKILL.md",
+      "computedHash": "6337038fe1fe6bbe1b9f252ab678ee575859190bab6f0f246f4061824eb40875"
+    },
+    "ux-designer": {
+      "source": "Shubhamsaboo/awesome-llm-apps",
+      "sourceType": "github",
+      "skillPath": "awesome_agent_skills/ux-designer/SKILL.md",
+      "computedHash": "5059addf2e11d8f1062c524fd7363c9a2bd4deb038924f02436ffb6957c6c938"
+    }
+  }
+}

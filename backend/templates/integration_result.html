@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CATAS - Integração</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAABQ0lEQVR4nGP5//8/AymAhSTVNNPw////ree+uelxsLEyY9fw7t27hQsXXrt2rampSVJS8tGbPwuO/vE2YsJiw////xcuXFhZWSkgIHDjxo2wsDBxcfFlc3q7kgoZGRnRNfz79y8vL+/EiRNHjx7duXPnxo0b7e3tu7q6bt++pSjGhu6H////l5aWHgYDPj6+yMjIjIyMhQsXLlmy5NixYxDjUTTs2LGjv7//1KlTfHx8DAwMPDw8TU1N8+bNO3DgAEQERcP////r6uq4uLgMDAz+//+/f//+ioqK79+/Hzx4UEFBAUuw/vjx4+zZs////1dXV//58+fz58/T0tK6u7t5eHiwxwMHB0dgYOD69es/fvzo5eVVWFhoYGAAdzcWDYyMjGvWrPn16xcbGxtWdegaIHrY2dnxKEXXQCQgTQMwLwAAtqCI8a6JVxwAAAAASUVORK5CYII=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090B;
+    --card-bg: #18181B;
+    --card-border: #3F3F46;
+    --text-primary: #F4F4F5;
+    --text-secondary: #A1A1AA;
+    --text-muted: #71717A;
+    --primary: #3B82F6;
+    --success: #22C55E;
+    --error: #EF4444;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #FFFFFF;
+      --card-bg: #F4F4F5;
+      --card-border: #D4D4D8;
+      --text-primary: #18181B;
+      --text-secondary: #71717A;
+      --text-muted: #A1A1AA;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 420px;
+    padding: 24px;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 48px 32px;
+    text-align: center;
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-size: 32px;
+    line-height: 1;
+  }
+
+  .icon.success { background: rgba(34, 197, 94, 0.12); }
+  .icon.error { background: rgba(239, 68, 68, 0.12); }
+
+  .title {
+    font-size: 22px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .message {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .footer {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--card-border);
+  }
+
+  .footer p {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .brand {
+    margin-top: 32px;
+    text-align: center;
+  }
+
+  .brand span {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 1px;
+  }
+
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="card">
+    <!-- status: success | error -->
+    <div class="icon {{status}}">
+      {{icon}}
+    </div>
+    <h1 class="title">{{title}}</h1>
+    <p class="message">{{message}}</p>
+    <div class="footer">
+      <p>Você já pode fechar esta aba e voltar ao app.</p>
+    </div>
+  </div>
+  <div class="brand">
+    <span>CATAS</span>
+  </div>
+</div>
+</body>
+</html>

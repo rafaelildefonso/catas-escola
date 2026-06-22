@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CATAS – Automatize Qualquer Processo com IA e Linguagem Natural</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  :root {
+    --background: #09090B;
+    --surface: #18181B;
+    --surface-highlight: #27272A;
+    --border: #3F3F46;
+    --primary: #3B82F6;
+    --primary-foreground: #ffffff;
+    --text-primary: #F4F4F5;
+    --text-secondary: #A1A1AA;
+    --error: #ef4444;
+    --success: #22c55e;
+    --white: #ffffff;
+    --card-green-bg: rgba(34, 197, 94, 0.05);
+    --card-green-border: rgba(34, 197, 94, 0.2);
+    --card-red-bg: rgba(239, 68, 68, 0.05);
+    --card-red-border: rgba(239, 68, 68, 0.2);
+  }
+
+  [data-theme="light"] {
+    --background: #FAFAFA;
+    --surface: #FFFFFF;
+    --surface-highlight: #F4F4F5;
+    --border: #E4E4E7;
+    --primary: #2563EB;
+    --primary-foreground: #ffffff;
+    --text-primary: #09090B;
+    --text-secondary: #52525B;
+    --error: #dc2626;
+    --success: #16a34a;
+    --card-green-bg: rgba(22, 163, 74, 0.05);
+    --card-green-border: rgba(22, 163, 74, 0.2);
+    --card-red-bg: rgba(220, 38, 38, 0.05);
+    --card-red-border: rgba(220, 38, 38, 0.2);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
+
+  body {
+    background: var(--background);
+    color: var(--text-primary);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    z-index: 9999;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .theme-toggle:hover { transform: scale(1.1) translateY(-2px); border-color: var(--primary); box-shadow: 0 15px 30px rgba(59, 130, 246, 0.2); }
+  .theme-toggle i { width: 24px; height: 24px; }
+  .sun-icon { display: block; }
+  .moon-icon { display: none; }
+  [data-theme="light"] .sun-icon { display: none; }
+  [data-theme="light"] .moon-icon { display: block; }
+
+  /* ── HERO ── */
+  .hero {
+    background: var(--background);
+    padding: 60px 5% 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    min-height: 100vh;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-left { max-width: 560px; flex: 1; }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+  }
+
+  .logo-icon {
+    width: 48px; height: 48px;
+    background: var(--primary);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 900; font-size: 20px; color: var(--primary-foreground);
+  }
+
+  .logo-text { font-size: 14px; font-weight: 600; text-transform: uppercase; line-height: 1.2; letter-spacing: 0.5px; }
+  .logo-text span { color: var(--primary); }
+
+  .hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+  }
+
+  .hero h1 .highlight { color: var(--primary); }
+
+  .hero p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 40px;
+  }
+
+  .btn-primary {
+    display: inline-block;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 20px 40px;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+  }
+  .btn-primary:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
+
+  .btn-outline-cyan {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 12px 20px;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-outline-cyan:hover { border-color: var(--primary); background: var(--surface-highlight); }
+
+  .pills {
+    display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px;
+  }
+
+  .hero-right {
+    flex: 1; max-width: 480px;
+    position: relative;
+  }
+
+  .hero-photo-wrapper {
+    position: relative;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  }
+
+  .fake-window-bar {
+    background: var(--surface-highlight);
+    padding: 10px 16px;
+    display: flex; gap: 8px; align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .win-btn {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--border);
+  }
+
+  .hero-photo {
+    width: 100%;
+    display: block;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+  }
+
+  .hero-photo-placeholder {
+    width: 100%;
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, #18181B, #27272A);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 5rem;
+  }
+
+  .discount-badge {
+    position: absolute;
+    bottom: -24px; right: -24px;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    padding: 20px 24px;
+    border-radius: 16px;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+  }
+
+  .discount-badge .label { font-size: 0.9rem; font-weight: 500; opacity: 0.9; }
+  .discount-badge .value { font-size: 2.8rem; font-weight: 800; line-height: 1; }
+  .discount-badge .off { font-size: 1.1rem; font-weight: 600; }
+
+  /* ── SECTION BASE ── */
+  section { padding: 100px 5%; }
+
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+    text-align: center;
+    line-height: 1.2;
+    margin-bottom: 60px;
+    letter-spacing: -0.02em;
+  }
+
+  .section-title .accent { color: var(--primary); }
+  .section-title .accent-cyan { color: var(--primary); }
+
+  /* ── PROFESSORS ── */
+  .professors { background: var(--background); }
+
+  .prof-carousel { position: relative; overflow: hidden; }
+  .prof-track {
+    display: flex;
+    transition: transform 0.4s ease;
+  }
+
+  .prof-slide {
+    min-width: 33.333%;
+    padding: 0 12px;
+  }
+
+  .prof-card {
+    background: var(--surface);
+    color: var(--text-primary);
+    text-align: center;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    height: 100%;
+    transition: transform 0.3s ease;
+  }
+  .prof-card:hover { transform: translateY(-5px); border-color: var(--primary); }
+
+  .prof-card img, .prof-card .prof-img-placeholder {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+    display: block;
+  }
+
+  .prof-img-placeholder {
+    background: var(--surface-highlight);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    color: var(--primary);
+  }
+
+  .prof-card-body { padding: 32px 24px; }
+  .prof-name {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.01em;
+  }
+  .prof-bio { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.6; }
+
+  .carousel-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    margin-top: 40px;
+  }
+
+  .carousel-btn {
+    width: 48px; height: 48px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .carousel-btn:hover { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+
+  .carousel-dots { display: flex; gap: 10px; }
+  .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .dot.active { background: var(--primary); width: 24px; border-radius: 5px; }
+
+  /* ── WHO CAN ── */
+  .who-can { background: var(--background); }
+
+  .who-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .who-left h2 {
+    font-size: clamp(2rem, 3.5vw, 2.8rem);
+    font-weight: 800;
+    margin-bottom: 24px;
+    letter-spacing: -0.02em;
+  }
+
+  .who-left p { color: var(--text-secondary); margin-bottom: 20px; font-size: 1.1rem; }
+  .who-left strong { color: var(--text-primary); font-weight: 600; }
+
+  .card-green {
+    background: var(--card-green-bg);
+    border: 1px solid var(--card-green-border);
+    padding: 32px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+  }
+
+  .card-green h3 {
+    color: var(--success);
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+
+  .card-red {
+    background: var(--card-red-bg);
+    border: 1px solid var(--card-red-border);
+    padding: 32px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+  }
+
+  .card-red h3 {
+    color: var(--error);
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .card-red ul, .card-green ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .card-red li, .card-green li {
+    padding: 8px 0;
+    padding-left: 28px;
+    position: relative;
+    font-size: 1rem;
+    color: var(--text-secondary);
+  }
+
+  .card-green li::before { content: ""; position: absolute; left: 0; top: 12px; width: 16px; height: 16px; background: var(--success); -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>') no-repeat center; mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>') no-repeat center; }
+  .card-red li::before { content: ""; position: absolute; left: 0; top: 12px; width: 16px; height: 16px; background: var(--error); -webkit-mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>') no-repeat center; mask: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>') no-repeat center; }
+
+  /* ── TESTIMONIALS ── */
+  .testimonials { background: var(--background); text-align: center; }
+
+  .video-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-bottom: 60px;
+  }
+
+  .video-thumb {
+    position: relative;
+    aspect-ratio: 16/9;
+    background: var(--surface);
+    cursor: pointer;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .video-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .video-thumb .play-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.4);
+    transition: background 0.3s;
+  }
+  .video-thumb:hover .play-overlay { background: rgba(0,0,0,0.2); }
+
+  .play-btn {
+    width: 72px; height: 72px;
+    background: var(--primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: white;
+    transition: transform 0.3s;
+    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
+  }
+  .video-thumb:hover .play-btn { transform: scale(1.1); }
+
+  .btn-outline-green {
+    display: inline-block;
+    background: var(--primary);
+    color: var(--primary-foreground);
+    font-weight: 700;
+    font-size: 1.1rem;
+    padding: 20px 48px;
+    cursor: pointer;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+  }
+  .btn-outline-green:hover { transform: translateY(-2px); filter: brightness(1.1); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6); }
+
+  /* ── CURRICULUM ── */
+  .curriculum { background: var(--background); }
+
+  .curr-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+  }
+
+  .curr-left {
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .laptop-mock {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    text-align: center;
+    font-size: 6rem;
+    width: 100%;
+    max-width: 440px;
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+  }
+
+  .module-list { list-style: none; padding: 0; }
+  .module-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 18px 24px;
+    margin-bottom: 12px;
+    border-radius: 12px;
+    font-size: 1rem;
+    cursor: default;
+    transition: all 0.2s;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .module-item:hover { background: var(--surface-highlight); border-color: var(--primary); color: var(--text-primary); }
+
+  /* ── ERRORS ── */
+  .errors { background: linear-gradient(180deg, var(--background) 0%, var(--surface) 100%); }
+
+  .errors-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-bottom: 80px;
+  }
+
+  .error-card {
+    border: 1px solid var(--border);
+    padding: 40px 32px;
+    border-radius: 16px;
+    background: var(--surface);
+    transition: border-color 0.3s;
+  }
+  .error-card:hover { border-color: var(--error); }
+
+  .error-number {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--error);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+
+  .error-card h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    line-height: 1.3;
+  }
+
+  .error-card p { font-size: 0.95rem; color: var(--text-secondary); line-height: 1.7; }
+
+  .what-market {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 80px;
+    align-items: center;
+    margin-top: 80px;
+    background: var(--surface);
+    padding: 60px;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+  }
+
+  .what-market h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 32px;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+  }
+
+  .check-card {
+    border: 1px solid var(--border);
+    padding: 24px;
+    background: var(--surface-highlight);
+    border-radius: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 16px;
+    transition: transform 0.2s;
+  }
+  .check-card:hover { transform: translateX(10px); border-color: var(--primary); }
+
+  .check-icon { color: var(--success); font-size: 1.4rem; margin-top: 2px; }
+
+  .market-graphic {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8rem;
+    color: var(--primary);
+    opacity: 0.8;
+  }
+
+  /* ── PRESS ── */
+  .press { background: var(--background); }
+
+  .press-clips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+  }
+
+  .press-clip {
+    border: 1px solid var(--border);
+    padding: 32px;
+    background: var(--surface);
+    border-radius: 16px;
+    transition: transform 0.2s;
+  }
+  .press-clip:hover { transform: translateY(-5px); border-color: var(--primary); }
+
+  .press-clip .source { font-size: 0.85rem; font-weight: 700; color: var(--primary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .press-clip h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; line-height: 1.4; color: var(--text-primary); }
+  .press-clip p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
+
+  /* ── ANHANGUERA (REFINED AS "SECURITY & TRUST") ── */
+  .anhanguera { background: var(--surface); }
+
+  .anh-header {
+    font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 60px;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  .anh-header .accent { color: var(--primary); }
+
+  .anh-card {
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 60px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto 60px;
+    background: var(--background);
+  }
+
+  .anh-logo {
+    text-align: center;
+    font-size: 6rem;
+    color: var(--primary);
+  }
+
+  .anh-info h3 { font-size: 1.6rem; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); }
+  .anh-info p { font-size: 1rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.7; }
+
+  .anh-stats {
+    display: flex;
+    gap: 40px;
+    margin-top: 32px;
+  }
+
+  .anh-stat h4 { font-size: 1.8rem; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+  .anh-stat p { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; }
+
+  .anh-cta { text-align: center; }
+
+  /* ── FAQ ── */
+  .faq { background: var(--background); }
+
+  .faq-title {
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin-bottom: 40px;
+    text-align: center;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    letter-spacing: -0.02em;
+  }
+
+  .faq-list { max-width: 800px; margin: 0 auto 40px; }
+
+  .faq-item {
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+  .faq-item:hover { border-color: var(--primary); }
+
+  .faq-question {
+    padding: 24px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    background: var(--surface);
+    transition: background 0.2s;
+    color: var(--text-primary);
+  }
+  .faq-question:hover { background: var(--surface-highlight); }
+  .faq-question .plus { font-size: 1.5rem; color: var(--primary); transition: transform 0.3s; }
+  .faq-item.open .faq-question .plus { transform: rotate(45deg); }
+
+  .faq-answer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    background: var(--background);
+    font-size: 1rem;
+    color: var(--text-secondary);
+    padding: 0 24px;
+    line-height: 1.7;
+  }
+
+  .faq-item.open .faq-answer {
+    max-height: 500px;
+    padding: 20px 24px 32px;
+  }
+
+  .faq-cta { text-align: center; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--background);
+    padding: 60px 5%;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+
+  footer .footer-logo { font-size: 2.5rem; margin-bottom: 16px; color: var(--primary); }
+  footer p { font-size: 0.95rem; color: var(--text-secondary); margin-bottom: 8px; }
+  footer strong { color: var(--text-primary); }
+
+  footer .disclaimer {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    max-width: 800px;
+    margin: 32px auto 0;
+    line-height: 1.6;
+    opacity: 0.6;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .hero { flex-direction: column; padding: 40px 4% 60px; min-height: auto; }
+    .hero-right { max-width: 100%; }
+    .who-grid, .curr-grid, .what-market, .anh-card { grid-template-columns: 1fr; }
+    .errors-grid, .press-clips, .video-grid { grid-template-columns: 1fr; }
+    .prof-slide { min-width: 100%; }
+  }
+
+  @media (max-width: 600px) {
+    section { padding: 50px 4%; }
+    .pills { flex-direction: column; }
+  }
+
+  /* scroll reveal */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
+  .reveal.visible { opacity: 1; transform: none; }
+</style>
+<script>
+  // Pre-load theme to avoid flash
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  if (savedTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+</script>
+</head>
+<body>
+
+<button id="themeToggle" class="theme-toggle" aria-label="Toggle Theme">
+  <i data-lucide="sun" class="sun-icon"></i>
+  <i data-lucide="moon" class="moon-icon"></i>
+</button>
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="logo-badge">
+      <div class="logo-icon">CA</div>
+      <div class="logo-text">
+        AUTOMATIZE<br>
+        SEM CÓDIGO COM<br>
+        <span>CATAS IA</span>
+      </div>
+    </div>
+
+    <h1>Transforme Intenções em Ações: Automação Inteligente via <span class="highlight">Linguagem Natural</span></h1>
+
+    <p>Elimine tarefas manuais e escale sua operação. O CATAS interpreta suas instruções e cria fluxos de trabalho resilientes, integrando suas ferramentas favoritas sem a necessidade de uma única linha de código.</p>
+
+    <a href="#inscricao" class="btn-primary">QUERO AUTOMATIZAR AGORA – GRÁTIS</a>
+
+    <div class="pills">
+      <button class="btn-outline-cyan"><i data-lucide="smartphone" style="width: 18px; height: 18px;"></i> 100% Mobile</button>
+      <button class="btn-outline-cyan"><i data-lucide="bot" style="width: 18px; height: 18px;"></i> IA Conversacional</button>
+      <button class="btn-outline-cyan"><i data-lucide="zap" style="width: 18px; height: 18px;"></i> Sem Código</button>
+      <button class="btn-outline-cyan"><i data-lucide="rocket" style="width: 18px; height: 18px;"></i> Pronto em Minutos</button>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="hero-photo-wrapper">
+      <div class="fake-window-bar">
+        <div class="win-btn"></div>
+        <div class="win-btn"></div>
+        <div class="win-btn"></div>
+      </div>
+      <div class="hero-photo-placeholder"><i data-lucide="code" style="width: 64px; height: 64px; color: var(--primary);"></i></div>
+    </div>
+
+    <div class="discount-badge">
+      <div class="label">Economize até</div>
+      <div class="value"><span style="font-size:3.5rem">53</span><span class="off">%<br>DO TEMPO</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ PROFESSORS ══════════════════════ -->
+<section class="professors reveal" id="professores">
+  <h2 class="section-title">
+    Orquestração Agêntica: Do Pensamento à <span class="accent">Execução em Segundos</span>
+  </h2>
+
+  <div class="prof-carousel">
+    <div class="prof-track" id="profTrack">
+
+      <div class="prof-slide">
+        <div class="prof-card">
+          <div class="prof-img-placeholder"><i data-lucide="message-square"></i></div>
+          <div class="prof-card-body">
+            <div class="prof-name">Passo 1: Descreva</div>
+            <p class="prof-bio">Basta digitar o que você quer automatizar em linguagem natural, como se estivesse explicando para um assistente. Sem formulários complexos, sem comandos técnicos – apenas suas palavras.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="prof-slide">
+        <div class="prof-card">
+          <div class="prof-img-placeholder"><i data-lucide="brain"></i></div>
+          <div class="prof-card-body">
+            <div class="prof-name">Passo 2: IA Processa</div>
+            <p class="prof-bio">O motor de IA do CATAS interpreta sua intenção, identifica as ferramentas e integrações necessárias e monta a lógica do fluxo automaticamente – sem que você precise configurar nada manualmente.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="prof-slide">
+        <div class="prof-card">
+          <div class="prof-img-placeholder"><i data-lucide="settings"></i></div>
+          <div class="prof-card-body">
+            <div class="prof-name">Passo 3: Automação Criada</div>
+            <p class="prof-bio">Em segundos, seu fluxo de trabalho está pronto e ativo. O CATAS gera a automação completa, conecta os sistemas e começa a executar as tarefas no piloto automático – para você focar no que realmente importa.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="prof-slide">
+        <div class="prof-card">
+          <div class="prof-img-placeholder"><i data-lucide="bar-chart-3"></i></div>
+          <div class="prof-card-body">
+            <div class="prof-name">Passo 4: Monitore</div>
+            <p class="prof-bio">Acompanhe em tempo real o desempenho das suas automações pelo app. Visualize métricas, receba alertas e ajuste os fluxos com um simples comando em linguagem natural – sem precisar de suporte técnico.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="prof-slide">
+        <div class="prof-card">
+          <div class="prof-img-placeholder"><i data-lucide="trending-up"></i></div>
+          <div class="prof-card-body">
+            <div class="prof-name">Passo 5: Escale</div>
+            <p class="prof-bio">Multiplique suas automações sem aumentar sua equipe. O CATAS cresce junto com o seu negócio – adicione novos fluxos, integre mais ferramentas e processe volumes maiores mantendo a mesma simplicidade do início.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="carousel-nav">
+    <button class="carousel-btn" id="prevBtn">&#8592;</button>
+    <div class="carousel-dots" id="dots">
+      <div class="dot active" onclick="goTo(0)"></div>
+      <div class="dot" onclick="goTo(1)"></div>
+      <div class="dot" onclick="goTo(2)"></div>
+      <div class="dot" onclick="goTo(3)"></div>
+      <div class="dot" onclick="goTo(4)"></div>
+    </div>
+    <button class="carousel-btn" id="nextBtn">&#8594;</button>
+  </div>
+</section>
+
+<!-- ══════════════════════ WHO CAN ══════════════════════ -->
+<section class="who-can reveal">
+  <div class="who-grid">
+    <div class="who-left">
+      <h2>Desenhado para Líderes e Operações de Alto Impacto</h2>
+      <p>Ideal para gestores que buscam eficiência operacional sem a complexidade de desenvolvimento tradicional.</p>
+      <p>Nossa arquitetura de IA interpreta a semântica dos seus comandos e <strong>orquestra a execução de forma autônoma.</strong></p>
+      <p>De fundadores de startups a gestores de operações enterprise – o CATAS democratiza o acesso à <strong>automação industrial resiliente.</strong></p>
+    </div>
+
+    <div class="who-right">
+      <div class="card-green">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+          <i data-lucide="rocket" style="color:var(--success); width: 24px; height: 24px;"></i>
+          <h3>PERFIL IDEAL:</h3>
+        </div>
+        <ul>
+          <li>Donos de PMEs que querem automatizar processos sem contratar desenvolvedores</li>
+          <li>Gestores e equipes operacionais sobrecarregadas com tarefas repetitivas</li>
+          <li>Empreendedores que precisam escalar sem aumentar custos</li>
+          <li>Profissionais que querem mais tempo para o que realmente importa</li>
+        </ul>
+      </div>
+
+      <div class="card-red">
+        <h3>
+          <i data-lucide="x-circle" style="color:var(--error); width: 24px; height: 24px;"></i>
+          QUEM NÃO PRECISA:
+        </h3>
+        <ul>
+          <li>Quem já tem um time técnico dedicado e processos 100% automatizados</li>
+          <li>Quem prefere continuar fazendo tudo manualmente</li>
+          <li>Quem não quer ganhar tempo e eficiência</li>
+        </ul>
+      </div>
+
+      <a href="#inscricao" class="btn-primary" style="margin-top:10px;">QUERO AUTOMATIZAR MEU NEGÓCIO AGORA</a>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ TESTIMONIALS ══════════════════════ -->
+<section class="testimonials reveal">
+  <h2 class="section-title">RESULTADOS REAIS DE QUEM JÁ USA O CATAS:</h2>
+  <p style="color:var(--text-secondary);margin-bottom:30px;font-size:1.05rem;">Veja como empreendedores e gestores estão <span style="color:var(--error);font-weight:700;">recuperando horas por semana</span> ao automatizar processos com linguagem natural.</p>
+
+  <div class="video-grid">
+    <div class="video-thumb">
+      <div style="width:100%;height:100%;background:var(--surface-highlight);display:flex;align-items:center;justify-content:center;font-size:3rem;"><i data-lucide="user" style="width: 64px; height: 64px; color: var(--primary);"></i></div>
+      <div class="play-overlay"><div class="play-btn">▶</div></div>
+    </div>
+    <div class="video-thumb">
+      <div style="width:100%;height:100%;background:var(--surface-highlight);display:flex;align-items:center;justify-content:center;font-size:3rem;"><i data-lucide="user" style="width: 64px; height: 64px; color: var(--primary);"></i></div>
+      <div class="play-overlay"><div class="play-btn">▶</div></div>
+    </div>
+    <div class="video-thumb">
+      <div style="width:100%;height:100%;background:var(--surface-highlight);display:flex;align-items:center;justify-content:center;font-size:3rem;"><i data-lucide="user" style="width: 64px; height: 64px; color: var(--primary);"></i></div>
+      <div class="play-overlay"><div class="play-btn">▶</div></div>
+    </div>
+  </div>
+
+  <a href="#inscricao" class="btn-outline-green">QUERO AUTOMATIZAR MEU NEGÓCIO AGORA</a>
+</section>
+
+<!-- ══════════════════════ CURRICULUM ══════════════════════ -->
+<section class="curriculum reveal">
+  <h2 class="section-title" style="text-align:left;">
+    Capacidades Enterprise:
+    <span class="accent">Integrações de Alto Nível Sem Fricção Técnica</span>
+  </h2>
+
+  <div class="curr-grid">
+    <div class="curr-left">
+      <div class="laptop-mock"><i data-lucide="layout" style="width: 120px; height: 120px; color: var(--primary);"></i></div>
+    </div>
+
+    <div>
+      <ul class="module-list">
+        <li class="module-item">1. Automatize envio de e-mails e follow-ups automáticos</li>
+        <li class="module-item">2. Integre CRM, planilhas e ferramentas de gestão</li>
+        <li class="module-item">3. Crie fluxos de atendimento ao cliente sem esforço</li>
+        <li class="module-item">4. Sincronize dados entre apps em tempo real</li>
+        <li class="module-item">5. Gere relatórios e dashboards automaticamente</li>
+        <li class="module-item">6. Automatize aprovações e notificações internas</li>
+        <li class="module-item">7. Conecte-se a APIs externas com um simples comando</li>
+        <li class="module-item">8. Agendamento inteligente de tarefas recorrentes</li>
+        <li class="module-item">9. Triagem e categorização automática de dados</li>
+        <li class="module-item">10. Monitore processos e receba alertas proativos</li>
+        <li class="module-item">11. Automação de redes sociais e conteúdo digital</li>
+        <li class="module-item">12. Fluxos personalizados para qualquer área do negócio</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ ERRORS ══════════════════════ -->
+<section class="errors reveal">
+  <h2 class="section-title">
+    <span class="accent-cyan">O GAP TECNOLÓGICO NA GESTÃO MODERNA</span>
+  </h2>
+  <p style="text-align:center;color:var(--text-secondary);margin-bottom:40px;">O problema não é falta de vontade – é que as soluções existentes eram complicadas, caras e exigiam equipe técnica. O CATAS muda isso.</p>
+
+  <div class="errors-grid">
+    <div class="error-card">
+      <div class="error-number">BARREIRA 1</div>
+      <h3>Capex Elevado em Desenvolvimento</h3>
+      <p>Contratar desenvolvedores para criar automações custa caro e leva semanas. 53% das PMEs brasileiras não têm orçamento para isso.</p>
+    </div>
+
+    <div class="error-card">
+      <div class="error-number">BARREIRA 2</div>
+      <h3>Gargalo de Mão de Obra Especializada</h3>
+      <p>40% das organizações apontam a falta de profissionais especializados como principal obstáculo para adotar IA nos processos.</p>
+    </div>
+
+    <div class="error-card">
+      <div class="error-number">BARREIRA 3</div>
+      <h3>Fricção em Ferramentas Low-Code</h3>
+      <p>Sistemas de "arrastar e soltar" ainda exigem conhecimento técnico e horas de configuração. A curva de aprendizado afasta a maioria.</p>
+    </div>
+  </div>
+
+  <div class="what-market">
+    <div>
+      <h2>O CATAS ELIMINA ESSAS 3 BARREIRAS DE UMA VEZ SÓ:</h2>
+
+      <div class="check-card">
+        <span class="check-icon">✓</span>
+        <p>Crie automações completas em minutos, sem escrever uma única linha de código – apenas descrevendo o que você quer em português</p>
+      </div>
+
+      <div class="check-card">
+        <span class="check-icon">✓</span>
+        <p>Acesse o poder da IA de ponta sem precisar de equipe técnica, servidor ou infra-estrutura cara</p>
+      </div>
+
+      <div class="check-card">
+        <span class="check-icon">✓</span>
+        <p>Interface 100% mobile e conversacional – tão simples quanto mandar uma mensagem no WhatsApp</p>
+      </div>
+
+      <p style="color:var(--text-secondary);margin-top:20px;margin-bottom:20px;">Pronto para transformar processos caóticos em fluxos de trabalho estruturados e escaláveis?</p>
+      <a href="#inscricao" class="btn-primary">QUERO AUTOMATIZAR MEU NEGÓCIO AGORA</a>
+    </div>
+
+    <div class="market-graphic"><i data-lucide="smartphone" style="width: 160px; height: 160px; color: var(--primary); opacity: 0.2;"></i></div>
+  </div>
+</section>
+
+<!-- ══════════════════════ PRESS ══════════════════════ -->
+<section class="press reveal">
+  <h2 class="section-title">O QUE OS DADOS DIZEM SOBRE AUTOMAÇÃO E PMEs NO BRASIL?</h2>
+
+  <div class="press-clips">
+    <div class="press-clip">
+      <div class="source">Sebrae / Pesquisa</div>
+      <h3>71% das PMEs consideram a IA relevante para sua sobrevivência nos próximos anos</h3>
+      <p>A inteligência artificial deixou de ser tendência e passou a ser questão de competição no mercado brasileiro.</p>
+    </div>
+
+    <div class="press-clip">
+      <div class="source" style="color:#0077b5;">McKinsey & Company</div>
+      <h3>Automação pode aumentar a produtividade de pequenas empresas em até 40%</h3>
+      <p>Processos automatizados liberam equipes para atividades estratégicas, reduzindo erros e acelerando entregas.</p>
+    </div>
+
+    <div class="press-clip">
+      <div class="source" style="color:#e63922;">Gartner</div>
+      <h3>Até 2026, 80% das plataformas de automação usarão linguagem natural como interface principal</h3>
+      <p>A era do "sem código" impulsionada por IA está redefinindo como negócios operam e escalam.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════ ANHANGUERA ══════════════════════ -->
+<section class="anhanguera reveal">
+  <h2 class="anh-header">
+    Confiabilidade Industrial e Segurança de Dados<br>
+    <span class="accent">SISTEMA ORQUESTRADO VIA TEMPORAL.IO PARA MÁXIMA RESILIÊNCIA.</span>
+  </h2>
+
+  <div class="anh-card">
+    <div class="anh-logo"><i data-lucide="shield-check" style="width: 120px; height: 120px; color: var(--primary);"></i></div>
+    <div class="anh-info">
+      <h3>Infraestrutura Enterprise:</h3>
+      <p>O CATAS utiliza o motor de orquestração <strong>Temporal.io</strong> para garantir que cada automação seja executada com resiliência total, retentativas automáticas e consistência de estado, mesmo em falhas críticas.</p>
+      <p>Seus dados são protegidos com criptografia de nível bancário e conformidade rigorosa com a <strong>LGPD</strong>, garantindo privacidade absoluta em cada fluxo.</p>
+
+      <div class="anh-stats">
+        <div class="anh-stat">
+          <h4>+500</h4>
+          <p>Automações criadas</p>
+        </div>
+        <div class="anh-stat">
+          <h4>40%</h4>
+          <p>Ganho médio de produtividade</p>
+        </div>
+        <div class="anh-stat">
+          <h4>0 Código</h4>
+          <p>Necessário para criar</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="anh-cta">
+    <a href="#inscricao" class="btn-outline-green" style="background:#e67e22;border-color:#e67e22;color:#fff;">QUERO AUTOMATIZAR MEU NEGÓCIO AGORA</a>
+  </div>
+</section>
+
+<!-- ══════════════════════ FAQ ══════════════════════ -->
+<section class="faq reveal" id="inscricao">
+  <h2 class="faq-title">PERGUNTAS FREQUENTES</h2>
+
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-question">Preciso saber programar para usar o CATAS? <span class="plus">+</span></div>
+      <div class="faq-answer">Não! O CATAS foi criado exatamente para eliminar essa barreira. Basta descrever o que você quer automatizar em linguagem natural – como se estivesse explicando para um colega – e a IA faz o resto.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">Quanto tempo leva para criar uma automação? <span class="plus">+</span></div>
+      <div class="faq-answer">A maioria das automações é criada em menos de 5 minutos. Você descreve a tarefa, a IA processa e o fluxo já está ativo. Não há configurações complexas ou longas etapas de setup.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">O CATAS funciona no celular? <span class="plus">+</span></div>
+      <div class="faq-answer">Sim! O CATAS foi desenvolvido com foco mobile. Você cria, gerencia e monitora todas as suas automações diretamente pelo smartphone, de qualquer lugar.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">Quais ferramentas e apps o CATAS integra? <span class="plus">+</span></div>
+      <div class="faq-answer">O CATAS integra com as principais ferramentas do mercado: e-mail, planilhas, CRM, ERPs, APIs, redes sociais e muito mais. Nossa lista de integrações cresce constantemente com base no feedback dos usuários.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">Meus dados ficam seguros? <span class="plus">+</span></div>
+      <div class="faq-answer">Absolutamente. Todos os dados são criptografados em trânsito e em repouso. O CATAS segue as melhores práticas de segurança e está em conformidade com a LGPD.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">E se a automação criada não for o que eu queria? <span class="plus">+</span></div>
+      <div class="faq-answer">Sem problemas! Basta refinar sua descrição em linguagem natural. O CATAS entende ajustes e correções como se fosse uma conversa normal. Você também pode editar os fluxos visualmente.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">O CATAS serve para qualquer tipo de empresa? <span class="plus">+</span></div>
+      <div class="faq-answer">Sim! De MEIs e pequenas empresas a médias organizações. Se você tem processos repetitivos que consomem tempo da sua equipe, o CATAS pode automatizá-los independente do setor ou tamanho.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">Existe um período de teste gratuito? <span class="plus">+</span></div>
+      <div class="faq-answer">Sim! Você pode começar gratuitamente e criar suas primeiras automações sem pagar nada. Os planos pagos desbloqueiam volume maior de execuções e integrações premium.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">Posso criar automações para minha equipe? <span class="plus">+</span></div>
+      <div class="faq-answer">Sim! O CATAS suporta ambientes colaborativos onde você pode compartilhar fluxos com toda a equipe, definir permissões e centralizar a gestão das automações do seu negócio.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-question">Tenho dúvidas, como entro em contato? <span class="plus">+</span></div>
+      <div class="faq-answer">Nosso suporte está disponível pelo chat no app, WhatsApp e e-mail. Além disso, temos documentação completa e tutoriais em vídeo para cada funcionalidade do CATAS.</div>
+    </div>
+  </div>
+
+  <div class="faq-cta">
+    <a href="#" class="btn-primary" style="display:inline-block;width:auto;padding:18px 60px;">QUERO AUTOMATIZAR MEU NEGÓCIO AGORA</a>
+  </div>
+</section>
+
+<!-- ══════════════════════ FOOTER ══════════════════════ -->
+<footer>
+  <div class="footer-logo"><i data-lucide="bot" style="width: 48px; height: 48px; color: var(--primary); margin: 0 auto 16px;"></i></div>
+  <p>2026© CATAS – Inteligência Artificial para Automação</p>
+  <p><strong>Transformando linguagem em automação desde 2025</strong></p>
+  <div class="disclaimer">
+    <strong>Atenção:</strong> Este site não é afiliado ao Facebook, Google ou a qualquer entidade ligada a eles. Os resultados apresentados são baseados em casos reais de uso, porém resultados individuais podem variar conforme o tipo e complexidade dos processos automatizados.
+  </div>
+</footer>
+
+<script>
+  // Initialize Lucide Icons
+  lucide.createIcons();
+
+  // ── THEME TOGGLE ──
+  const themeToggle = document.getElementById('themeToggle');
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    if (isLight) {
+      document.documentElement.removeAttribute('data-theme');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.setAttribute('data-theme', 'light');
+      localStorage.setItem('theme', 'light');
+    }
+    // Update icons after theme change if necessary (Lucide handles this via CSS in our case but let's be sure)
+    lucide.createIcons();
+  });
+
+  // ── CAROUSEL ──
+  let current = 0;
+  const track = document.getElementById('profTrack');
+  const dots = document.querySelectorAll('.dot');
+  const total = 5;
+
+  function goTo(index) {
+    current = ((index % total) + total) % total;
+    track.style.transform = `translateX(-${current * 33.333}%)`;
+    dots.forEach((d, i) => d.classList.toggle('active', i === current));
+  }
+
+  document.getElementById('nextBtn').onclick = () => goTo(current + 1);
+  document.getElementById('prevBtn').onclick = () => goTo(current - 1);
+
+  setInterval(() => goTo(current + 1), 5000);
+
+  // ── FAQ ──
+  document.querySelectorAll('.faq-question').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.closest('.faq-item');
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item.open').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // ── SCROLL REVEAL ──
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

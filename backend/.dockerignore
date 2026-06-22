@@ -1,0 +1,26 @@
+# Ignore all files
+
+.dart_tool/
+build/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Except for the Dockerfile and .dockerignore
+!Dockerfile
+!./.dockerignore
+!./server/
+!docker-compose.yml
+!requirements.txt
+
+__pycache__/
+*.pyc
+*.pyo
+.env
+.git
+.idea/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+tests/

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "CATAS",
+  "colors": {
+    "primary": "#2563EB",
+    "light": "#60A5FA",
+    "dark": "#1E40AF"
+  },
+  "favicon": "/favicon.ico",
+  "api": {
+    "mdx": {
+      "server": "https://catas-ai.onrender.com/api/v1",
+      "auth": {
+        "method": "bearer"
+      }
+    }
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentação",
+        "groups": [
+          {
+            "group": "Começando",
+            "pages": ["comecando/instalacao","comecando/variaveis-ambiente"]
+          },
+          {
+            "group": "Arquitetura",
+            "pages": ["arquitetura/visao-geral","arquitetura/sistema","arquitetura/backend","arquitetura/app-flutter","arquitetura/banco-dados"]
+          },
+          {
+            "group": "Referência",
+            "pages": ["referencia/api","referencia/integracoes","referencia/componentes-ui"]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png"
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Repositório",
+        "href": "https://github.com/CATAS-AI/CATAS"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Abrir Dashboard",
+      "href": "https://catas.app/dashboard"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/CATAS-AI"
+    }
+  }
+}
