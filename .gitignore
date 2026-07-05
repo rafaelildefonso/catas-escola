@@ -26,7 +26,3 @@ build/
 .flutter-plugins-dependencies
 *.js.deps
 *.js.map
-
-# Pasta de clone aninhado (CATAS dentro de CATAS)
-catas-app/
-CATAS/
