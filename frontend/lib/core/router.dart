@@ -9,6 +9,7 @@ import 'package:catas/screens/pricing_screen.dart';
 import 'package:catas/screens/settings_screen.dart';
 import 'package:catas/screens/web/web_main_layout.dart';
 import 'package:catas/screens/automation_detail_screen.dart';
+import 'package:catas/screens/crud/crud_management_screen.dart';
 import 'package:catas/screens/main_layout.dart';
 // Demo screens
 import 'package:catas/screens/demo_report_screen.dart';
@@ -46,6 +47,7 @@ class AppRoutes {
   static const String settingsHelp = '/app/settings/help';
   static const String notifications = '/app/notifications';
   static const String automationDetail = '/app/automations/:runId';
+  static const String crud = '/app/crud';
   static const String suggestedPrompts = '/app/prompts';
   // Demo routes
   static const String demoReport = '/app/report/demo';
@@ -246,6 +248,16 @@ GoRouter createRouter(
             name: 'suggested-prompts',
             pageBuilder: (context, state) => _buildPageWithTransition(
               child: const SuggestedPromptsScreen(),
+              state: state,
+            ),
+          ),
+
+          // CRUD Management
+          GoRoute(
+            path: AppRoutes.crud,
+            name: 'crud',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              child: const CrudManagementScreen(),
               state: state,
             ),
           ),

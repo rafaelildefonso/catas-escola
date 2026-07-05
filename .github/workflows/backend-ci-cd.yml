@@ -86,6 +86,6 @@
 #       - name: Trigger Production Worker Deploy
 #         continue-on-error: true
 #         run: |
-#           if [ -n "${{ secrets.RENDER_DEPLOY_HOOK_PROD_WORKER }}" ]; then
+#           if [ -n "#${{} secrets.RENDER_DEPLOY_HOOK_PROD_WORKER }}" ]; then
 #             curl -X POST -d "" "${{ secrets.RENDER_DEPLOY_HOOK_PROD_WORKER }}"
 #           fi

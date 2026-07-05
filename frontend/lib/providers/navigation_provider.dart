@@ -9,6 +9,7 @@ enum AppPage {
   history,
   pricing,
   dashboard,
+  crud,
 }
 
 class NavigationProvider with ChangeNotifier {
