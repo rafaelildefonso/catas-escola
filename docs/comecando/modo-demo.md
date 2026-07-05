@@ -1,15 +1,13 @@
 # Modo Demo e Apresentação
 
-O CATAS possui um "Modo Demo" projetado para permitir apresentações e testes sem a necessidade de APIs reais externas (n8n/Stripe) ou para simular comportamentos específicos.
+O CATAS possui um "Modo Demo" projetado para permitir apresentações e testes sem a necessidade de APIs reais externas ou para simular comportamentos específicos.
 
-## 1. Mocks de n8n
+## 1. Mocks de IA
 
-Caso você queira testar o fluxo de chat sem um servidor n8n real rodando:
+Caso você queira testar o fluxo de chat sem uma API de IA real:
 
-1. Execute o script de mock: `python server/mock_n8n.py`.
-2. No `.env` do backend, aponte `N8N_WEBHOOK_URL` para `http://localhost:5678/webhook`.
-
-O mock simulará respostas de IA e detecção de ações de forma determinística.
+1. No `.env` do backend, use `ENVIRONMENT=development` e configure chaves de teste.
+2. Use `DEMO_MODE=true` no Flutter para dados mockados na UI.
 
 ## 2. Mock de Billing
 

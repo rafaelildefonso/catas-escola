@@ -11,7 +11,8 @@ from typing import Any, Dict, List, Optional
 from openai import OpenAI
 
 from core.config import settings
-from services.db_supabase import supabase
+from services.database import get_sync_db
+from models.db_models import IaMemory
 
 _EMBED_MODEL = "text-embedding-3-small"
 _EMBED_DIM = 1536
@@ -36,42 +37,47 @@ def embed_text(text: str) -> List[float]:
 
 def load_memory(user_id: str) -> dict:
     try:
-        res = (
-            supabase.table("ia_memory")
-            .select("key, content, metadata")
-            .eq("user_id", user_id)
-            .order("created_at", desc=True)
-            .limit(80)
-            .execute()
-        )
+        db = get_sync_db()
+        try:
+            rows = (
+                db.query(IaMemory)
+                .filter(IaMemory.user_id == user_id)
+                .order_by(IaMemory.created_at.desc())
+                .limit(80)
+                .all()
+            )
+        finally:
+            db.close()
         merged: Dict[str, Any] = {}
-        for row in res.data or []:
-            k = row.get("key") or "note"
-            merged[k] = row.get("content")
+        for row in rows:
+            k = row.key or "note"
+            merged[k] = row.content
         return merged
     except Exception:
         return {}
 
 
 def save_memory(user_id: str, memory: dict) -> None:
-    for k, v in memory.items():
-        if v is None:
-            continue
-        text = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
-        row: Dict[str, Any] = {
-            "user_id": user_id,
-            "key": str(k),
-            "content": text[:12000],
-            "metadata": {},
-            "created_at": datetime.utcnow().isoformat(),
-        }
-        emb = embed_text(text[:8000])
-        if emb:
-            row["embedding"] = emb
-        try:
-            supabase.table("ia_memory").insert(row).execute()
-        except Exception:
-            pass
+    db = get_sync_db()
+    try:
+        for k, v in memory.items():
+            if v is None:
+                continue
+            text = v if isinstance(v, str) else json.dumps(v, ensure_ascii=False)
+            emb = embed_text(text[:8000])
+            row = IaMemory(
+                user_id=user_id,
+                key=str(k),
+                content=text[:12000],
+            )
+            if emb:
+                row.embedding = emb
+            db.add(row)
+        db.flush()
+    except Exception:
+        pass
+    finally:
+        db.close()
 
 
 def search_similar_memory(user_id: str, query: str, limit: int = 8) -> List[Dict[str, Any]]:
@@ -79,18 +85,32 @@ def search_similar_memory(user_id: str, query: str, limit: int = 8) -> List[Dict
     if not emb:
         return []
     try:
-        res = (
-            supabase.rpc(
-                "match_ia_memory",
+        db = get_sync_db()
+        try:
+            from sqlalchemy import text
+            emb_str = "[" + ",".join(str(x) for x in emb) + "]"
+            rows = db.execute(
+                text("""
+                    SELECT id, key, content,
+                           (1 - (embedding <=> :query_embedding::vector(1536)))::double precision AS similarity
+                    FROM ia_memory
+                    WHERE user_id = :match_user
+                      AND embedding IS NOT NULL
+                    ORDER BY embedding <=> :query_embedding::vector(1536)
+                    LIMIT :match_count
+                """),
                 {
-                    "query_embedding": emb,
+                    "query_embedding": emb_str,
                     "match_user": user_id,
                     "match_count": limit,
                 },
-            )
-            .execute()
-        )
-        return res.data or []
+            ).fetchall()
+        finally:
+            db.close()
+        return [
+            {"id": str(r[0]), "key": r[1], "content": r[2], "similarity": r[3]}
+            for r in rows
+        ]
     except Exception:
         return []
 

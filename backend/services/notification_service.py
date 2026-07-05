@@ -4,27 +4,28 @@ import firebase_admin
 from firebase_admin import messaging
 from typing import Dict, Optional
 
-from supabase import create_client, Client
+from services.database import get_sync_db
+from models.db_models import UserDevice
 
 logger = logging.getLogger(__name__)
 
 class NotificationService:
-    def __init__(self):
-        # Configure Supabase client to fetch user devices
-        supabase_url: str = os.environ.get("SUPABASE_URL", "")
-        supabase_key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
-        self.supabase: Client = create_client(supabase_url, supabase_key)
-
     def _get_user_tokens(self, user_id: str) -> list[str]:
         """Fetch all active FCM tokens for a user from the database."""
         try:
-            response = self.supabase.table("user_devices") \
-                .select("fcm_token") \
-                .eq("user_id", user_id) \
-                .eq("active", True) \
-                .execute()
-            
-            return [device["fcm_token"] for device in response.data]
+            db = get_sync_db()
+            try:
+                devices = (
+                    db.query(UserDevice)
+                    .filter(
+                        UserDevice.user_id == user_id,
+                        UserDevice.active == True,
+                    )
+                    .all()
+                )
+                return [device.fcm_token for device in devices]
+            finally:
+                db.close()
         except Exception as e:
             logger.error(f"Error fetching FCM tokens for user {user_id}: {e}")
             return []

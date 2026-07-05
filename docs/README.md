@@ -1,94 +1,90 @@
-# Documentação CATAS
+# Documentacao CATAS
 
-> 🤖 **CATAS** = Context Aware Task Automation System  
-> Agente de automação inteligente baseado em linguagem natural
+> **CATAS** = Context Aware Task Automation System  
+> Agente de automacao inteligente baseado em linguagem natural
 
 ---
 
-## 🚀 Comece Aqui
+## Comece Aqui
 
 **Primeira vez?** → [Quick Start em 15 minutos](comecando/quickstart.md)
 
 ```bash
-# Setup rápido
-cd server/docker/temporal && docker-compose up -d
-cd server && uvicorn app.main:app --reload
-cd server && python worker/main.py
+# Setup rapido
+cd backend && .\.venv\Scripts\activate && flask run --port 8000
+cd backend && .\.venv\Scripts\activate && python -m worker.server
 cd app_flutter && flutter run
 ```
 
 ---
 
-## 🗺️ Navegue por Perfil
+## Navegue por Perfil
 
 Escolha seu caminho:
 
-### 👨‍💻 [Frontend Developer](flutter/index.md)
+### [Frontend Developer](flutter/index.md)
 Trabalhando com Flutter e UI?
 
-**Tópicos:** Providers, Componentes, Telas, Realtime
+**Topicos:** Providers, Componentes, Telas, Realtime
 
-### 🐍 [Backend Developer](backend/index.md)
-Trabalhando com Python, FastAPI ou automações?
+### [Backend Developer](backend/index.md)
+Trabalhando com Python, Flask ou automacoes?
 
-**Tópicos:** Pipeline de IA, Temporal Workflows, API REST
+**Topicos:** Pipeline de IA, Automacao, API REST
 
-### 🔧 [DevOps / Infra](infra/index.md)
-Configurando deploy, banco ou integrações?
+### [DevOps / Infra](infra/index.md)
+Configurando deploy, banco ou integracoes?
 
-**Tópicos:** Temporal, Supabase, Firebase, Stripe
+**Topicos:** Supabase, Firebase, Stripe, Docker
 
 ---
 
-## 📚 Guias Práticos
+## Guias Praticos
 
 | Eu quero... | Guia |
 |-------------|------|
-| 🆕 Rodar o projeto pela primeira vez | [Quick Start](comecando/quickstart.md) |
-| 🔌 Adicionar nova integração (Slack, Notion, etc) | [Nova Integração](guias/nova-integracao/index.md) |
-| 🐛 Debugar um bug | [Debugging](guias/debugging/index.md) |
-| ⚙️ Configurar variáveis de ambiente | [Variáveis de Ambiente](comecando/variaveis-ambiente.md) |
-| 🆘 Resolver erro comum | [Troubleshooting](comecando/troubleshooting.md) |
+| Rodar o projeto pela primeira vez | [Quick Start](comecando/quickstart.md) |
+| Adicionar nova integracao (Slack, Notion, etc) | [Nova Integracao](guias/nova-integracao/index.md) |
+| Depurar um bug | [Debugging](guias/debugging/index.md) |
+| Configurar variaveis de ambiente | [Variaveis de Ambiente](comecando/variaveis-ambiente.md) |
+| Resolver erro comum | [Troubleshooting](comecando/troubleshooting.md) |
 
 ---
 
-## 📖 Documentação Técnica
+## Documentacao Tecnica
 
 ### Arquitetura
-- [Visão Geral](arquitetura/visao-geral.md) - Fluxo do sistema
-- [Sistema](arquitetura/sistema.md) - Componentes técnicos
+- [Sistema](arquitetura/sistema.md) - Componentes tecnicos
 - [Backend](arquitetura/backend.md) - Estrutura Python
 - [App Flutter](arquitetura/app-flutter.md) - Estrutura Dart
 - [Banco de Dados](arquitetura/banco-dados.md) - Schema e RLS
 
-### Referência
+### Referencia
 - [API](referencia/api.md) - Endpoints REST
-- [Integrações](referencia/integracoes.md) - Google, Stripe, etc
+- [Integracoes](referencia/integracoes.md) - Google, Stripe, etc
 - [Componentes UI](referencia/componentes-ui.md) - Biblioteca de widgets
 - [Faturamento](referencia/faturamento.md) - Stripe e planos
 
 ---
 
-## 🔗 Links Úteis
+## Links Uteis
 
 | Recurso | Link |
 |---------|------|
-| ⏱️ Temporal UI | http://localhost:8080 |
-| 📚 API Docs | http://localhost:8000/docs |
-| 💬 Swagger | http://localhost:8000/redoc |
+| API Docs | http://localhost:8000/docs |
 
 ---
 
-## 📝 Sobre esta Documentação
+## Sobre esta Documentacao
 
-Organização:
-- **Começando** - Setup rápido e troubleshooting
-- **Por Perfil** - Guias específicos (Flutter, Backend, Infra)
+Organizacao:
+- **Comecando** - Setup rapido e troubleshooting
+- **Por Perfil** - Guias especificos (Flutter, Backend, Infra)
 - **Guias** - Tarefas comuns passo a passo
-- **Arquitetura** - Documentação técnica detalhada
-- **Referência** - APIs, componentes, integrações
+- **Arquitetura** - Documentacao tecnica detalhada
+- **Referencia** - APIs, componentes, integracoes
 
-> 💡 **Dica:** Use a busca (Ctrl+K) para encontrar qualquer tópico em segundos.
+> **Dica:** Use a busca (Ctrl+K) para encontrar qualquer topico em segundos.
 
 ---
 

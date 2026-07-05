@@ -52,7 +52,7 @@ Este documento detalha os recursos, limites e preços sugeridos para cada plano 
 
 - **Benefícios:**
   - Tudo do plano Pro.
-  - Criação de fluxos customizados no n8n sob demanda pela equipe CATAS.
+  - Criação de modulos customizados no Worker sob demanda pela equipe CATAS.
   - Maior limite de tokens para processamento de documentos gigantes.
   - Acesso à **API do CATAS** para integração com sistemas legados ou internos da empresa.
   - **Agentes Compartilhados:** Vários usuários podem usar os mesmos bots de automação da empresa.

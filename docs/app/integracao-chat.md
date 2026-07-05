@@ -6,7 +6,7 @@ O fluxo de comunicação entre o App Flutter e o Backend é centralizado no `Cha
 
 1. **Envio**: O usuário digita a mensagem e o app chama `chatProvider.sendMessage(text)`.
 2. **Repositório**: O `ChatRepository` faz um `POST` para o backend com o JWT do Supabase no cabeçalho `Authorization`.
-3. **Espera Ativa**: Enquanto o backend processa (n8n ou Gemini), o app exibe o estágio de "pensamento".
+3. **Espera Ativa**: Enquanto o backend processa (IA), o app exibe o estágio de "pensamento".
 4. **Processamento de Ação**:
    - Se o backend retornar `actionTriggered: true`, o app renderiza um card específico (ex: `ActionCardCalendar`).
    - O usuário revisa os dados extraídos pela IA.
@@ -30,4 +30,4 @@ Para garantir uma experiência fluida no mobile, o `ChatProvider` gerencia a per
 
 ## Busca na Web
 
-Quando ativado, o app envia o parâmetro `web_search: true` no payload da mensagem. Isso sinaliza ao backend (ou ao n8n via ferramenta de busca) para realizar pesquisas externas antes de formular a resposta final.
+Quando ativado, o app envia o parâmetro `web_search: true` no payload da mensagem. Isso sinaliza ao backend para realizar pesquisas externas (via ferramenta de busca da IA) antes de formular a resposta final.

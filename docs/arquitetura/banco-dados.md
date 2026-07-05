@@ -90,7 +90,7 @@ Sugestões proativas baseadas no contexto da página.
 - `title` / `description` (text).
 - `confidence_score` (float).
 - `payload_preview` (jsonb).
-- `suggested_workflow` (text): ID ou nome do workflow no n8n.
+- `suggested_workflow` (text): ID ou nome do workflow de automacao.
 - `status` (enum): 'pending', 'accepted', 'rejected', 'executed'.
 
 ### `automations` (definições)
@@ -102,11 +102,11 @@ Plano versionado: gatilho + steps em JSON (fonte de verdade além de `saved_auto
 
 ### `automation_runs`
 
-Uma linha por execução (**Temporal** ou **n8n**).
+Uma linha por execucao.
 
-- `id` (uuid, PK): costuma coincidir com o `automation_id` usado no chat / step logs quando a origem é `execution_logs`.
-- `automation_id` (uuid, FK opcional): referência à definição em `automations`.
-- `temporal_workflow_id` (text), `correlation_id` (text, único), `run_type` ('temporal' | 'n8n').
+- `id` (uuid, PK): costuma coincidir com o `automation_id` usado no chat / step logs quando a origem e `execution_logs`.
+- `automation_id` (uuid, FK opcional): referencia a definicao em `automations`.
+- `correlation_id` (text, unico), `run_type` (text, ex: 'direct').
 - `input_payload` / `result_metadata` / `error_details` / `steps_summary` (jsonb).
 - `status`: 'pending', 'running', 'completed', 'failed', 'canceled'.
 
@@ -162,7 +162,7 @@ Tokens para notificações via Firebase Cloud Messaging (FCM).
 Automações favoritas ou customizadas do usuário.
 
 - `name` / `description` (text).
-- `workflow_id_n8n` (text).
+- `workflow_id` (text).
 - `trigger_type` (text): Ex: 'manual', 'domain_filter'.
 - `domain_filter` (text).
 - `is_active` (boolean).

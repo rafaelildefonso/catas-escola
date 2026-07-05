@@ -1,15 +1,14 @@
-import 'package:catas/components/brand_logo.dart';
 import 'dart:async';
 import 'dart:html' as html;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catas/l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/navigation_provider.dart';
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,11 +19,12 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
-  String? _loadingMessage;
   bool _showEmailForm = false;
+  String? _loadingMessage;
   bool _isSignUpMode = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   final _pageController = PageController();
@@ -43,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _pageController.dispose();
     _carouselTimer?.cancel();
     super.dispose();
@@ -65,54 +66,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (kIsWeb) html.window.location.href = path;
   }
 
-  void _loginWithGoogle() async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _isLoading = true;
-      _loadingMessage = l10n.googleConnecting;
-    });
-    if (!mounted) return;
-    final success = await context.read<AuthProvider>().loginWithGoogle();
-    if (success && mounted) {
-      context.read<NavigationProvider>().reset();
-    } else if (!success && mounted) {
-      setState(() {
-        _isLoading = false;
-        _loadingMessage = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.loginGoogleFailed), behavior: SnackBarBehavior.floating),
-      );
-    }
-  }
-
-  void _loginWithApple() async {
-    final l10n = AppLocalizations.of(context)!;
-    setState(() {
-      _isLoading = true;
-      _loadingMessage = l10n.appleConnecting;
-    });
-    if (!mounted) return;
-    final success = await context.read<AuthProvider>().loginWithApple();
-    if (success && mounted) {
-      context.read<NavigationProvider>().reset();
-    } else if (!success && mounted) {
-      setState(() {
-        _isLoading = false;
-        _loadingMessage = null;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.loginAppleFailed), behavior: SnackBarBehavior.floating),
-      );
-    }
-  }
-
   void _loginWithEmail() async {
     final l10n = AppLocalizations.of(context)!;
-    if (!_showEmailForm) {
-      setState(() => _showEmailForm = true);
-      return;
-    }
     if (!_formKey.currentState!.validate()) return;
     setState(() {
       _isLoading = true;
@@ -295,52 +250,58 @@ class _LoginScreenState extends State<LoginScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: SizedBox(
-            child: Image.asset(
-              isDarkMode
-                  ? 'assets/icons/app_icon_transparent_white.png'
-                  : 'assets/icons/app_icon_transparent.png',
-              width: 100,
-              height: 100,
-              fit: BoxFit.contain,
-            ),
-          ).animate().scale(delay: 100.ms, duration: 400.ms),
-        ),
-        const SizedBox(height: 8),
-        Center(
-          child: Text(
-            l10n.loginSubtitle,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              color: colorScheme.onSurface.withValues(alpha: 0.7),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-        const SizedBox(height: 2),
-        Center(
-          child: Text(
-            l10n.loginSubtitleExecution,
-            style: GoogleFonts.outfit(
-              fontSize: 20,
-              color: colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 40),
-
         if (!_showEmailForm) ...[
-          _buildGoogleButton(colorScheme, l10n),
-          const SizedBox(height: 14),
-          _buildAppleButton(colorScheme, l10n),
-          const SizedBox(height: 14),
-          _buildEmailButton(colorScheme, l10n),
+          Center(
+            child: SizedBox(
+              child: Image.asset(
+                isDarkMode
+                    ? 'assets/icons/app_icon_transparent_white.png'
+                    : 'assets/icons/app_icon_transparent.png',
+                width: 100,
+                height: 100,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Text(
+              l10n.loginSubtitle,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                color: colorScheme.onSurface.withValues(alpha: 0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Center(
+            child: Text(
+              l10n.loginSubtitleExecution,
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(height: 40),
         ],
 
-        if (_showEmailForm) _buildEmailForm(colorScheme, l10n),
+        AnimatedCrossFade(
+          duration: const Duration(milliseconds: 300),
+          crossFadeState: _showEmailForm
+              ? CrossFadeState.showSecond
+              : CrossFadeState.showFirst,
+          firstChild: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildEmailLink(colorScheme, l10n),
+            ],
+          ),
+          secondChild: _buildEmailForm(colorScheme, l10n),
+        ),
 
         const SizedBox(height: 24),
         Center(
@@ -350,138 +311,53 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─── GOOGLE BUTTON ────────────────────────────────────────
+  // ─── EMAIL LINK ─────────────────────────────────────────
 
-  Widget _buildGoogleButton(ColorScheme colorScheme, AppLocalizations l10n) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: _isLoading
-          ? _buildLoadingIndicator(colorScheme, l10n)
-          : ElevatedButton(
-              onPressed: _loginWithGoogle,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.onSurface,
-                foregroundColor: colorScheme.surface,
-                elevation: 0.5,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 24, height: 24,
-                    child: Logo(
-                      logoId: LogoId.google, size: 24,
-                      onErrorIcon: const Icon(Icons.g_mobiledata_rounded, size: 24),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: Text(
-                      l10n.continueWithGoogle,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  // ─── APPLE BUTTON ─────────────────────────────────────────
-
-  Widget _buildAppleButton(ColorScheme colorScheme, AppLocalizations l10n) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: _isLoading
-          ? const SizedBox.shrink()
-          : ElevatedButton(
-              onPressed: _loginWithApple,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.surface,
-                foregroundColor: colorScheme.onSurface,
-                elevation: 0.5,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 24, height: 28,
-                    child: Logo(
-                      logoId: LogoId.apple, size: 24,
-                      onErrorIcon: const Icon(Icons.apple, size: 24),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: Text(
-                      l10n.continueWithApple,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-    );
-  }
-
-  // ─── EMAIL BUTTON ────────────────────────────────────────
-
-  Widget _buildEmailButton(ColorScheme colorScheme, AppLocalizations l10n) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: _isLoading
-          ? const SizedBox.shrink()
-          : ElevatedButton(
-              onPressed: _loginWithEmail,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.surface,
-                foregroundColor: colorScheme.onSurface,
-                elevation: 0.5,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                side: BorderSide(color: colorScheme.outline.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.email_outlined, size: 22, color: colorScheme.primary),
-                  const SizedBox(width: 12),
-                  Flexible(
-                    child: Text(
-                      l10n.loginWithEmail,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 16),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+  Widget _buildEmailLink(ColorScheme colorScheme, AppLocalizations l10n) {
+    return Center(
+      child: TextButton(
+        onPressed: _isLoading ? null : () => setState(() => _showEmailForm = true),
+        child: Text(
+          l10n.loginWithEmail,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            color: colorScheme.primary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 
   // ─── EMAIL FORM ───────────────────────────────────────────
 
   Widget _buildEmailForm(ColorScheme colorScheme, AppLocalizations l10n) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
-      ),
-      child: Form(
+    return Form(
         key: _formKey,
         child: Column(
           children: [
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back, size: 20),
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          setState(() {
+                            _showEmailForm = false;
+                            _isSignUpMode = false;
+                            _emailController.clear();
+                            _passwordController.clear();
+                            _confirmPasswordController.clear();
+                          });
+                        },
+                  visualDensity: VisualDensity.compact,
+                  tooltip: l10n.backToLogin,
+                ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 8),
             TextFormField(
               controller: _emailController,
               enabled: !_isLoading,
@@ -500,7 +376,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
                 ),
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
               style: GoogleFonts.inter(fontSize: 15),
@@ -529,20 +405,54 @@ class _LoginScreenState extends State<LoginScreen> {
                   borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
                 ),
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               ),
               style: GoogleFonts.inter(fontSize: 15),
               validator: (value) {
                 if (value == null || value.isEmpty) return 'Digite sua senha';
-                if (value.length < 6) return 'Mínimo 6 caracteres';
+                if (value.length < 8) return 'Mínimo 8 caracteres';
+                if (!RegExp(r'[a-z]').hasMatch(value)) return 'Precisa de uma letra minúscula';
+                if (!RegExp(r'[A-Z]').hasMatch(value)) return 'Precisa de uma letra maiúscula';
+                if (!RegExp(r'[0-9]').hasMatch(value)) return 'Precisa de um dígito';
+                if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(value)) return 'Precisa de um caractere especial';
                 return null;
               },
             ),
+            if (_isSignUpMode) ...[
+              const SizedBox(height: 14),
+              TextFormField(
+                controller: _confirmPasswordController,
+                enabled: !_isLoading,
+                obscureText: true,
+                decoration: InputDecoration(
+                  hintText: 'Repita a senha',
+                  labelText: 'Confirmar senha',
+                  prefixIcon: Icon(Icons.lock_outlined, color: colorScheme.primary),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+                  ),
+                  filled: true,
+                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                style: GoogleFonts.inter(fontSize: 15),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return 'Confirme sua senha';
+                  if (value != _passwordController.text) return 'Senhas não conferem';
+                  return null;
+                },
+              ),
+            ],
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              height: 52,
               child: _isLoading
                   ? _buildLoadingIndicator(colorScheme, l10n)
                   : _buildGradientButton(
@@ -551,46 +461,30 @@ class _LoginScreenState extends State<LoginScreen> {
                       colorScheme: colorScheme,
                     ),
             ),
-            if (!_isSignUpMode) ...[
-              const SizedBox(height: 10),
-              TextButton(
-                onPressed: _isLoading ? null : _sendMagicLink,
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton(
+                onPressed: _isLoading
+                    ? null
+                    : () => setState(() => _isSignUpMode = !_isSignUpMode),
                 child: Text(
-                  l10n.magicLinkButton,
+                  _isSignUpMode ? l10n.alreadyHaveAccount : l10n.dontHaveAccount,
                   style: GoogleFonts.inter(fontSize: 13, color: colorScheme.primary),
                 ),
               ),
-            ],
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: _isLoading
-                  ? null
-                  : () => setState(() => _isSignUpMode = !_isSignUpMode),
-              child: Text(
-                _isSignUpMode ? l10n.alreadyHaveAccount : l10n.dontHaveAccount,
-                style: GoogleFonts.inter(fontSize: 13, color: colorScheme.primary),
-              ),
             ),
-            TextButton.icon(
-              onPressed: _isLoading
-                  ? null
-                  : () {
-                      setState(() {
-                        _showEmailForm = false;
-                        _isSignUpMode = false;
-                        _emailController.clear();
-                        _passwordController.clear();
-                      });
-                    },
-              icon: const Icon(Icons.arrow_back, size: 18),
-              label: Text(
-                l10n.backToLogin,
-                style: GoogleFonts.inter(fontSize: 13),
+            if (!_isSignUpMode)
+              Center(
+                child: TextButton(
+                  onPressed: _isLoading ? null : _sendMagicLink,
+                  child: Text(
+                    l10n.magicLinkButton,
+                    style: GoogleFonts.inter(fontSize: 13, color: colorScheme.primary),
+                  ),
+                ),
               ),
-            ),
           ],
         ),
-      ),
     );
   }
 

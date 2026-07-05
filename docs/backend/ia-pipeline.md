@@ -49,10 +49,10 @@ Utilizamos um sistema de busca semântica em `pgvector` para injetar contexto re
 
 ## Fluxo de Saída (Execution)
 
-Após a validação, o plano é enviado para o backend:
-1. O backend salva o plano no Supabase (`automation_runs`).
-2. O **TemporalService** dispara o Workflow correspondente no **Temporal.io**.
-3. O App Flutter recebe atualizações em tempo real (Streaming via SSE) de cada etapa do plano.
+Apos a validacao, o plano e enviado para o Worker:
+1. O backend salva o plano no banco (`automation_runs`).
+2. O **AutomationRunner** executa os modulos correspondentes no **Worker**.
+3. O App Flutter recebe atualizacoes em tempo real de cada etapa do plano.
 
 ---
 

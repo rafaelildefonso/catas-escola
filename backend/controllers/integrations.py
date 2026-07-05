@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 from core.security import get_current_user
 from core.errors import sanitize_error
 from repositories import integrations as int_repo
-from services.db_supabase import supabase
+from repositories.integrations import save_integration as _save_int
 from services.oauth_token_service import (
     exchange_google_auth_code,
     get_google_auth_url,
@@ -140,7 +140,7 @@ def disconnect_integration(provider):
 
     user_id = current_user["id"]
     try:
-        supabase.table("integrations").delete().eq("user_id", user_id).eq("provider", provider).execute()
+        int_repo.delete_integration(user_id, provider)
         return jsonify({"status": "success", "message": f"{provider} desconectado com sucesso"})
     except Exception as e:
         return jsonify({"detail": sanitize_error(e, "Erro ao desconectar integração")}), 500

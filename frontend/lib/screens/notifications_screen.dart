@@ -8,6 +8,7 @@ import '../models/notification_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:skeletonizer/skeletonizer.dart';
+import '../core/router.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -51,13 +52,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       // Fallback por tipo
       switch (notification.type) {
         case NotificationType.automation:
-          context.go('/app/automations');
+          context.go(AppRoutes.automations);
           break;
         case NotificationType.integration:
-          context.go('/app/integrations');
+          context.go(AppRoutes.integrations);
           break;
         case NotificationType.billing:
-          context.go('/app/settings/subscription');
+          context.go(AppRoutes.settingsSubscription);
           break;
         case NotificationType.update:
         case NotificationType.system:
@@ -91,7 +92,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             if (context.canPop()) {
               context.pop();
             } else {
-              context.go('/app');
+              context.go(AppRoutes.chat);
             }
           },
         ),

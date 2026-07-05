@@ -1,100 +1,113 @@
-# Estrutura do Backend (Server)
+# Estrutura do Backend
 
-O backend do CATAS é desenvolvido em **Python** com **FastAPI**, localizado em `server/`.
+O backend do CATAS e composto por **dois servicos** em Python:
 
-## Diretórios e Arquivos
+| Componente | Tecnologia | Funcao |
+|---|---|---|
+| **API Server** | Flask | HTTP API, autenticacao, orquestracao IA |
+| **Worker** | FastAPI | Execucao de automacoes (assincrono) |
+
+Ambos compartilham o mesmo codigo base (`core/`, `models/`, `repositories/`, `services/`).
+
+---
+
+## Estrutura de Diretorios
 
 ```
-server/
-├── app/
-│   ├── main.py              # Ponto de entrada FastAPI
-│   ├── core/
-│   │   ├── config.py        # Configurações e variáveis de ambiente
-│   │   └── security.py      # Autenticação JWT/Bearer
-│   ├── models/              # Modelos Pydantic (request/response)
-│   ├── routers/
-│   │   ├── chat.py          # CRUD de sessões e mensagens
-│   │   ├── automations.py   # Execução de planos via Temporal.io
-│   │   ├── payments.py      # Stripe Checkout/Subscription
-│   │   └── webhooks.py      # Callbacks Stripe
-│   ├── repositories/
-│   │   ├── chat.py          # Acesso a chat_sessions e messages
-│   │   ├── profiles.py      # Perfis de usuário e cotas de crédito
-│   │   └── automation_runs.py # Histórico de execuções Temporal.io
-│   └── services/
-│       ├── ai_base.py       # Chamada unificada às APIs de IA (Token tracking)
-│       ├── ai_service.py    # Orquestrador Maestro (Intent, Entity, Response)
-│       ├── automation_pipeline_service.py # Maestro Pipeline (Planner/Validator)
-│       ├── temporal_service.py # Core do Temporal.io (Workflow Starter)
-│       └── ia_memory.py     # Busca Semântica / RAG (pgvector)
-├── worker/                  # Workers e Activities do Temporal.io
-│   ├── main.py              # Entry point do Worker
-│   ├── workflows/           # Definição de Workflows (AutomationWorkflow)
-│   └── activities/          # Ações atômicas (Google, Meta, WhatsApp)
-├── requirements.txt
-└── .env
+backend/
+  app.py                           # Entrypoint Flask
+  core/
+    config.py                      # Config e variaveis de ambiente
+    security.py                    # Autenticacao JWT/Bearer (Supabase)
+    errors.py                      # Manipulacao de erros
+  controllers/                     # Blueprints Flask
+    user.py                        # CRUD de perfil
+    chat.py                        # CRUD de sessoes
+    chatbot.py                     # POST /api/v1/chat/message
+    automations.py                 # Automacoes
+    integrations.py                # Google OAuth
+    payments.py                    # Stripe
+    feedback.py                    # Feedback
+    webhooks.py                    # Webhooks Stripe
+    webhook_receiver.py            # Webhooks externos
+    prompt_improve.py              # Melhoria de prompt
+  models/
+    db_models.py                   # 17 modelos SQLAlchemy
+  services/
+    database.py                    # Engine SQLAlchemy, SessionLocal
+    ai_service.py                  # Orquestrador Maestro
+    ai_base.py                     # Provider base
+    ai_providers/                  # Gemini, Groq, OpenAI
+    intent_classifier.py           # Classificador de intencao
+    entity_extractor.py            # Extrator de entidades
+    payload_builder.py             # Montagem de payload
+    ui_components_library.py       # Biblioteca de componentes
+    credit_service.py              # Gestao de creditos (atomico)
+    ia_memory.py                   # Busca semantica pgvector
+    notification_service.py        # Push FCM
+  repositories/                    # Acesso a dados (SQLAlchemy)
+    profiles.py, chat.py, automations.py, ...
+  worker/
+    server.py                      # Servidor FastAPI
+    runner.py                      # Motor de execucao
+    modules/                       # Modulos de automacao
+  migrations/
+  tests/
+  requirements.txt
+  .env
 ```
+
+---
 
 ## Fluxo Principal: Chat
 
-1. **Frontend** envia `POST /api/v1/chat/message`.
+1. **Frontend** envia `POST /api/v1/chat/message` com `Authorization: Bearer <token>`.
 2. **Backend (AIService)**:
-   - **Router**: Detecta se é conversa ou intenção de automação.
-   - **Planner**: Se for automação, gera um `AutomationPlan` validado.
-   - **Temporal**: Se o plano for aprovado/finalizado, o `TemporalService` inicia o workflow no Cluster Temporal.
-   - **Streaming**: O status de cada Activity do Temporal é enviado em tempo real ao app via SSE ou Realtime DB.
-   - **Créditos**: O custo total de tokens da interação é debitado do perfil do usuário (2k tokens = 1 credit).
-3. **Persistência**: O plano e os resultados são salvos em `automation_runs`.
+   - **Classificador**: Detecta se e conversa ou intencao de automacao.
+   - **Entity Extractor**: Extrai parametros (data, hora, email, etc).
+   - **Payload Builder**: Monta plano de automacao.
+   - **Worker**: Envia o plano para o Worker via HTTP (`/execute`).
+   - **Creditos**: Custo em tokens e debitado do perfil (2k tokens = 1 credito).
+3. **Worker**: Executa o plano (modulos como Google Calendar, Gmail, etc).
+4. **Persistencia**: Resultados salvos via SQLAlchemy.
+
+---
 
 ## Repositories
 
-| Arquivo              | Tabela(s)                   | Funções Principais                                                                       |
-| -------------------- | --------------------------- | --------------------------------------------------------------------------------------- |
-| `chat.py`            | `chat_sessions`, `messages` | create_session, get_user_sessions, save_message, get_session_messages, delete_session   |
-| `automation_logs.py` | `automation_logs`           | log_automation, get_user_automation_logs, get_automation_stats                          |
-| `automations.py`     | `automations`               | save_automation_history, update_automation_status                                       |
-| `profiles.py`        | `profiles`                  | get_user_profile, create_default_profile, increment_quota_usage, get_quota_config       |
+Cada repository encapsula queries SQLAlchemy para uma ou mais tabelas:
 
-### Persistência de Contexto
+| Arquivo | Tabela(s) | Funcoes Principais |
+|---|---|---|
+| `chat.py` | `chat_sessions`, `messages` | create_session, save_message, get_session_messages |
+| `automations.py` | `automations` | save_automation_history, update_status |
+| `automation_logs.py` | `automation_logs` | log_automation, get_stats |
+| `profiles.py` | `profiles` | get_user_profile, create_default_profile, increment_quota |
 
-O campo `metadata` da tabela `messages` armazena o estado complexo da resposta da IA:
+---
 
-- `components`: JSON dos componentes de UI exibidos.
-- `status`: Estado conversacional (`requires_action`, `completed`).
-- `action_triggered`: Se uma ação foi identificada para execução.
-- `is_hidden`: Se a mensagem deve ser oculta do histórico visual do usuário (usado para callbacks de componentes).
+## Seguranca
 
-**Nota:** Automações no banco:
+- **get_current_user**: Valida Bearer token via `GET {SUPABASE_URL}/auth/v1/user`.
+- **login_required**: Decorator que bloqueia rotas nao autenticadas.
+- **Dev token**: Em ambiente `development`, aceita `Authorization: Bearer dev-token`.
 
-- `execution_logs`: correlaciona disparos iniciados pelo chat (id reutilizado como `automation_id` no Temporal).
-- `automations`: definições (gatilho + steps JSONB).
-- `automation_runs`: histórico por execução (Temporal / n8n); alimenta métricas e callbacks.
-- `automation_step_logs`: progresso por step (worker + Realtime).
-- `automation_generation_logs`: auditoria de geração de planos (Maestro).
-- `automation_logs` (migration 002 / legado nome): uso legado em alguns ambientes — não confundir com `automation_generation_logs`.
+---
 
-Execuções via `POST /api/v1/execute/action` registram linhas em `automation_runs` (`run_type = n8n`).
+## Configuracao
 
-Matriz RLS: [RLS_MATRIX.md](../../server/migrations/RLS_MATRIX.md).
+Veja [variaveis de ambiente](../comecando/variaveis-ambiente.md).
 
-## Segurança
-
-- **get_current_user**: Valida Bearer token via Supabase `auth.get_user()`.
-- **verify_n8n_webhook**: Valida header `X-N8N-Webhook-Secret` em callbacks n8n.
-- **RLS**: O Supabase aplica Row Level Security; o backend usa `SUPABASE_SERVICE_ROLE_KEY` (bypassa RLS para operações server-side).
-
-## Configuração
-
-Veja [variáveis de ambiente](../comecando/variaveis-ambiente.md).
+---
 
 ## Como Rodar
 
 ```powershell
-cd server
+cd backend
 python -m venv .venv
 .\.venv\Scripts\activate
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+flask run --port 8000 --debug
 ```
 
-API disponível em `http://127.0.0.1:8000`. Swagger em `http://127.0.0.1:8000/docs`.
+API disponivel em `http://127.0.0.1:8000`.

@@ -1,9 +1,10 @@
 import re
 import os
+import httpx
 from functools import wraps
 from flask import request, jsonify, g
 
-from services.db_supabase import supabase
+from core.config import settings
 
 security = None
 
@@ -26,14 +27,26 @@ def get_current_user():
         return user
 
     try:
-        response = supabase.auth.get_user(token)
-        if not response.user:
+        resp = httpx.get(
+            f"{settings.SUPABASE_URL}/auth/v1/user",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
+            },
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            return None
+
+        data = resp.json()
+        user_id = data.get("id")
+        if not user_id:
             return None
 
         user = {
-            "id": response.user.id,
-            "email": response.user.email,
-            "token": token
+            "id": user_id,
+            "email": data.get("email", ""),
+            "token": token,
         }
         g.current_user = user
         return user

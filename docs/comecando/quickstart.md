@@ -1,60 +1,37 @@
-# Quick Start - 15 Minutos ⏱️
+# Quick Start - 15 Minutos
 
 > **Meta:** Ter o CATAS rodando localmente em 15 minutos ou menos.
 
 ---
 
-## ✅ Pré-checklist
+## Pre-checklist
 
-Antes de começar, verifique se tem:
+Antes de comecar, verifique se tem:
 
 ```markdown
-☐ Docker Desktop instalado e rodando
-☐ Python 3.10+ instalado
-☐ Flutter 3.19+ instalado (`flutter doctor`)
-☐ Conta no [Supabase](https://supabase.com) (gratuita)
-☐ Conta no [Google Cloud](https://console.cloud.google.com) (para OAuth)
+ Python 3.10+ instalado
+ Flutter 3.19+ instalado (`flutter doctor`)
+ Conta no Supabase (gratuita)
+ Conta no Google Cloud (para OAuth)
 ```
 
-> 💡 **Windows?** Use PowerShell. **Mac/Linux?** Use terminal bash/zsh.
+> **Windows?** Use PowerShell. **Mac/Linux?** Use terminal bash/zsh.
 
 ---
 
-## 🐳 Passo 1: Temporal Server (3 min)
-
-O Temporal é o coração da orquestração de automações.
+## Passo 1: Backend API (5 min)
 
 ```bash
-cd server/docker/temporal
-docker-compose up -d
-```
-
-**Verifique se subiu:**
-```bash
-docker ps
-```
-
-Deve mostrar 4 containers: `temporal`, `temporal-ui`, `postgresql`, `elasticsearch`.
-
-**Acesse a UI:** http://localhost:8080
-
-> 🔴 **Erro comum:** Porta 8080 ocupada? Pare outros serviços ou mude a porta no `docker-compose.yml`.
-
----
-
-## 🐍 Passo 2: Backend API (5 min)
-
-```bash
-cd server
+cd backend
 
 # Criar ambiente virtual (primeira vez)
-python -m venv venv
+python -m venv .venv
 
 # Ativar
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # Mac/Linux
+.\.venv\Scripts\activate        # Windows
+source .venv/bin/activate        # Mac/Linux
 
-# Instalar dependências
+# Instalar dependencias
 pip install -r requirements.txt
 ```
 
@@ -68,66 +45,59 @@ cp .env.example .env
 Edite `.env` e preencha **pelo menos**:
 
 ```env
-# === SUPABASE (obrigatório) ===
+# === SUPABASE ===
 SUPABASE_URL=https://seu-projeto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=sua_chave_aqui
 
-# === IA (para testes básicos) ===
-GOOGLE_API_KEY=sua_chave_gemini
+# === DATABASE (SQLAlchemy) ===
+DATABASE_URL=postgresql://postgres.[PROJECT_REF]:[DB_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres
 
-# === TEMPORAL (local) ===
-TEMPORAL_HOST=localhost:7233
-TEMPORAL_NAMESPACE=default
-TEMPORAL_TASK_QUEUE=automation-queue
+# === IA ===
+GROQ_API_KEY=sua_chave_groq
 ```
 
-> 🔑 **Onde pegar:**
+> **Onde pegar:**
 > - Supabase URL/Key: Dashboard → Settings → API
-> - Google API Key: [Google AI Studio](https://aistudio.google.com/app/apikey)
+> - DATABASE_URL: Dashboard → Project Settings → Database → Connection string
+> - Groq API Key: [Groq Console](https://console.groq.com)
 
 ### Rodar servidor
 
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+flask run --port 8000 --debug
 ```
 
-**Verifique:** http://localhost:8000/docs
-
-Deve abrir o Swagger UI com todos os endpoints.
+**Verifique:** http://localhost:8000/
 
 ---
 
-## ⚡ Passo 3: Temporal Worker (3 min)
+## Passo 2: Worker (3 min)
 
 Em **outro terminal** (mantenha o API rodando):
 
 ```bash
-cd server
-venv\Scripts\activate        # Windows
-source venv/bin/activate     # Mac/Linux
+cd backend
+.\.venv\Scripts\activate        # Windows
+source .venv/bin/activate        # Mac/Linux
 
-$env:PYTHONPATH = "."       # Windows
-export PYTHONPATH="."       # Mac/Linux
-
-python worker/main.py
+python -m worker.server
 ```
 
 **Sucesso quando ver:**
 ```
-🚀 Worker ativo — task_queue: 'automation-queue'
-Conectado ao Temporal — host: localhost:7233
+Worker rodando em http://0.0.0.0:8001
 ```
 
-> 💡 O Worker é quem executa as automações (criar eventos, enviar emails, etc).
+> O Worker e quem executa as automacoes (criar eventos, enviar emails, etc).
 
 ---
 
-## 📱 Passo 4: App Flutter (4 min)
+## Passo 3: App Flutter (4 min)
 
 ```bash
 cd app_flutter
 
-# Instalar dependências
+# Instalar dependencias
 flutter pub get
 
 # Configurar .env
@@ -151,7 +121,7 @@ WEB_CLIENT_ID=seu_web_client_id.apps.googleusercontent.com
 ### Rodar
 
 ```bash
-# Web (mais fácil para testar)
+# Web (mais facil para testar)
 flutter run -d chrome
 
 # Ou Windows
@@ -165,37 +135,36 @@ flutter run -d android
 
 ---
 
-## 🎉 Teste seu Setup
+## Teste seu Setup
 
-1. **Abra o app** e faça login
+1. **Abra o app** e faca login
 2. **Na tela de chat**, digite:
    ```
-   Marcar reunião amanhã às 14h com test@email.com
+   Marcar reuniao amanha as 14h com test@email.com
    ```
-3. **Veja a mágica:**
-   - IA classifica a intenção
+3. **Veja a magica:**
+   - IA classifica a intencao
    - Extrai data, hora, email
    - Mostra preview do evento
-   - Pede confirmação
-   - Cria no Google Calendar (se tiver integração)
+   - Pede confirmacao
+   - Cria no Google Calendar (se tiver integracao)
 
 ---
 
-## 🔍 Verificando se Tudo Funciona
+## Verificando se Tudo Funciona
 
 | Componente | Como verificar | Status |
 |------------|----------------|--------|
-| Temporal | http://localhost:8080 | ☐ |
-| API | http://localhost:8000/docs | ☐ |
-| Worker | Terminal mostra "Worker ativo" | ☐ |
-| Flutter | App abre sem erros | ☐ |
-| Integração | Chat responde com componentes | ☐ |
+| API | http://localhost:8000/ |  |
+| Worker | Terminal mostra "Worker rodando" |  |
+| Flutter | App abre sem erros |  |
+| Integracao | Chat responde com componentes |  |
 
 ---
 
-## 🆘 Deu erro?
+## Deu erro?
 
-### "Porta já em uso"
+### "Porta ja em uso"
 ```bash
 # Descobrir processo na porta 8000
 netstat -ano | findstr :8000    # Windows
@@ -205,28 +174,28 @@ lsof -i :8000                     # Mac/Linux
 kill -9 <PID>
 ```
 
-### "Worker não conecta"
-- Verifique se Temporal está rodando: `docker ps`
-- Verifique `TEMPORAL_HOST` no `.env`
+### "Worker nao conecta"
+- Verifique `WORKER_URL` no `.env`
+- Certifique-se de que o worker esta rodando
 
-### "Flutter não encontra API"
+### "Flutter nao encontra API"
 - Android Emulator: use `10.0.2.2:8000` em vez de `localhost`
 - iOS Simulator: use `localhost`
-- Web: CORS deve estar configurado no backend (padrão: permitido)
+- Web: CORS deve estar configurado no backend (padrao: permitido)
 
 ### Mais problemas
-→ [Troubleshooting Completo](./troubleshooting.md)
+[Troubleshooting Completo](./troubleshooting.md)
 
 ---
 
-## 📚 Próximos Passos
+## Proximos Passos
 
 Escolha seu caminho:
 
-- **[👨‍💻 Quero mexer no Flutter →](../flutter/index.md)**
-- **[🐍 Quero mexer no Backend →](../backend/index.md)**
-- **[🔧 Quero configurar Infra →](../infra/index.md)**
+- **[Quero mexer no Flutter →](../flutter/index.md)**
+- **[Quero mexer no Backend →](../backend/index.md)**
+- **[Quero configurar Infra →](../infra/index.md)**
 
 ---
 
-> 💬 **Dica:** Anote seus comandos de startup favoritos em um script `.bat` ou `.sh`!
+> **Dica:** Anote seus comandos de startup favoritos em um script `.bat` ou `.sh`!

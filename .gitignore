@@ -29,3 +29,4 @@ build/
 
 # Pasta de clone aninhado (CATAS dentro de CATAS)
 catas-app/
+CATAS/

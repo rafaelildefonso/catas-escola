@@ -9,7 +9,7 @@ A interface principal onde ocorre a interação com o agente.
 - **Omnibox**: Campo de entrada inteligente que suporta texto e anexos.
 - **Micro-interações**: Indicadores de estágio de pensamento (Raciocinando, Planejando, Executando).
 - **Ações Rápidas (Popup Menus)**: Long-press em mensagens ou sessões abre menus de contexto (MenuAnchor) para copiar, excluir ou renomear, eliminando a poluição visual de botões fixos.
-- **Action Cards (Validated Plans)**: Após o "Pensamento" da IA, um plano de automação (Maestro) é apresentado para revisão. O usuário valida os passos antes da execução no Temporal.io.
+- **Action Cards (Validated Plans)**: Após o "Pensamento" da IA, um plano de automação (Maestro) é apresentado para revisão. O usuário valida os passos antes da execução no Worker.
 - **Anexos**: Draggable e restauráveis entre sessões.
 
 ---
@@ -26,7 +26,7 @@ Lista todas as sessões de chat salvas no Supabase.
 
 - **`ImpactDashboard`**: Visualização central com métricas de uso:
   - **Tempo Economizado**: Estimativa de ganho de produtividade.
-  - **Tarefas Concluídas**: Contador de automações via Temporal.io.
+  - **Tarefas Concluídas**: Contador de automações executadas.
   - **Gráficos de Consumo**: Visualização de créditos (tokens) usados no período.
 - **`IntegrationsScreen`**: Gerencia as conexões globais. Mostra o status de conexão em tempo real e permite revogar tokens.
 - **`LoginScreen`**: Layout minimalista com suporte a **Google Sign-In** e **Apple ID**.

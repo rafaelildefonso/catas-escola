@@ -1,11 +1,9 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import '../core/app_config.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:catas/models/user_model.dart';
@@ -289,96 +287,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> loginWithGoogle() async {
-    if (_isDemoMode) return true;
-    _isLoading = true;
-    notifyListeners();
-
-    final webClientId = AppConfig.webClientId;
-    final androidClientId = AppConfig.androidClientId;
-    final iosClientId = AppConfig.iosClientId;
-
-    try {
-      // --- Fluxo WEB: usar diretamente o OAuth do Supabase ---
-      if (kIsWeb) {
-        await _supabase.auth.signInWithOAuth(
-          OAuthProvider.google,
-          redirectTo: _redirectUrl,
-        );
-
-        // Em web o Supabase faz redirect/callback e gerencia a sessão.
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      }
-
-      // --- Fluxo nativo (Android/iOS/desktop) com GoogleSignIn ---
-      // No mobile/desktop usamos os client IDs nativos e depois entregamos
-      // idToken/accessToken para o Supabase.
-      late final GoogleSignIn googleSignIn;
-
-      final String? nativeClientId = Platform.isAndroid
-          ? androidClientId
-          : iosClientId;
-
-      googleSignIn = GoogleSignIn(
-        clientId: nativeClientId,
-        serverClientId: webClientId,
-      );
-
-      final googleUser = await googleSignIn.signIn();
-      final googleAuth = await googleUser?.authentication;
-      final accessToken = googleAuth?.accessToken;
-      final idToken = googleAuth?.idToken;
-
-      if (accessToken == null) {
-        throw 'No Access Token found.';
-      }
-      if (idToken == null) {
-        throw 'No ID Token found.';
-      }
-
-      await _supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken,
-        accessToken: accessToken,
-      );
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Google Sign-In Error: $e');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> loginWithApple() async {
-    if (_isDemoMode) return true;
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // Usamos o OAuth do Supabase para Apple.
-      // Em mobile, isso abrirá um navegador para autenticação.
-      await _supabase.auth.signInWithOAuth(
-        OAuthProvider.apple,
-        redirectTo: _redirectUrl,
-      );
-
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Apple Sign-In Error: $e');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
   Future<void> refreshOnboardingState() async {
     if (_profile != null) {
       _onboardingCompleted = _profile!.onboardingCompleted;
@@ -520,11 +428,6 @@ class AuthProvider extends ChangeNotifier {
       return;
     }
     await _supabase.auth.signOut();
-    try {
-      await GoogleSignIn().signOut();
-    } catch (e) {
-      // Silently fail if google sign out fails (e.g. wasn't signed in via google)
-    }
     _isAuthenticated = false;
     _currentUser = null;
     notifyListeners();

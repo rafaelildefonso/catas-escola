@@ -120,7 +120,7 @@ class _ChatScreenState extends State<ChatScreen> {
           final demoAutoProvider = context.read<DemoAutomationsProvider>();
           final runId = demoAutoProvider.lastOnboardingRunId;
           if (runId != null) {
-            context.push('/app/automations/$runId');
+            context.push(AppRoutes.automationDetailPath(runId));
           }
         }
       });

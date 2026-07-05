@@ -7,6 +7,7 @@ import '../providers/chat_provider.dart';
 import '../providers/navigation_provider.dart';
 import '../providers/notifications_provider.dart';
 import '../core/router.dart';
+import '../core/navigation_helpers.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../l10n/app_localizations.dart';
 import 'catas_input.dart';
@@ -22,28 +23,8 @@ class AppDrawer extends StatefulWidget {
 class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
 
   void _navigateTo(BuildContext context, AppPage page) {
-    final route = _getRouteForPage(page);
-    context.go(route);
+    context.go(getRouteForPage(page));
     Navigator.pop(context); // Close Drawer
-  }
-
-  String _getRouteForPage(AppPage page) {
-    switch (page) {
-      case AppPage.chat:
-        return AppRoutes.chat;
-      case AppPage.automations:
-        return AppRoutes.automations;
-      case AppPage.integrations:
-        return AppRoutes.integrations;
-      case AppPage.history:
-        return AppRoutes.history;
-      case AppPage.pricing:
-        return AppRoutes.pricing;
-      case AppPage.dashboard:
-        return AppRoutes.dashboard;
-      case AppPage.settings:
-        return AppRoutes.settings;
-    }
   }
 
   void _createNewChat(BuildContext context) {

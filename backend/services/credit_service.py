@@ -2,7 +2,8 @@ import math
 import logging
 from typing import Dict, Any
 from core.config import settings
-from services.db_supabase import supabase
+from services.database import get_sync_db
+from models.db_models import Profile
 from services.notification_service import notification_service
 
 logger = logging.getLogger(__name__)
@@ -21,8 +22,8 @@ class CreditService:
     @staticmethod
     def debit_credits(user_id: str, amount: int, idempotency_key: str = None) -> Dict[str, Any]:
         """
-        Chama o RPC atômico no Postgres para debitar créditos.
-        Lida com quota mensal and pool of rollover.
+        Debita créditos do usuário de forma atômica.
+        Lida com quota mensal e pool de rollover.
         """
         # Dev-user bypass: return success without hitting DB
         if user_id.startswith("dev-user-"):
@@ -31,30 +32,64 @@ class CreditService:
         if amount <= 0:
             return {"status": "success", "amount_debited": 0}
 
+        db = get_sync_db()
         try:
-            # Observação: Supabase RPC espera UUID se o parâmetro for UUID no Postgres
-            payload = {"p_user_id": user_id, "p_amount": int(amount)}
-            if idempotency_key:
-                payload["p_idempotency_key"] = idempotency_key
+            profile = (
+                db.query(Profile)
+                .filter(Profile.id == user_id)
+                .with_for_update()
+                .first()
+            )
 
-            response = supabase.rpc(
-                "handle_credit_debit",
-                payload
-            ).execute()
+            if not profile:
+                return {"status": "error", "message": "User profile not found"}
 
-            if not response.data:
-                return {"status": "error", "message": "No data returned from RPC"}
+            v_monthly_limit = profile.monthly_quota_limit or 500
+            v_monthly_remaining = max(0, v_monthly_limit - profile.quota_used)
 
-            result = response.data
-            if result.get("status") == "success":
-                logger.info(f"📊 [Credits] User {user_id} debited {amount} credits. Status: {result.get('status')}")
-                # Verificar se o saldo está baixo após o débito
-                CreditService.check_low_balance(user_id, result)
-            
+            if v_monthly_remaining >= amount:
+                v_deduct_from_monthly = amount
+                v_deduct_from_rollover = 0
+            else:
+                v_deduct_from_monthly = v_monthly_remaining
+                v_deduct_from_rollover = amount - v_monthly_remaining
+
+            total_available = v_monthly_remaining + (profile.rollover_credits or 0)
+            if total_available < amount:
+                return {
+                    "status": "error",
+                    "message": "Insufficient credits",
+                    "monthly_remaining": v_monthly_remaining,
+                    "rollover_available": profile.rollover_credits or 0,
+                    "requested": amount,
+                }
+
+            new_monthly_used = profile.quota_used + v_deduct_from_monthly
+            new_rollover_balance = max(0, (profile.rollover_credits or 0) - v_deduct_from_rollover)
+
+            profile.quota_used = new_monthly_used
+            profile.rollover_credits = new_rollover_balance
+            db.flush()
+
+            result = {
+                "status": "success",
+                "amount_debited": amount,
+                "deducted_from_monthly": v_deduct_from_monthly,
+                "deducted_from_rollover": v_deduct_from_rollover,
+                "new_monthly_used": new_monthly_used,
+                "monthly_limit": v_monthly_limit,
+                "new_rollover_balance": new_rollover_balance,
+            }
+
+            logger.info(f"📊 [Credits] User {user_id} debited {amount} credits. Status: success")
+            CreditService.check_low_balance(user_id, result)
+
             return result
         except Exception as e:
             logger.error(f"❌ CreditService Error: {e}")
             return {"status": "error", "message": str(e)}
+        finally:
+            db.close()
 
     @staticmethod
     def check_low_balance(user_id: str, balance_info: Dict[str, Any]):

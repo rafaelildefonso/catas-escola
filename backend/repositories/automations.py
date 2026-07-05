@@ -1,6 +1,10 @@
-from services.db_supabase import supabase
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
+from collections import Counter
+
+from services.database import get_sync_db
+from models.db_models import AutomationRun, AutomationStepLog
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 
 def upsert_automation_run(
@@ -17,7 +21,8 @@ def upsert_automation_run(
     result_metadata: Optional[Dict[str, Any]] = None,
     expires_at: Optional[str] = None,
 ) -> List[Dict]:
-    row: Dict[str, Any] = {
+    now = datetime.now(timezone.utc)
+    row = {
         "id": run_id,
         "user_id": user_id,
         "correlation_id": run_id,
@@ -27,8 +32,8 @@ def upsert_automation_run(
         "input_payload": input_payload or {},
         "result_metadata": result_metadata or {},
         "expires_at": expires_at,
-        "started_at": datetime.utcnow().isoformat(),
-        "updated_at": datetime.utcnow().isoformat(),
+        "started_at": now,
+        "updated_at": now,
     }
     if automation_definition_id:
         row["automation_id"] = automation_definition_id
@@ -37,33 +42,38 @@ def upsert_automation_run(
     if execution_run_id:
         row["execution_run_id"] = execution_run_id
 
-    return (
-        supabase.table("automation_runs")
-        .upsert(row, on_conflict="id")
-        .execute()
-        .data
-        or []
-    )
+    db = get_sync_db()
+    try:
+        stmt = pg_insert(AutomationRun).values(**row)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["id"],
+            set_={k: stmt.excluded[k] for k in row if k != "id"},
+        )
+        db.execute(stmt)
+        db.flush()
+
+        result = db.query(AutomationRun).filter(AutomationRun.id == run_id).first()
+        return [result.to_dict()] if result else []
+    finally:
+        db.close()
 
 
 def update_automation_run_execution(
     run_id: str, execution_id: str, execution_run_id: str | None = None
 ) -> List[Dict]:
-    upd = {
-        "execution_id": execution_id,
-        "updated_at": datetime.utcnow().isoformat(),
-    }
-    if execution_run_id:
-        upd["execution_run_id"] = execution_run_id
-
-    return (
-        supabase.table("automation_runs")
-        .update(upd)
-        .eq("id", run_id)
-        .execute()
-        .data
-        or []
-    )
+    db = get_sync_db()
+    try:
+        run = db.query(AutomationRun).filter(AutomationRun.id == run_id).first()
+        if not run:
+            return []
+        run.execution_id = execution_id
+        run.updated_at = datetime.now(timezone.utc)
+        if execution_run_id:
+            run.execution_run_id = execution_run_id
+        db.flush()
+        return [run.to_dict()]
+    finally:
+        db.close()
 
 
 def update_automation_run_status(
@@ -74,29 +84,25 @@ def update_automation_run_status(
     error_details: Optional[Dict[str, Any]] = None,
     steps_summary: Optional[Dict[str, Any]] = None,
 ) -> List[Dict]:
-    upd: Dict[str, Any] = {
-        "status": status,
-        "updated_at": datetime.utcnow().isoformat(),
-    }
-    if status in ("completed", "failed", "canceled"):
-        upd["finished_at"] = datetime.utcnow().isoformat()
-    if result_metadata is not None:
-        upd["result_metadata"] = result_metadata
-    if error_details is not None:
-        upd["error_details"] = error_details
-    if steps_summary is not None:
-        upd["steps_summary"] = steps_summary
-
-    return (
-        supabase.table("automation_runs")
-        .update(upd)
-        .eq("id", run_id)
-        .execute()
-        .data
-        or []
-    )
-
-
+    db = get_sync_db()
+    try:
+        run = db.query(AutomationRun).filter(AutomationRun.id == run_id).first()
+        if not run:
+            return []
+        run.status = status
+        run.updated_at = datetime.now(timezone.utc)
+        if status in ("completed", "failed", "canceled"):
+            run.finished_at = datetime.now(timezone.utc)
+        if result_metadata is not None:
+            run.result_metadata = result_metadata
+        if error_details is not None:
+            run.error_details = error_details
+        if steps_summary is not None:
+            run.steps_summary = steps_summary
+        db.flush()
+        return [run.to_dict()]
+    finally:
+        db.close()
 
 
 def log_step(
@@ -108,12 +114,11 @@ def log_step(
     result: Optional[Dict[str, Any]] = None,
     intent: str = None,
 ) -> List[Dict]:
-    row: Dict[str, Any] = {
+    row = {
         "automation_id": automation_id,
         "step_index": step_index,
         "module_id": module_id,
         "status": status,
-        "updated_at": datetime.utcnow().isoformat(),
     }
     if user_id:
         row["user_id"] = user_id
@@ -122,45 +127,59 @@ def log_step(
     if intent:
         row["intent"] = intent
 
-    return (
-        supabase.table("automation_step_logs")
-        .upsert(row, on_conflict="automation_id, step_index")
-        .execute()
-        .data
-        or []
-    )
+    db = get_sync_db()
+    try:
+        stmt = pg_insert(AutomationStepLog).values(**row)
+        stmt = stmt.on_conflict_do_update(
+            constraint="automation_step_logs_automation_step_unique",
+            set_={
+                "module_id": stmt.excluded.module_id,
+                "status": stmt.excluded.status,
+                "result": stmt.excluded.result,
+                "intent": stmt.excluded.intent,
+            },
+        )
+        db.execute(stmt)
+        db.flush()
+
+        result_obj = (
+            db.query(AutomationStepLog)
+            .filter(
+                AutomationStepLog.automation_id == automation_id,
+                AutomationStepLog.step_index == step_index,
+            )
+            .first()
+        )
+        return [result_obj.to_dict()] if result_obj else []
+    finally:
+        db.close()
 
 
 def get_user_stats(user_id: str) -> List[Dict]:
-    """
-    Retorna contagem de automações por dia da semana nos últimos 7 dias.
-    """
-    from datetime import timedelta
-    seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
 
-    res = (
-        supabase.table("automation_runs")
-        .select("created_at")
-        .eq("user_id", user_id)
-        .gte("created_at", seven_days_ago)
-        .execute()
-    )
-    rows = res.data or []
+    db = get_sync_db()
+    try:
+        rows = (
+            db.query(AutomationRun.created_at)
+            .filter(
+                AutomationRun.user_id == user_id,
+                AutomationRun.created_at >= seven_days_ago,
+            )
+            .all()
+        )
+    finally:
+        db.close()
 
-    from collections import Counter
     weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
     counts: Counter = Counter()
 
     for r in rows:
-        created = r.get("created_at")
-        if created:
-            try:
-                dt = datetime.fromisoformat(created.replace("Z", "+00:00"))
-                counts[weekdays[dt.weekday()]] += 1
-            except (ValueError, IndexError):
-                pass
+        dt = r.created_at
+        if dt:
+            counts[weekdays[dt.weekday()]] += 1
 
-    today = datetime.utcnow()
+    today = datetime.now(timezone.utc)
     current_weekday = today.weekday()
 
     data = []
@@ -173,26 +192,30 @@ def get_user_stats(user_id: str) -> List[Dict]:
 
 
 def get_user_history(user_id: str, limit: int = 20) -> List[Dict]:
-    res = (
-        supabase.table("automation_runs")
-        .select("*")
-        .eq("user_id", user_id)
-        .order("created_at", desc=True)
-        .limit(limit)
-        .execute()
-    )
-    rows = res.data or []
+    db = get_sync_db()
+    try:
+        rows = (
+            db.query(AutomationRun)
+            .filter(AutomationRun.user_id == user_id)
+            .order_by(AutomationRun.created_at.desc())
+            .limit(limit)
+            .all()
+        )
+    finally:
+        db.close()
+
     out: List[Dict] = []
     for r in rows:
-        payload = r.get("input_payload") or {}
+        d = r.to_dict()
+        payload = d.get("input_payload") or {}
         out.append(
             {
-                "id": r.get("id"),
-                "type": payload.get("action_type") or r.get("run_type") or "automation",
-                "status": r.get("status"),
-                "input_summary": r.get("input_summary"),
-                "created_at": r.get("created_at"),
-                "result_metadata": r.get("result_metadata") or {},
+                "id": d.get("id"),
+                "type": payload.get("action_type") or d.get("run_type") or "automation",
+                "status": d.get("status"),
+                "input_summary": d.get("input_summary"),
+                "created_at": d.get("created_at"),
+                "result_metadata": d.get("result_metadata") or {},
             }
         )
     return out

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import '../core/router.dart';
 import '../components/brand_logo.dart';
 import '../components/upgrade_modal.dart';
 import '../components/options_button.dart';
@@ -211,7 +212,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                   width: double.infinity,
                   child: FilledButton.tonal(
                     onPressed: () {
-                      context.push('/app/prompts');
+                      context.push(AppRoutes.suggestedPrompts);
                     },
                     child: const Text('Ver Prompts Sugeridos'),
                   ),
@@ -261,7 +262,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
               const SizedBox(width: 16),
               FilledButton.tonal(
                 onPressed: () {
-                  context.push('/app/prompts');
+                  context.push(AppRoutes.suggestedPrompts);
                 },
                 child: const Text('Ver Prompts'),
               ),
@@ -612,7 +613,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                     SizedBox(
                       height: 32,
                       child: FilledButton(
-                        onPressed: () => context.push('/app/automations/${run.id}'),
+                        onPressed: () => context.push(AppRoutes.automationDetailPath(run.id)),
                         style: FilledButton.styleFrom(
                           backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
                           foregroundColor: colorScheme.onSurface,
@@ -674,7 +675,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: () => context.push('/app/automations/${run.id}'),
+                      onPressed: () => context.push(AppRoutes.automationDetailPath(run.id)),
                       style: FilledButton.styleFrom(
                         backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
                         foregroundColor: colorScheme.onSurface,

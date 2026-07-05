@@ -6,7 +6,8 @@ import uuid as uuid_lib
 from flask import Blueprint, request, jsonify
 
 from core.security import get_current_user
-from services.db_supabase import supabase
+from services.database import get_sync_db
+from models.db_models import UserWebhookConfig, Automation
 from services.automation_runner_service import AutomationRunnerService
 
 logger = logging.getLogger(__name__)
@@ -15,15 +16,19 @@ webhook_receiver_bp = Blueprint("webhook_receiver", __name__, url_prefix="/api/v
 
 
 def _get_webhook_config(slug: str):
-    res = (
-        supabase.table("user_webhook_configs")
-        .select("*")
-        .eq("slug", slug)
-        .eq("is_active", True)
-        .single()
-        .execute()
-    )
-    return res.data
+    db = get_sync_db()
+    try:
+        config = (
+            db.query(UserWebhookConfig)
+            .filter(
+                UserWebhookConfig.slug == slug,
+                UserWebhookConfig.is_active == True,
+            )
+            .first()
+        )
+        return config.to_dict() if config else None
+    finally:
+        db.close()
 
 
 def _verify_hmac(secret: str, body: bytes, signature_header: str) -> bool:
@@ -60,16 +65,18 @@ def trigger_from_webhook(slug):
     }
 
     if config.get("automation_id"):
-        auto_res = (
-            supabase.table("automations")
-            .select("steps, name")
-            .eq("id", config["automation_id"])
-            .single()
-            .execute()
-        )
-        if auto_res.data:
-            plan["steps"] = auto_res.data.get("steps", [])
-            plan["name"] = auto_res.data.get("name", plan["name"])
+        db = get_sync_db()
+        try:
+            auto = (
+                db.query(Automation)
+                .filter(Automation.id == config["automation_id"])
+                .first()
+            )
+            if auto:
+                plan["steps"] = auto.steps or []
+                plan["name"] = auto.name or plan["name"]
+        finally:
+            db.close()
 
     try:
         result = AutomationRunnerService.trigger_automation_from_webhook(
@@ -103,11 +110,16 @@ def create_webhook_config():
         "allowed_sources": data.get("allowed_sources") or [],
     }
 
-    res = supabase.table("user_webhook_configs").insert(row).execute()
-    if not res.data:
+    db = get_sync_db()
+    try:
+        config_obj = UserWebhookConfig(**row)
+        db.add(config_obj)
+        db.flush()
+        return jsonify(config_obj.to_dict())
+    except Exception:
         return jsonify({"detail": "Erro ao criar webhook config."}), 500
-
-    return jsonify(res.data[0])
+    finally:
+        db.close()
 
 
 @webhook_receiver_bp.route("/configs", methods=["GET"])
@@ -117,14 +129,18 @@ def list_webhook_configs():
         return jsonify({"detail": "Não autorizado"}), 401
 
     user_id = current_user["id"]
-    res = (
-        supabase.table("user_webhook_configs")
-        .select("id, slug, name, description, automation_id, is_active, created_at")
-        .eq("user_id", user_id)
-        .order("created_at", desc=True)
-        .execute()
-    )
-    return jsonify({"status": "success", "data": res.data or []})
+    db = get_sync_db()
+    try:
+        configs = (
+            db.query(UserWebhookConfig)
+            .filter(UserWebhookConfig.user_id == user_id)
+            .order_by(UserWebhookConfig.created_at.desc())
+            .all()
+        )
+        data = [c.to_dict() for c in configs]
+        return jsonify({"status": "success", "data": data})
+    finally:
+        db.close()
 
 
 @webhook_receiver_bp.route("/configs/<config_id>", methods=["DELETE"])
@@ -134,13 +150,20 @@ def delete_webhook_config(config_id):
         return jsonify({"detail": "Não autorizado"}), 401
 
     user_id = current_user["id"]
-    res = (
-        supabase.table("user_webhook_configs")
-        .update({"is_active": False})
-        .eq("id", config_id)
-        .eq("user_id", user_id)
-        .execute()
-    )
-    if not res.data:
-        return jsonify({"detail": "Config não encontrada."}), 404
-    return jsonify({"status": "success", "message": "Webhook desativado."})
+    db = get_sync_db()
+    try:
+        config = (
+            db.query(UserWebhookConfig)
+            .filter(
+                UserWebhookConfig.id == config_id,
+                UserWebhookConfig.user_id == user_id,
+            )
+            .first()
+        )
+        if not config:
+            return jsonify({"detail": "Config não encontrada."}), 404
+        config.is_active = False
+        db.flush()
+        return jsonify({"status": "success", "message": "Webhook desativado."})
+    finally:
+        db.close()

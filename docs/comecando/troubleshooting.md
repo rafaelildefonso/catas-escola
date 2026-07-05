@@ -1,67 +1,30 @@
 # Troubleshooting
 
-> 🆘 Guia de problemas comuns e como resolver
-
----
-
-## Docker / Temporal
-
-### "Porta 8080 já está em uso"
-
-```powershell
-# Windows: Encontrar e matar processo
-netstat -ano | findstr :8080
-taskkill /PID <NUMERO> /F
-
-# Ou mudar porta no docker-compose.yml
-# ports:
-#   - "8081:8080"  # Mapeia 8081 local para 8080 container
-```
-
-### "docker-compose command not found"
-
-```bash
-# Docker Desktop antigo usa docker-compose
-# Novo usa: docker compose (sem hífen)
-
-docker compose up -d
-```
-
-### "Container temporal não inicia"
-
-```bash
-# Ver logs
-docker-compose logs temporal
-
-# Problemas comuns:
-# - Memória insuficiente (precisa 4GB+)
-# - Portas em conflito
-# - Elasticsearch precisa de VM max_map_count
-
-# Aumentar memória para o Docker Desktop:
-# Settings → Resources → Memory: 4GB+
-```
+> Guia de problemas comuns e como resolver
 
 ---
 
 ## Backend API
 
-### "ModuleNotFoundError: No module named 'app'"
+### "ModuleNotFoundError: No module named ..."
 
 ```bash
-# PYTHONPATH não definido
-$env:PYTHONPATH = "."        # Windows
-export PYTHONPATH="."      # Mac/Linux
+# Verificar se venv esta ativado
+.\.venv\Scripts\activate       # Windows
+source .venv/bin/activate       # Mac/Linux
+
+# Reinstalar dependencias
+pip install -r requirements.txt
 ```
 
-### "uvicorn: command not found"
+### "Flask command not found"
 
 ```bash
-# Verificar se venv está ativado
-venv\Scripts\activate       # Windows
-source venv/bin/activate     # Mac/Linux
+# Verificar se venv esta ativado
+.\.venv\Scripts\activate       # Windows
+source .venv/bin/activate       # Mac/Linux
 
-# Reinstalar dependências
+# Reinstalar dependencias
 pip install -r requirements.txt
 ```
 
@@ -74,14 +37,25 @@ cp .env.example .env
 # Editar com suas credenciais
 ```
 
+### "DATABASE_URL not set"
+
+```bash
+# Adicionar DATABASE_URL no .env
+# Formato: postgresql://user:password@host:port/database
+# Para Supabase: Dashboard > Project Settings > Database > Connection string
+```
+
 ### "Port 8000 is already in use"
 
 ```bash
 # Windows
 netstat -ano | findstr :8000
 
-# Matar processo ou mudar porta
-uvicorn app.main:app --reload --port 8001
+# Matar processo
+taskkill /PID <NUMERO> /F
+
+# Ou mudar porta
+flask run --port 8001 --debug
 ```
 
 ---
@@ -91,23 +65,16 @@ uvicorn app.main:app --reload --port 8001
 ### "Worker connection refused"
 
 ```bash
-# 1. Verificar se Temporal está rodando
-docker ps
+# 1. Verificar se Worker esta rodando
+curl http://localhost:8001/
 
-# 2. Verificar TEMPORAL_HOST no .env
-# Deve ser: localhost:7233 (local)
+# 2. Se nao estiver, iniciar:
+cd backend
+.\.venv\Scripts\activate
+python -m worker.server
 
-# 3. Verificar se porta 7233 está liberada
-netstat -ano | findstr :7233
-```
-
-### "Module 'activities' not found"
-
-```bash
-# PYTHONPATH não definido no terminal do worker
-$env:PYTHONPATH = "."        # Windows PowerShell
-$env:PYTHONPATH="."          # Windows CMD (sem espaço)
-export PYTHONPATH="."         # Mac/Linux
+# 3. Verificar WORKER_URL no .env
+# Deve ser: http://localhost:8001
 ```
 
 ---
@@ -138,13 +105,13 @@ API_BASE_URL=http://localhost:8000
 
 ```bash
 # Verificar SUPABASE_ANON_KEY no .env do Flutter
-# Deve ser a chave pública (anon), não service_role
+# Deve ser a chave publica (anon), nao service_role
 
 # Se expirado: gerar novo token no Supabase Dashboard
-# Authentication → Users → Gerar novo token
+# Authentication > Users > Gerar novo token
 ```
 
-### "Flutter run stuck at "Running Gradle task..."
+### "Flutter run stuck at 'Running Gradle task...'"
 
 ```bash
 # Limpar cache
@@ -157,9 +124,9 @@ flutter run --offline
 
 ---
 
-## Autenticação
+## Autenticacao
 
-### "Google Sign-In não abre"
+### "Google Sign-In nao abre"
 
 ```bash
 # Verificar:
@@ -168,27 +135,27 @@ flutter run --offline
 # 3. App registrado no Google Cloud com SHA-1 (Android)
 ```
 
-### "Magic link não chega"
+### "Magic link nao chega"
 
 ```bash
 # Verificar:
 # 1. Email correto
-# 2. Spam/promoções
-# 3. Supabase Auth → Email templates configurados
+# 2. Spam/promocoes
+# 3. Supabase Auth > Email templates configurados
 ```
 
 ---
 
-## Integrações (Google Calendar/Gmail)
+## Integracoes (Google Calendar/Gmail)
 
-### "Token inválido"
+### "Token invalido"
 
 ```bash
 # Token OAuth expirou
-# Solução: Desconectar e reconectar integração no app
+# Solucao: Desconectar e reconectar integracao no app
 
-# Ou verificar refresh token no Supabase:
-# SELECT * FROM user_integrations WHERE provider = 'google';
+# Ou verificar refresh token no banco:
+# SELECT * FROM integrations WHERE provider = 'google';
 ```
 
 ### "Access denied" ou "Insufficient permissions"
@@ -199,52 +166,48 @@ flutter run --offline
 # - https://www.googleapis.com/auth/gmail.send
 # - etc
 
-# Verificar se usuário concedeu permissões
+# Verificar se usuario concedeu permissoes
 ```
 
 ---
 
-## Créditos
+## Creditos
 
-### "Créditos não atualizam no app"
+### "Creditos nao atualizam no app"
 
 ```bash
-# 1. Verificar se Worker está rodando
-# 2. Verificar Supabase Realtime ativo
-# 3. Fazer pull-to-refresh no app
-# 4. Verificar console do Flutter por erros
+# 1. Verificar se Worker esta rodando
+# 2. Fazer pull-to-refresh no app
+# 3. Verificar console do Flutter por erros
 ```
 
 ---
 
-## Problemas Genéricos
+## Problemas Genericos
 
 ### "Nada funciona"
 
 Reset completo:
 ```bash
 # 1. Parar tudo
-# Ctrl+C nos terminais do API e Worker
-docker-compose down
+# Ctrl+C nos terminais do backend e Worker
 
 # 2. Limpar
 flutter clean
-cd server && pip cache purge
+cd backend && pip cache purge
 
-# 3. Recomeçar
-docker-compose up -d
-uvicorn app.main:app --reload
-# (novo terminal) python worker/main.py
+# 3. Recomecar
+flask run --port 8000 --debug
+# (novo terminal) python -m worker.server
 flutter pub get && flutter run
 ```
 
 ---
 
-## Ainda não funcionou?
+## Ainda nao funcionou?
 
 1. **Verifique os logs** - Sempre comece lendo a mensagem de erro completa
-2. **Verifique variáveis de ambiente** - 80% dos erros são envs faltando
+2. **Verifique variaveis de ambiente** - 80% dos erros sao envs faltando
 3. **Verifique portas** - Use `netstat` ou `lsof` para ver portas ocupadas
 4. **Google/Stack Overflow** - Copie a mensagem de erro exata
-5. **Documentação** - Volte para o [Quick Start](../quickstart.md)
-
+5. **Documentacao** - Volte para o [Quick Start](./quickstart.md)

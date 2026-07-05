@@ -1,6 +1,8 @@
-from services.db_supabase import supabase
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+
+from services.database import get_sync_db
+from models.db_models import AutomationGenerationLog
 
 
 def log_generation(
@@ -14,15 +16,20 @@ def log_generation(
     model: Optional[str] = None,
     tokens_used: Optional[int] = None,
 ) -> List[Dict]:
-    row = {
-        "user_id": user_id,
-        "session_id": session_id,
-        "intent_raw": intent_raw,
-        "attempts": attempts or [],
-        "errors": errors or [],
-        "final_plan": final_plan,
-        "model": model,
-        "tokens_used": tokens_used,
-        "created_at": datetime.utcnow().isoformat(),
-    }
-    return supabase.table("automation_generation_logs").insert(row).execute().data or []
+    db = get_sync_db()
+    try:
+        row = AutomationGenerationLog(
+            user_id=user_id,
+            session_id=session_id,
+            intent_raw=intent_raw,
+            attempts=attempts or [],
+            errors=errors or [],
+            final_plan=final_plan,
+            model=model,
+            tokens_used=tokens_used,
+        )
+        db.add(row)
+        db.flush()
+        return [row.to_dict()]
+    finally:
+        db.close()

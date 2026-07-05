@@ -1,156 +1,140 @@
 # Backend Developer Guide
 
-> 🐍 **Você está em:** `server/`  
-> ⚡ **Stack:** Python 3.10+, FastAPI, Temporal.io
+> **Voce esta em:** `backend/`  
+> **Stack:** Python 3.10+, Flask, SQLAlchemy, FastAPI (Worker)
 
 ---
 
-## 🎯 O que você precisa saber
+## O que voce precisa saber
 
-O backend do CATAS é dividido em **duas partes** que trabalham juntas:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  1. API (FastAPI) - app/                                │
-│     └── Recebe requests, orquestra IA, dispara workflows│
-├─────────────────────────────────────────────────────────┤
-│  2. Worker (Temporal) - worker/                           │
-│     └── Executa automações com resiliência             │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Fluxo de uma automação:
+O backend do CATAS e dividido em **duas partes** que trabalham juntas:
 
 ```
-User: "Marcar reunião amanhã às 14h"
-    ↓
-[API] IntentClassifier.classify() → "calendar_create_event"
-[API] EntityExtractor.extract() → {date, time, title, attendees}
-[API] PayloadBuilder.build() → {tool: "google_calendar", ...}
-[API] Temporal.execute_workflow(AutomationPlan)
-    ↓
-[Worker] AutomationWorkflow.run()
-    → Activity: debit_automation_credits
-    → Activity: create_event (Google Calendar)
-    → Activity: send_notification
-    ↓
-[Supabase Realtime] → Flutter UI
+  1. API (Flask) - backend/app.py
+      Recebe requests, orquestra IA, gerencia usuarios
+  2. Worker (FastAPI) - backend/worker/
+      Executa automacoes com resiliencia
+```
+
+### Fluxo de uma automacao:
+
+```
+User: "Marcar reuniao amanha as 14h"
+    |
+[API] IntentClassifier.classify()  "calendar_create_event"
+[API] EntityExtractor.extract()  {date, time, title, attendees}
+[API] PayloadBuilder.build()  {tool: "google_calendar", ...}
+[API] POST /worker/execute
+    |
+[Worker] AutomationRunner.run()
+    Module: debit_automation_credits
+    Module: create_event (Google Calendar)
+    Module: send_notification
+    |
+[Database] SQLAlchemy  Flutter UI
 ```
 
 ---
 
-## 📂 Estrutura de Pastas
+## Estrutura de Pastas
 
 ```
-server/
-├── app/                           # 🚀 API FastAPI
-│   ├── api/                       # Endpoints
-│   │   ├── dependencies.py        # Auth, injeção
-│   │   └── v1/                    # Versão 1
-│   │       ├── chat.py            # POST /chat/message
-│   │       ├── auth.py            # Login, refresh
-│   │       └── integrations.py    # Google OAuth
-│   │
-│   ├── core/                      # ⚙️ Configurações
-│   │   ├── config.py              # Settings (Pydantic)
-│   │   ├── security.py            # JWT, hashing
-│   │   └── firebase.py            # FCM config
-│   │
-│   ├── middleware/                # 🔗 Middleware
-│   │   ├── auth.py                # Bearer token validation
-│   │   └── cors.py                # CORS config
-│   │
-│   ├── models/                    # 📦 Schemas
-│   │   ├── message.py             # Message schemas
-│   │   └── user.py                # User schemas
-│   │
-│   ├── repositories/              # 🗄️ Acesso DB
-│   │   ├── profiles.py            # Users, quotas
-│   │   ├── chat.py                # Messages, sessions
-│   │   ├── integrations.py        # OAuth tokens
-│   │   └── automations.py         # Runs, logs
-│   │
-│   ├── routers/                   # 🛣️ Rotas (legacy)
-│   │   └── *.py                   # Endpoints antigos
-│   │
-│   ├── services/                  # 🧠 Lógica de IA
-│   │   ├── ai_service.py          # Orquestrador principal
-│   │   ├── ai_base.py             # Base para providers
-│   │   ├── ai_providers/          # Gemini, Groq, OpenAI
-│   │   │   ├── gemini_provider.py
-│   │   │   └── groq_provider.py
-│   │   ├── intent_classifier.py   # Classifica intenção
-│   │   ├── entity_extractor.py    # Extrai dados
-│   │   ├── payload_builder.py     # Monta payload Temporal
-│   │   ├── ui_components_library.py # Componentes UI
-│   │   └── credit_service.py      # Gestão de créditos
-│   │
-│   └── main.py                    # 🚀 Entrypoint FastAPI
-│
-├── worker/                        # ⏱️ Temporal Worker
-│   ├── activities/                # Atividades executáveis
-│   │   ├── calendar/              # Google Calendar
-│   │   │   └── create_calendar.py
-│   │   ├── gmail/                 # Gmail
-│   │   │   ├── send_gmail.py
-│   │   │   └── create_draft.py
-│   │   ├── google_sheets/         # Sheets
-│   │   ├── flow/                  # Controle de fluxo
-│   │   ├── notifications/         # Push notifications
-│   │   ├── utils/                 # Helpers
-│   │   └── credits.py             # Debitar créditos
-│   │
-│   ├── workflows/                 # Orquestrações
-│   │   └── automation_workflow.py # Workflow principal
-│   │
-│   └── main.py                    # 🚀 Entrypoint Worker
-│
-├── docker/                        # 🐳 Docker
-│   └── temporal/                  # Temporal Server
-│       ├── docker-compose.yml
-│       └── dynamicconfig/
-│
-├── migrations/                    # 🗄️ SQL Migrations
-│   └── *.sql
-│
-└── tests/                         # 🧪 Testes
-    └── test_*.py
+backend/
+  app.py                           #  API Flask
+  core/
+    config.py                      # Configuracoes
+    security.py                    # Auth (Supabase JWT)
+    errors.py                      # Error handling
+  controllers/                     # Blueprints Flask
+    user.py                        # Perfil, quotas
+    chat.py                        # Sessoes de chat
+    chatbot.py                     # POST /api/v1/chat/message
+    automations.py                 # Automacoes CRUD
+    integrations.py                # Google OAuth
+    payments.py                    # Stripe
+    feedback.py                    # Feedback do usuario
+    webhooks.py                    # Webhooks Stripe
+    webhook_receiver.py            # Webhooks externos
+    prompt_improve.py              # Melhoria de prompt
+  models/
+    db_models.py                   # Modelos SQLAlchemy (17 tabelas)
+  services/
+    database.py                    # SQLAlchemy engine, SessionLocal
+    ai_service.py                  # Orquestrador principal
+    ai_base.py                    # Base para providers
+    ai_providers/                  # Gemini, Groq, OpenAI
+      gemini_provider.py
+      groq_provider.py
+    intent_classifier.py           # Classifica intencao
+    entity_extractor.py            # Extrai dados
+    payload_builder.py             # Monta payload
+    ui_components_library.py       # Componentes UI
+    credit_service.py              # Gestao de creditos (atomic)
+    ia_memory.py                   # Busca semantica (pgvector)
+    notification_service.py        # Push notifications (FCM)
+  repositories/                    # Acesso a dados (SQLAlchemy)
+    profiles.py                    # Perfis, quotas
+    chat.py                        # Mensagens, sessoes
+    automations.py                 # Runs, logs
+    automation_logs.py
+    automation_generation_logs.py
+    integrations.py                # OAuth tokens
+    feedback.py
+    ai_suggestions.py
+    page_contexts.py
+  worker/                          #  Worker FastAPI
+    server.py                      # Servidor FastAPI
+    runner.py                      # Motor de execucao
+    modules/                       # Modulos executaveis
+      http_request.py              # Requisicoes HTTP
+      google_calendar.py           # Google Calendar
+      gmail.py                     # Gmail
+      google_sheets.py             # Google Sheets
+      google_drive.py              # Google Drive
+      google_docs.py               # Google Docs
+      ai_transform.py              # Transformacao com IA
+      flow_control.py              # Controle de fluxo
+  migrations/                      #  SQL Migrations
+    *.sql
+  tests/                           #  Testes
+    test_*.py
+  requirements.txt
+  .env
 ```
 
 ---
 
-## 🚀 Primeiras Tarefas
+## Primeiras Tarefas
 
 Escolha por objetivo:
 
 | Eu quero... | Guia |
 |-------------|------|
-| 🆕 Entender o fluxo de IA | [Pipeline de IA](./services/ai-pipeline.md) |
-| 🔌 Adicionar nova integração (Slack, Notion, etc) | [Guia: Nova Integração](../guias/nova-integracao/index.md) |
-| ⚡ Criar nova atividade Temporal | [Nova Activity](./worker/nova-activity.md) |
-| 🔄 Modificar workflow existente | [Modificar Workflow](./worker/modificar-workflow.md) |
-| ➕ Adicionar endpoint API | [Novo Endpoint](./api/novo-endpoint.md) |
-| 🧪 Escrever testes | [Testing](./testing.md) |
-| 🐛 Debugar problema | [Debugging](./debugging.md) |
+| Entender o fluxo de IA | [Pipeline de IA](./ia-pipeline.md) |
+| Adicionar nova integracao (Slack, Notion, etc) | [Guia: Nova Integracao](../guias/nova-integracao/index.md) |
+| Adicionar modulo ao Worker | [Novo Modulo](./worker/novo-modulo.md) |
+| Adicionar endpoint API | [Novo Endpoint](./api/novo-endpoint.md) |
+| Escrever testes | [Testing](./testing.md) |
+| Depurar problema | [Debugging](../guias/debugging/index.md) |
 
 ---
 
-## 💡 Conceitos Chave
+## Conceitos Chave
 
 ### 1. Pipeline de IA (Maestro)
 
 ```python
-# app/services/ai_service.py
+# backend/services/ai_service.py
 
-async def analyze_message(text, history, user_id):
-    # 1. Classificar intenção
-    intent = await intent_classifier.classify(text, history)
+def analyze_message(text, history, user_id):
+    # 1. Classificar intencao
+    intent = intent_classifier.classify(text, history)
     
-    # 2. Extrair entidades (se for ação)
+    # 2. Extrair entidades (se for acao)
     if intent != "conversation":
-        entities = await entity_extractor.extract(text, intent, history)
+        entities = entity_extractor.extract(text, intent, history)
     
-    # 3. Montar payload para Temporal
+    # 3. Montar payload para Worker
     action_details = payload_builder.build(intent, entities)
     
     # 4. Retornar com componentes UI
@@ -162,146 +146,136 @@ async def analyze_message(text, history, user_id):
     }
 ```
 
-### 2. Temporal: Workflows vs Activities
+### 2. Worker: Runner + Modulos
 
-**Workflow** = Orquestração (o que fazer, em que ordem)
+**Runner** = Orquestracao (o que fazer, em que ordem)
 ```python
-# workflows/automation_workflow.py
-@workflow.run
-async def run(self, plan):
-    # Debitar créditos
-    await workflow.execute_activity(debit_automation_credits)
-    
-    # Executar passos do plano
-    for step in plan["steps"]:
-        await workflow.execute_activity(
-            self._get_activity(step["module_id"]),
-            args=[step["parameters"]]
-        )
-    
-    # Notificar conclusão
-    await workflow.execute_activity(send_notification)
+# worker/runner.py
+class AutomationRunner:
+    def execute(self, plan):
+        # Debitar creditos
+        self.run_module("credits.debit", plan["user_id"])
+        
+        # Executar passos do plano
+        for step in plan["steps"]:
+            self.run_module(step["module_id"], step["parameters"])
+        
+        # Notificar conclusao
+        self.run_module("notification.send", plan["user_id"])
 ```
 
-**Activity** = Execução (como fazer, com retry automático)
+**Modulo** = Execucao (como fazer)
 ```python
-# activities/calendar/create_calendar.py
-@activity.defn
-async def create_event(params):
-    service = _get_service(params["oauth_token"])
+# worker/modules/google_calendar.py
+def execute(params):
+    service = get_google_service(params["oauth_token"])
     event = service.events().insert(calendarId='primary', body=body).execute()
     return event
 ```
 
-### 3. Sistema de Créditos
+### 3. Sistema de Creditos
 
 ```python
 # Calculado por uso de tokens
-2000 tokens = 1 crédito
+2000 tokens = 1 credito
 
 # Fluxo:
-User manda msg → IA processa → Calcular tokens → Debitar créditos → Executar ação
+User manda msg  IA processa  Calcular tokens  Debitar creditos  Executar acao
+```
+
+### 4. Acesso a Dados (SQLAlchemy)
+
+```python
+# repositories/profiles.py
+from services.database import get_sync_db
+
+def get_user_profile(user_id: str) -> dict | None:
+    with get_sync_db() as db:
+        profile = db.query(Profile).filter(Profile.id == user_id).first()
+        return profile.to_dict() if profile else None
 ```
 
 ---
 
-## 🔧 Configurações Importantes
+## Configuracoes Importantes
 
-### Variáveis de Ambiente (.env)
+### Variaveis de Ambiente (.env)
 
 ```env
-# === SUPABASE ===
-SUPABASE_URL=                    # URL do projeto
-SUPABASE_SERVICE_ROLE_KEY=       # Chave privada (server-side only!)
+# === SUPABASE (auth) ===
+SUPABASE_URL=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# === DATABASE (SQLAlchemy) ===
+DATABASE_URL=
 
 # === IA ===
-GOOGLE_API_KEY=                  # Gemini
-OPENAI_API_KEY=                  # GPT-4
-GROQ_API_KEY=                     # Groq
-
-# === TEMPORAL ===
-TEMPORAL_HOST=localhost:7233     # Local: localhost, Cloud: temporal.io
-TEMPORAL_NAMESPACE=default       # Local: default, Cloud: seu-namespace
-TEMPORAL_TASK_QUEUE=automation-queue
-TEMPORAL_TLS_CERT=               # Cloud only
-TEMPORAL_TLS_KEY=                # Cloud only
+GROQ_API_KEY=
+GOOGLE_API_KEY=
+OPENAI_API_KEY=
 
 # === FIREBASE ===
-FIREBASE_ADMIN_SDK_JSON_PATH=    # Service account JSON
+FIREBASE_ADMIN_SDK_JSON_PATH=
 
 # === STRIPE ===
-STRIPE_SECRET_KEY=               # Test ou Live
-STRIPE_WEBHOOK_SECRET=           # Para webhooks
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
 
-# === N8N (opcional) ===
-N8N_WEBHOOK_URL=                 # Para prototipagem rápida
-N8N_WEBHOOK_SECRET=
+# === WORKER ===
+WORKER_URL=http://localhost:8001
 ```
-
-### Conexões
-
-| Serviço | Local | Cloud |
-|---------|-------|-------|
-| Temporal | `localhost:7233` | `temporal.io` |
-| Supabase | `supabase.co` | Self-hosted |
-| Stripe | Test mode | Live mode |
 
 ---
 
-## 📚 Tópicos Detalhados
+## Topicos Detalhados
 
-### API (app/)
-- [Pipeline de IA](./services/ai-pipeline.md) - Deep dive
+### API
+- [Pipeline de IA](./ia-pipeline.md) - Deep dive
 - [Intent Classifier](./services/intent-classifier.md)
 - [Entity Extractor](./services/entity-extractor.md)
 - [Payload Builder](./services/payload-builder.md)
-- [Routers e Endpoints](./api/routers.md)
-- [Autenticação](./api/auth.md)
-- [Créditos e Cobrança](./api/credits.md)
-- [Repositories](./repositories.md) - Padrões de acesso
+- [Autenticacao](./api/auth.md)
+- [Creditos e Cobranca](./api/credits.md)
+- [Repositories](./repositories.md) - Padroes de acesso
 
-### Worker (worker/)
-- [Conceitos Temporal](./worker/temporal-concepts.md)
-- [Workflow Principal](./worker/automation-workflow.md)
-- [Nova Atividade](./worker/nova-activity.md)
-- [Modificar Workflow](./worker/modificar-workflow.md)
-- [Debugging](./worker/debugging.md)
-- [Atividades Existentes](./worker/activities-list.md)
+### Worker
+- [Worker Runner](./worker/runner.md)
+- [Modulos Existentes](./worker/modules-list.md)
+- [Novo Modulo](./worker/novo-modulo.md)
 
-### IA (app/services/)
+### IA
 - [AI Providers](./services/ai-providers.md) - Gemini, Groq, OpenAI
 - [Prompt Engineering](./services/prompts.md)
 - [UI Components](./services/ui-components.md)
 - [Error Handling](./services/error-handling.md)
 
-### Avançado
+### Avancado
 - [Testes](./testing.md) - Unit, integration, e2e
 - [Performance](./performance.md)
-- [Deploy](./deploy.md) - Produção checklists
+- [Deploy](./deploy.md) - Producao checklists
 
 ---
 
-## 🔗 Links Rápidos
+## Links Rapidos
 
 | Recurso | Local |
 |---------|-------|
-| 📁 Código API | `server/app/` |
-| 📁 Código Worker | `server/worker/` |
-| 🧪 Testes | `server/tests/` |
-| ⚙️ Config | `server/.env` |
-| ⏱️ Temporal UI | http://localhost:8080 |
-| 📚 API Docs | http://localhost:8000/docs |
+| Codigo API | `backend/` |
+| Codigo Worker | `backend/worker/` |
+| Testes | `backend/tests/` |
+| Config | `backend/.env` |
+| API Docs | http://localhost:8000/ |
 
 ---
 
-## 🆘 Precisa de ajuda?
+## Precisa de ajuda?
 
-1. **Worker não conecta?** → Verifique `TEMPORAL_HOST` e se Docker está rodando
-2. **Erro de autenticação?** → Verifique `SUPABASE_SERVICE_ROLE_KEY`
-3. **IA não responde?** → Verifique `GOOGLE_API_KEY` ou quota
-4. **Mais problemas?** → [Debugging Guide](./debugging.md)
+1. **Erro de autenticacao?**  Verifique `SUPABASE_SERVICE_ROLE_KEY`
+2. **IA nao responde?**  Verifique `GROQ_API_KEY` ou quota
+3. **Worker nao conecta?**  Verifique `WORKER_URL`
+4. **Mais problemas?**  [Debugging Guide](../guias/debugging/index.md)
 
 ---
 
-> ⬅️ [Voltar para Documentação](../index.md)  
-> ➡️ [Próximo: Pipeline de IA →](./services/ai-pipeline.md)
+> [Voltar para Documentacao](../index.md)  
+> [Proximo: Pipeline de IA ](./ia-pipeline.md)

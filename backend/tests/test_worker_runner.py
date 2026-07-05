@@ -329,23 +329,24 @@ class TestAutomationRepositories:
 
     def test_get_user_stats_returns_7_days(self):
         from repositories import automations as automations_repo
-        from datetime import timedelta
+        from datetime import timedelta, timezone
 
-        mock_rows = [
-            {"created_at": (datetime.utcnow() - timedelta(days=1)).isoformat()},
-            {"created_at": (datetime.utcnow() - timedelta(days=1)).isoformat()},
-            {"created_at": (datetime.utcnow() - timedelta(days=3)).isoformat()},
+        now = datetime.now(timezone.utc)
+        mock_dates = [
+            now - timedelta(days=1),
+            now - timedelta(days=1),
+            now - timedelta(days=3),
         ]
 
-        with patch.object(automations_repo.supabase, "table", autospec=True) as mock_table:
+        with patch("repositories.automations.get_sync_db") as mock_get_db:
+            mock_db = MagicMock()
+            mock_get_db.return_value = mock_db
             mock_query = MagicMock()
-            mock_table.return_value = mock_query
-            mock_query.select.return_value = mock_query
-            mock_query.eq.return_value = mock_query
-            mock_query.gte.return_value = mock_query
-            mock_execute = MagicMock()
-            mock_query.execute.return_value = mock_execute
-            mock_execute.data = mock_rows
+            mock_db.query.return_value = mock_query
+            mock_query.filter.return_value = mock_query
+            mock_query.all.return_value = [
+                MagicMock(created_at=d) for d in mock_dates
+            ]
 
             data = automations_repo.get_user_stats("user_123")
 
@@ -355,27 +356,29 @@ class TestAutomationRepositories:
 
     def test_get_user_history_returns_mapped_rows(self):
         from repositories import automations as automations_repo
+        from datetime import timezone
 
-        mock_rows = [{
-            "id": "run_1",
-            "run_type": "direct",
-            "status": "completed",
-            "input_summary": "Test 1",
-            "created_at": datetime.utcnow().isoformat(),
-            "result_metadata": {},
-            "input_payload": {},
-        }]
+        now = datetime.now(timezone.utc)
 
-        with patch.object(automations_repo.supabase, "table", autospec=True) as mock_table:
+        with patch("repositories.automations.get_sync_db") as mock_get_db:
+            mock_db = MagicMock()
+            mock_get_db.return_value = mock_db
             mock_query = MagicMock()
-            mock_table.return_value = mock_query
-            mock_query.select.return_value = mock_query
-            mock_query.eq.return_value = mock_query
-            mock_query.order.return_value = mock_query
+            mock_db.query.return_value = mock_query
+            mock_query.filter.return_value = mock_query
+            mock_query.order_by.return_value = mock_query
             mock_query.limit.return_value = mock_query
-            mock_execute = MagicMock()
-            mock_query.execute.return_value = mock_execute
-            mock_execute.data = mock_rows
+            mock_query.all.return_value = [
+                MagicMock(to_dict=lambda: {
+                    "id": "run_1",
+                    "run_type": "direct",
+                    "status": "completed",
+                    "input_summary": "Test 1",
+                    "created_at": now.isoformat(),
+                    "result_metadata": {},
+                    "input_payload": {},
+                })
+            ]
 
             history = automations_repo.get_user_history("user_123", limit=5)
 

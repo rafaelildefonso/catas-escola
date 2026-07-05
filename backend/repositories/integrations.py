@@ -1,61 +1,60 @@
-from services.db_supabase import supabase
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict
+
+from services.database import get_sync_db
+from models.db_models import Integration
 from core.crypto import encrypt_value, decrypt_value
 from services.oauth_token_service import (
     is_google_provider,
     refresh_google_tokens,
     token_expires_soon,
 )
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+
 
 def get_user_integrations(user_id: str) -> List[Dict]:
-    """
-    Busca todas as integrações de um usuário.
-    """
-    response = (
-        supabase
-        .table("integrations")
-        .select("*")
-        .eq("user_id", user_id)
-        .execute()
-    )
-    
-    data = response.data or []
-    # Descriptografar tokens para uso interno/exibição se necessário (idealmente não retornar para o front)
-    # Apenas enviamos metadata para o front, não os tokens
-    for item in data:
-        # Limpar tokens para não irem pro front-end na listagem
-        item.pop("access_token", None)
-        item.pop("refresh_token", None)
-        
-    return data
+    db = get_sync_db()
+    try:
+        rows = (
+            db.query(Integration)
+            .filter(Integration.user_id == user_id)
+            .all()
+        )
+        data = [r.to_dict() for r in rows]
+        for item in data:
+            item.pop("access_token", None)
+            item.pop("refresh_token", None)
+        return data
+    finally:
+        db.close()
+
 
 def get_integration(user_id: str, provider: str) -> Optional[Dict]:
-    """
-    Busca uma integração específica por provedor e descriptografa para uso interno.
-    """
-    response = (
-        supabase
-        .table("integrations")
-        .select("*")
-        .eq("user_id", user_id)
-        .eq("provider", provider)
-        .execute()
-    )
-    
-    if not response.data:
-        return None
-        
-    integration = response.data[0]
-    
-    if integration.get("access_token"):
-        integration["access_token"] = decrypt_value(integration["access_token"])
-    if integration.get("refresh_token"):
-        integration["refresh_token"] = decrypt_value(integration["refresh_token"])
+    db = get_sync_db()
+    try:
+        integration_obj = (
+            db.query(Integration)
+            .filter(
+                Integration.user_id == user_id,
+                Integration.provider == provider,
+            )
+            .first()
+        )
+        if not integration_obj:
+            return None
 
-    _maybe_refresh_tokens(user_id, provider, integration)
+        integration = integration_obj.to_dict()
 
-    return integration
+        if integration.get("access_token"):
+            integration["access_token"] = decrypt_value(integration["access_token"])
+        if integration.get("refresh_token"):
+            integration["refresh_token"] = decrypt_value(integration["refresh_token"])
+
+        _maybe_refresh_tokens(user_id, provider, integration)
+
+        return integration
+    finally:
+        db.close()
 
 
 def _maybe_refresh_tokens(user_id: str, provider: str, integration: Dict) -> None:
@@ -91,6 +90,7 @@ def _maybe_refresh_tokens(user_id: str, provider: str, integration: Dict) -> Non
     integration["refresh_token"] = new_refresh
     integration["token_expires_at"] = expires_at
 
+
 def save_integration(
     user_id: str,
     provider: str,
@@ -99,9 +99,6 @@ def save_integration(
     expires_at: Optional[str] = None,
     settings: Optional[Dict] = None
 ) -> Dict:
-    """
-    Salva ou atualiza uma integração (upsert) criptografando os tokens.
-    """
     integration_data = {
         "user_id": user_id,
         "provider": provider,
@@ -110,18 +107,47 @@ def save_integration(
         "token_expires_at": expires_at,
         "is_connected": True,
         "settings": settings or {},
-        "updated_at": datetime.utcnow().isoformat()
     }
-    
-    response = (
-        supabase
-        .table("integrations")
-        .upsert(integration_data, on_conflict="user_id,provider")
-        .execute()
-    )
-    
-    saved_data = response.data[0]
-    # Remove os tokens criptografados antes de retornar ao router
-    saved_data.pop("access_token", None)
-    saved_data.pop("refresh_token", None)
-    return saved_data
+
+    db = get_sync_db()
+    try:
+        stmt = pg_insert(Integration).values(**integration_data)
+        stmt = stmt.on_conflict_do_update(
+            constraint="integrations_user_id_provider_key",
+            set_={
+                "access_token": stmt.excluded.access_token,
+                "refresh_token": stmt.excluded.refresh_token,
+                "token_expires_at": stmt.excluded.token_expires_at,
+                "is_connected": stmt.excluded.is_connected,
+                "settings": stmt.excluded.settings,
+            },
+        )
+        db.execute(stmt)
+        db.flush()
+
+        result = (
+            db.query(Integration)
+            .filter(
+                Integration.user_id == user_id,
+                Integration.provider == provider,
+            )
+            .first()
+        )
+        saved_data = result.to_dict() if result else {}
+        saved_data.pop("access_token", None)
+        saved_data.pop("refresh_token", None)
+        return saved_data
+    finally:
+        db.close()
+
+
+def delete_integration(user_id: str, provider: str) -> None:
+    db = get_sync_db()
+    try:
+        db.query(Integration).filter(
+            Integration.user_id == user_id,
+            Integration.provider == provider,
+        ).delete()
+        db.flush()
+    finally:
+        db.close()

@@ -183,7 +183,7 @@ _`session_title` só é retornado no primeiro envio da conversa._
 
 | Método | Endpoint                 | Descrição                    |
 | ------ | ------------------------ | ---------------------------- |
-| `POST` | `/api/v1/execute/action` | Executa ação via webhook n8n |
+| `POST` | `/api/v1/execute/action` | Executa ação via Worker |
 
 #### POST /api/v1/execute/action
 
@@ -208,7 +208,7 @@ _`session_title` só é retornado no primeiro envio da conversa._
   "data": {
     "automation_id": "uuid",
     "status": "pending",
-    "n8n_response": { ... }
+    "worker_response": { ... }
   }
 }
 ```

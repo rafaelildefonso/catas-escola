@@ -22,7 +22,7 @@ import 'providers/automations_provider.dart';
 import 'providers/demo_automations_provider.dart';
 import 'providers/demo_notifications_provider.dart';
 import 'providers/demo_autoplay_controller.dart';
-import 'screens/subscription_success_screen.dart';
+import 'screens/splash_screen.dart';
 import 'core/theme.dart';
 import 'core/router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -154,29 +154,20 @@ void _handleDeepLink(Uri uri) {
     return;
   }
   if (uri.scheme == 'catas') {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    
     if (uri.host == 'payment-success') {
-      final context = navigatorKey.currentContext;
-      if (context != null) {
-        final uriPlan = uri.queryParameters['plan'] ?? 'pro';
-        
-        // Refresh the user profile so Flutter picks up the new plan tier
-        // that the Stripe webhook just wrote to the database.
-        context.read<AuthProvider>().refreshProfile().then((_) {
-          if (!context.mounted) return;
-          
-          // Navigate to success screen on top of the main layout using the URI plan
-          // because the webhook might take a few seconds to update the DB.
-          navigatorKey.currentState?.push(
-            MaterialPageRoute(
-              builder: (context) =>
-                  SubscriptionSuccessScreen(planName: uriPlan.toUpperCase()),
-            ),
-          );
-        });
-      }
+      final uriPlan = uri.queryParameters['plan']?.toUpperCase() ?? 'PRO';
+      
+      // Refresh the user profile so Flutter picks up the new plan tier
+      // that the Stripe webhook just wrote to the database.
+      context.read<AuthProvider>().refreshProfile().then((_) {
+        if (!context.mounted) return;
+        context.go('${AppRoutes.paymentSuccess}?plan=$uriPlan');
+      });
     } else if (uri.host == 'payment-cancel') {
-      // Just go back to the main screen
-      navigatorKey.currentState?.popUntil((route) => route.isFirst);
+      context.go(AppRoutes.chat);
     }
   }
 }
@@ -206,10 +197,6 @@ class _MyAppState extends State<MyApp> {
     _serverStatusProvider = ServerStatusProvider();
     _router = createRouter(
       context.read<AuthProvider>(),
-      initNotifier: _initNotifier,
-      onTriggerInit: _initializeApp,
-      onRetryConn: _retryConnection,
-      serverStatusProvider: _serverStatusProvider,
     );
   }
 
@@ -300,7 +287,72 @@ class _MyAppState extends State<MyApp> {
         locale: localeProvider.locale,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
+        builder: (context, child) {
+          return _SplashGate(
+            initNotifier: _initNotifier,
+            serverStatusProvider: _serverStatusProvider,
+            onInitializationTrigger: _initializeApp,
+            onRetryConnection: _retryConnection,
+            child: child!,
+          );
+        },
       ),
+    );
+  }
+}
+
+/// Wrapper stateful que ouve mudanças no _initNotifier e mostra/oculta o splash.
+/// Precisa estar DENTRO do MaterialApp.router para o SplashScreen ter acesso ao tema.
+class _SplashGate extends StatefulWidget {
+  final ValueNotifier<bool> initNotifier;
+  final ServerStatusProvider serverStatusProvider;
+  final VoidCallback onInitializationTrigger;
+  final VoidCallback onRetryConnection;
+  final Widget child;
+
+  const _SplashGate({
+    required this.initNotifier,
+    required this.serverStatusProvider,
+    required this.onInitializationTrigger,
+    required this.onRetryConnection,
+    required this.child,
+  });
+
+  @override
+  State<_SplashGate> createState() => _SplashGateState();
+}
+
+class _SplashGateState extends State<_SplashGate> {
+  @override
+  void initState() {
+    super.initState();
+    widget.initNotifier.addListener(_onInitChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.initNotifier.removeListener(_onInitChanged);
+    super.dispose();
+  }
+
+  void _onInitChanged() {
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        widget.child,
+        if (!widget.initNotifier.value)
+          ChangeNotifierProvider.value(
+            value: widget.serverStatusProvider,
+            child: SplashScreen(
+              onInitializationTrigger: widget.onInitializationTrigger,
+              onRetryConnection: widget.onRetryConnection,
+            ),
+          ),
+      ],
     );
   }
 }

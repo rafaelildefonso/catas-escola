@@ -1,6 +1,8 @@
-from services.supabase import supabase
-from datetime import datetime
 from typing import Optional, Dict
+
+from services.database import get_sync_db
+from models.db_models import AiSuggestion
+
 
 def save_suggestion(
     user_id: str,
@@ -11,40 +13,32 @@ def save_suggestion(
     payload_preview: Optional[Dict] = None,
     suggested_workflow: Optional[str] = None
 ) -> Dict:
-    """
-    Salva uma sugestão gerada pela IA.
-    """
-    suggestion_data = {
-        "user_id": user_id,
-        "context_id": context_id,
-        "title": title,
-        "description": description,
-        "confidence_score": confidence_score,
-        "payload_preview": payload_preview,
-        "suggested_workflow": suggested_workflow,
-        "status": "pending",
-        "created_at": datetime.utcnow().isoformat()
-    }
-    
-    response = (
-        supabase
-        .table("ai_suggestions")
-        .insert(suggestion_data)
-        .execute()
-    )
-    
-    return response.data[0]
+    db = get_sync_db()
+    try:
+        suggestion = AiSuggestion(
+            user_id=user_id,
+            context_id=context_id,
+            title=title,
+            description=description,
+            confidence_score=confidence_score,
+            payload_preview=payload_preview,
+            suggested_workflow=suggested_workflow,
+        )
+        db.add(suggestion)
+        db.flush()
+        return suggestion.to_dict()
+    finally:
+        db.close()
+
 
 def update_suggestion_status(suggestion_id: str, status: str) -> Dict:
-    """
-    Atualiza o status de uma sugestão ('accepted', 'rejected', 'executed').
-    """
-    response = (
-        supabase
-        .table("ai_suggestions")
-        .update({"status": status})
-        .eq("id", suggestion_id)
-        .execute()
-    )
-    
-    return response.data[0]
+    db = get_sync_db()
+    try:
+        suggestion = db.query(AiSuggestion).filter(AiSuggestion.id == suggestion_id).first()
+        if not suggestion:
+            raise RuntimeError(f"Sugestão {suggestion_id} não encontrada")
+        suggestion.status = status
+        db.flush()
+        return suggestion.to_dict()
+    finally:
+        db.close()

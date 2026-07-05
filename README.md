@@ -13,7 +13,7 @@ Agente de Automação Inteligente baseado em Linguagem Natural que **executa aç
 ## Arquitetura
 
 - **Client (Flutter):** Interface multiplataforma (Mobile/Desktop)
-- **Core API (FastAPI):** Processa linguagem natural com Gemini/Claude
+- **Core API (Flask):** Processa linguagem natural com IA multi-agente
 - **Executor (Temporal.io):** Workflows duráveis para integrações com Google APIs
 
 ## Tech Stack
@@ -21,65 +21,62 @@ Agente de Automação Inteligente baseado em Linguagem Natural que **executa aç
 | Camada | Tecnologia |
 |--------|-----------|
 | Frontend | Flutter (Dart) - Android, iOS, Web, Desktop |
-| Backend | Python 3.11+, FastAPI |
-| AI | Google Gemini 2.5 Flash, Anthropic Claude 3.5 Sonnet |
-| Database | Supabase (PostgreSQL) |
+| Backend | Python 3.11+, Flask + SQLAlchemy |
+| AI | Groq, OpenAI, Google Gemini |
+| Database | Supabase (PostgreSQL) ou SQLite (dev) |
 | Workflows | Temporal.io |
-| Auth | Supabase Auth |
+| Auth | Supabase Auth + Firebase |
 
 ---
 
-## Quick Start
+## Quick Start (Recomendado)
 
 ### Pré-requisitos
-- Docker e Docker Compose
-- Conta Supabase + credenciais Google API (Gemini/Claude)
+- Python 3.11+
+- Conta Supabase + credenciais de API
 
 ### 1. Configurar .env
+
 ```bash
-cd server
+cd backend
 cp .env.example .env
-
-cd app_flutter
-cp .env.example .env
-# Edite com suas credenciais
+# Edite com suas credenciais (ou deixe DATABASE_URL vazio para SQLite local)
 ```
 
-### 2. Subir Temporal
-```bash
-cd server/docker/temporal
-docker-compose up -d
-# Aguarde 30-60s
-```
-UI: http://localhost:8080
+### 2. Rodar a API
 
-### 3. Subir Server + Worker
 ```bash
-docker-compose -f server/docker-compose.yml up -d --build
+cd backend
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+python run.py
 ```
-API: http://localhost:8000 | Docs: http://localhost:8000/docs
 
-### Parar tudo
+API: http://localhost:8000 | Health: http://localhost:8000/health
+
+### 3. Rodar o Worker (opcional, para automações)
+
 ```bash
-docker-compose -f server/docker-compose.yml down
-cd server/docker/temporal && docker-compose down
+cd backend
+.\venv\Scripts\activate
+python -m worker.server
+```
+
+### Usando o Script de Atalho
+
+```powershell
+.\run_catas.ps1          # Só API
+.\run_catas.ps1 -Mode worker   # Só Worker
+.\run_catas.ps1 -Mode all      # API + Worker
 ```
 
 ---
 
-## Rodando localmente (sem Docker)
+## Rodando o Flutter App
 
 ```bash
-cd server
-python -m venv venv
-venv\Scripts\activate  # Windows
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-### Rodando o Flutter App
-```bash
-cd app_flutter
+cd frontend
 flutter pub get
 flutter run -d chrome --web-port 52159
 ```
@@ -87,18 +84,27 @@ flutter run -d chrome --web-port 52159
 ## Estrutura
 
 ```
-/server          # FastAPI + Temporal Worker (Python)
-/app_flutter     # App Flutter (Dart)
-/docs            # Documentação Mintlify
+backend/
+├── app/              # Flask API (controllers, models, services, routes)
+├── core/             # Config, settings, error handling
+├── worker/           # Temporal Worker
+├── migrations/       # Alembic migrations
+├── run.py            # Entrypoint da API
+run_catas.ps1         # Script de atalho para startup
+frontend/             # App Flutter (Dart)
+docs/                 # Documentação Mintlify
 ```
 
-Documentação completa em `docs/`. Rode com: `mintlify dev`
+Documentação completa em `docs/`.
 
 ## Testar
 
-1. Com backend, worker e Temporal rodando, abra o app Flutter
-2. No chat: *"Agendar reunião amanhã às 10h"*
-3. O sistema interpreta, cria o plano e executa via Temporal
-4. Resultado aparece no chat com confirmação
+1. Com a API rodando, visite http://localhost:8000/health
+2. Use o Swagger em `/` para explorar os endpoints
+3. Para testes automatizados:
 
-**Ver execuções:** http://localhost:8080 (Temporal UI)
+```bash
+cd backend
+.\venv\Scripts\activate
+python -m pytest tests/ -v
+```

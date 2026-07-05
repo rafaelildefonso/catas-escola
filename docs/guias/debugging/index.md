@@ -1,69 +1,65 @@
 # Guia: Debugging & Troubleshooting
 
-> 🐛 **Quando:** Algo não funciona e você precisa descobrir porquê  
-> 🔍 **Onde:** Logs, traces, stack traces  
-> ⏱️ **Tempo:** 5 min (simples) a 2h (complexo)
+> **Quando:** Algo nao funciona e voce precisa descobrir por que  
+> **Onde:** Logs, traces, stack traces  
+> **Tempo:** 5 min (simples) a 2h (complexo)
 
 ---
 
-## 🔴 Nível 1: Problemas Comuns (5 min)
+## Nivel 1: Problemas Comuns (5 min)
 
-### App não conecta no backend
+### App nao conecta no backend
 
-**Sintoma:** "Erro de conexão" no Flutter
+**Sintoma:** "Erro de conexao" no Flutter
 
 **Checklist:**
 ```bash
-☐ Backend rodando? → curl http://localhost:8000/health
-☐ URL correta? → Ver .env do Flutter
-☐ CORS permitido? → Ver server/app/main.py
-☐ Android? → Use 10.0.2.2, não localhost
+ Backend rodando?  curl http://localhost:8000/
+ URL correta?  Ver .env do Flutter
+ CORS permitido?  Ver backend/app.py
+ Android?  Use 10.0.2.2, nao localhost
 ```
 
-### Worker não conecta no Temporal
+### Worker nao conecta
 
-**Sintoma:** "Worker connection failed"
+**Sintoma:** "Connection refused"
 
 ```bash
-# Verificar se Temporal está rodando
-docker ps
+# Verificar se Worker esta rodando
+curl http://localhost:8001/
 
-# Deve mostcar:
-# temporal, temporal-ui, postgresql, elasticsearch
-
-# Se não estiver:
-cd server/docker/temporal
-docker-compose up -d
+# Se nao estiver:
+cd backend
+python -m worker.server
 ```
 
-### Créditos não atualizam
+### Creditos nao atualizam
 
 **Sintoma:** App mostra "25000/25000" mesmo usando
 
 ```bash
-☐ Worker está rodando? (debita créditos)
-☐ Supabase Realtime ativo?
-☐ Ver console do Flutter → debugPrint dos créditos
+ Worker esta rodando? (debita creditos)
+ Ver console do Flutter  debugPrint dos creditos
 ```
 
 ---
 
-## 🟡 Nível 2: Debug Estruturado (15 min)
+## Nivel 2: Debug Estruturado (15 min)
 
 ### Fluxo de Debug API
 
 ```python
 # 1. Adicionar logs no endpoint
-@router.post("/chat/message")
-async def chat_message(request: ChatRequest):
-    print(f"[DEBUG] Received: {request.message}")
+@chat_bp.route("/api/v1/chat/message", methods=["POST"])
+def chat_message():
+    print(f"[DEBUG] Received: {request.json}")
     
-    # 2. Log após classificação
-    intent = await intent_classifier.classify(request.message)
+    # 2. Log apos classificacao
+    intent = intent_classifier.classify(message)
     print(f"[DEBUG] Intent: {intent}")
     
-    # 3. Log após extração
-    entities = await entity_extractor.extract(...)
+    # 3. Log apos extracao
+    entities = entity_extractor.extract(message, intent)
     print(f"[DEBUG] Entities: {entities}")
     
     # 4. Log antes de disparar
@@ -73,18 +69,17 @@ async def chat_message(request: ChatRequest):
 ### Fluxo de Debug Worker
 
 ```python
-# Na activity
-@activity.defn
-async def create_event(params: dict):
-    print(f"[ACTIVITY] create_event called with: {params}")
+# No modulo
+def execute(params: dict):
+    print(f"[MODULE] execute called with: {params}")
     
     try:
-        result = await _create_calendar_event(params)
-        print(f"[ACTIVITY] Success: {result}")
+        result = _execute_action(params)
+        print(f"[MODULE] Success: {result}")
         return result
     except Exception as e:
-        print(f"[ACTIVITY] Error: {str(e)}")
-        print(f"[ACTIVITY] Traceback: {traceback.format_exc()}")
+        print(f"[MODULE] Error: {str(e)}")
+        print(f"[MODULE] Traceback: {traceback.format_exc()}")
         raise
 ```
 
@@ -111,40 +106,26 @@ Future<void> sendMessage(String text) async {
 
 ---
 
-## 🟠 Nível 3: Ferramentas Avançadas
+## Nivel 3: Ferramentas Avancadas
 
-### 1. Temporal Web UI
-
-**URL:** http://localhost:8080
-
-**O que ver:**
-- Workflows em execução
-- Histórico de execuções
-- Erros e retries
-- Detalhes de cada activity
-
-**Dica:** Filtre por `Workflow ID` ou `Workflow Type`
-
-### 2. Supabase Dashboard
+### 1. Supabase Dashboard
 
 **URL:** https://app.supabase.io
 
 **O que verificar:**
-- **Table Editor:** Dados estão sendo salvos?
-- **SQL Editor:** Queries estão funcionando?
-- **Logs:** Erros de RLS ou conexão
-- **Realtime:** Canais estão ativos?
+- **Table Editor:** Dados estao sendo salvos?
+- **SQL Editor:** Queries estao funcionando?
+- **Logs:** Erros de conexao
 
-### 3. API Swagger
+### 2. API Browser
 
-**URL:** http://localhost:8000/docs
+**URL:** http://localhost:8000/
 
 **Teste endpoints:**
-- `/health` → Status do servidor
-- `/chat/message` → Pipeline de IA
-- `/integrations` → OAuth tokens
+- `/`  Informacoes da API
+- `/health`  Status do servidor
 
-### 4. Flutter DevTools
+### 3. Flutter DevTools
 
 **Comando:** `flutter devtools`
 
@@ -155,9 +136,9 @@ Future<void> sendMessage(String text) async {
 
 ---
 
-## 🔵 Nível 4: Problemas Específicos
+## Nivel 4: Problemas Especificos
 
-### "IA não entende o comando"
+### "IA nao entende o comando"
 
 **Debug:**
 ```python
@@ -170,64 +151,59 @@ print(f"[AI] Parsed entities: {entities}")
 **Teste isolado:**
 ```python
 # Criar script de teste
-from app.services.intent_classifier import IntentClassifier
+from services.intent_classifier import IntentClassifier
 
-async def test():
+def test():
     classifier = IntentClassifier()
-    result = await classifier.classify_intent(
-        "Marcar reunião amanhã às 14h",
+    result = classifier.classify_intent(
+        "Marcar reuniao amanha as 14h",
         []
     )
     print(result)
-
-import asyncio
-asyncio.run(test())
 ```
 
-### "Automação não executa"
+### "Automacao nao executa"
 
 **Verificar:**
 ```
-1. Intent foi classificado como ação (não "conversation")?
+1. Intent foi classificado como acao (nao "conversation")?
 2. automation_id foi gerado?
-3. Worker está rodando?
-4. Temporal recebeu o workflow?
-5. Activity foi chamada?
+3. Worker esta rodando?
+4. Modulo foi chamado?
 ```
 
 **Logs para procurar:**
 ```bash
-# No servidor API
+# No backend
 "Triggering automation: xxx"
 
 # No Worker
-"Workflow started"
-"Executing activity: xxx"
-"Activity completed"
+"Executing module: xxx"
+"Module completed"
 ```
 
 ### "OAuth falha"
 
-**Sintoma:** "Token inválido" ou "Acesso negado"
+**Sintoma:** "Token invalido" ou "Acesso negado"
 
 **Checklist:**
 ```bash
-☐ Token expirado? → Ver data de expiração
-☐ Scopes corretos? → Ver config no Google Cloud
-☐ Token criptografado? → Ver repositories/integrations.py
-☐ Refresh token válido? → Tentar refresh manual
+ Token expirado?  Ver data de expiracao
+ Scopes corretos?  Ver config no Google Cloud
+ Token criptografado?  Ver repositories/integrations.py
+ Refresh token valido?  Tentar refresh manual
 ```
 
 **Debug:**
 ```python
-# No get_user_integration.py
+# No get_user_integration
 print(f"[OAUTH] User: {user_id}")
 print(f"[OAUTH] Provider: {provider}")
 print(f"[OAUTH] Token found: {token is not None}")
 print(f"[OAUTH] Token expires: {expires_at}")
 ```
 
-### "Componente não aparece no Flutter"
+### "Componente nao aparece no Flutter"
 
 **Debug:**
 ```dart
@@ -244,60 +220,53 @@ components?.forEach((c) {
 
 **Verificar:**
 - Response inclui `components` array?
-- Cada componente tem `type` válido?
+- Cada componente tem `type` valido?
 - UI tem case para esse `type`?
 
 ---
 
-## 📊 Decision Tree
+## Decision Tree
 
 ```
 Problema
-    ↓
-┌─── Conexão? ────┐
-│  ├─ API ↓       │
-│  │   └─ curl /health
-│  │   └─ Ver .env
-│  │   └─ Ver CORS
-│  │
-│  └─ Worker ↓
-│      └─ docker ps
-│      └─ Ver TEMPORAL_HOST
-│      └─ Ver logs
-│
-└─── Lógica? ─────┐
-    ├─ IA ↓       │
-    │   └─ Log classifier
-    │   └─ Log extractor
-    │   └─ Teste isolado
-    │
-    ├─ Temporal ↓ │
-    │   └─ Temporal UI
-    │   └─ Log workflow
-    │   └─ Log activities
-    │
-    └─ Flutter ↓  │
-        └─ DevTools
-        └─ Log provider
-        └─ Log response
+    |
+    - Conexao? ----+
+    |   - API      |
+    |     - curl /health
+    |     - Ver .env
+    |     - Ver CORS
+    |
+    |   - Worker   |
+    |     - curl http://localhost:8001
+    |     - Ver logs
+    |
+    - Logica? -----+
+        - IA       |
+        - Log classifier
+        - Log extractor
+        - Teste isolado
+        |
+        - Worker   |
+        - Log modulo
+        |
+        - Flutter  |
+        - DevTools
+        - Log provider
+        - Log response
 ```
 
 ---
 
-## 🛠️ Comandos Úteis
+## Comandos Uteis
 
 ### Ver logs em tempo real
 
 ```bash
 # API
-uvicorn app.main:app --reload --log-level debug
+flask run --port 8000 --debug
 
 # Worker
-python worker/main.py 2>&1 | tee worker.log
-
-# Docker
-docker-compose logs -f temporal
-docker-compose logs -f postgresql
+python -m worker.server
 ```
 
 ### Testar endpoints
@@ -309,37 +278,35 @@ curl http://localhost:8000/health
 # Chat message
 curl -X POST http://localhost:8000/api/v1/chat/message \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <token>" \
+  -H "Authorization: Bearer dev-token" \
   -d '{"message": "test"}'
 ```
 
 ### Inspecionar banco
 
 ```bash
-# Conectar no PostgreSQL local
-docker exec -it temporal-postgresql psql -U temporal
-
-# Ou usar Supabase Dashboard SQL Editor
+# Conectar no PostgreSQL via Supabase
+# Usar Supabase Dashboard SQL Editor
 ```
 
 ---
 
-## 📝 Template de Bug Report
+## Template de Bug Report
 
 Quando abrir um issue, inclua:
 
 ```markdown
-## Descrição
+## Descricao
 O que aconteceu vs o que deveria acontecer
 
 ## Como reproduzir
-1. Vá para '...'
+1. Va para '...'
 2. Clique em '...'
 3. Veja erro
 
 ## Logs relevantes
 ```
-[paste logs aqui]
+[cole logs aqui]
 ```
 
 ## Ambiente
@@ -350,5 +317,5 @@ O que aconteceu vs o que deveria acontecer
 
 ---
 
-> ⬅️ [Voltar para Guias](../index.md)  
-> ➡️ [Nova Integração →](../nova-integracao/index.md)
+> [Voltar para Guias](../index.md)  
+> [Nova Integracao ](../nova-integracao/index.md)

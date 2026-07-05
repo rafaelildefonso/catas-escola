@@ -17,8 +17,7 @@ enum LogoId {
   googleSheets('google-sheets-icon.svg'),
   notion('notion-icon.svg'),
   whatsapp('whatsapp-icon.svg'),
-  slack('slack-icon.svg'),
-  apple('apple-icon');
+  slack('slack-icon.svg');
 
   final String filename;
   const LogoId(this.filename);
