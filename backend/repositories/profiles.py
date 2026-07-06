@@ -8,13 +8,13 @@ from models.db_models import Profile, Integration
 
 def get_user_profile(user_id: str) -> Optional[Dict]:
     try:
-        uuid_lib.UUID(str(user_id))
+        uid = uuid_lib.UUID(str(user_id))
     except (ValueError, TypeError):
         return None
 
     db = get_sync_db()
     try:
-        profile = db.query(Profile).filter(Profile.id == user_id).first()
+        profile = db.query(Profile).filter(Profile.id == uid).first()
         return profile.to_dict() if profile else None
     except Exception:
         return None
@@ -90,7 +90,7 @@ def check_and_increment_quota(user_id: str, model_requested: Optional[str] = Non
 
         db = get_sync_db()
         try:
-            db.query(Profile).filter(Profile.id == user_id).update({
+            db.query(Profile).filter(Profile.id == uuid_lib.UUID(user_id)).update({
                 "quota_used": 0,
                 "rollover_credits": new_rollover,
                 "last_quota_reset": profile_dict["last_quota_reset"],
@@ -118,11 +118,12 @@ def increment_quota_usage(user_id: str, credits_to_add: int = 1) -> Dict:
 
 
 def create_default_profile(user_id: str) -> Dict:
+    uid = uuid_lib.UUID(user_id)
     default_profile = {
-        "id": user_id,
+        "id": uid,
         "subscription_tier": "basic",
         "quota_used": 0,
-        "last_quota_reset": datetime.now(timezone.utc).isoformat(),
+        "last_quota_reset": datetime.now(timezone.utc),
     }
 
     db = get_sync_db()
@@ -145,7 +146,7 @@ def update_subscription_tier(user_id: str, tier: str) -> Optional[Dict]:
 
     db = get_sync_db()
     try:
-        profile = db.query(Profile).filter(Profile.id == user_id).first()
+        profile = db.query(Profile).filter(Profile.id == uuid_lib.UUID(user_id)).first()
         if not profile:
             print(f"[Stripe] WARNING: Could not find profile for user_id={user_id} to update tier.")
             return None
@@ -165,7 +166,7 @@ def update_subscription_tier(user_id: str, tier: str) -> Optional[Dict]:
 def update_profile_info(user_id: str, updates: Dict) -> Optional[Dict]:
     db = get_sync_db()
     try:
-        profile = db.query(Profile).filter(Profile.id == user_id).first()
+        profile = db.query(Profile).filter(Profile.id == uuid_lib.UUID(user_id)).first()
         if not profile:
             return None
 
@@ -182,8 +183,9 @@ def update_profile_info(user_id: str, updates: Dict) -> Optional[Dict]:
 def delete_user_data(user_id: str):
     db = get_sync_db()
     try:
-        db.query(Integration).filter(Integration.user_id == user_id).delete()
-        db.query(Profile).filter(Profile.id == user_id).delete()
+        uid = uuid_lib.UUID(user_id)
+        db.query(Integration).filter(Integration.user_id == uid).delete()
+        db.query(Profile).filter(Profile.id == uid).delete()
         db.flush()
     finally:
         db.close()

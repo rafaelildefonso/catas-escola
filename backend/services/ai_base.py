@@ -51,7 +51,7 @@ class AIBase:
                     parsed_json = json.loads(clean)
                     result.update(parsed_json)
                 except json.JSONDecodeError:
-                    print(f"❌ AIBase: Failed to parse JSON: {clean}")
+                    print(f"AIBase: Failed to parse JSON: {clean}")
                     # Retornará apenas {"_system_usage": ...} no caso de erro de parse, evitando quebras
             else:
                 result["response_text"] = raw_text
@@ -59,5 +59,5 @@ class AIBase:
             return result
             
         except Exception as e:
-            print(f"❌ AIBase: Error calling AI provider: {e}")
+            print(f"AIBase: Error calling AI provider: {e}")
             raise

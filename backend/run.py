@@ -1,16 +1,24 @@
 import os
+import sys
 import logging
+
+# Garantir UTF-8 no Windows para evitar erros de encoding com emoji
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 from app import create_app, init_firebase
 from app.extensions import db
+from models.db_models import Base
 
 app = create_app()
 
 with app.app_context():
     db.create_all()
+    Base.metadata.create_all(db.engine)
     logger.info("Tabelas do banco verificadas/criadas.")
 
 init_firebase()

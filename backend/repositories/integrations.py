@@ -1,5 +1,6 @@
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict
+import uuid as uuid_lib
 
 from services.database import get_sync_db
 from models.db_models import Integration
@@ -17,7 +18,7 @@ def get_user_integrations(user_id: str) -> List[Dict]:
     try:
         rows = (
             db.query(Integration)
-            .filter(Integration.user_id == user_id)
+            .filter(Integration.user_id == uuid_lib.UUID(user_id))
             .all()
         )
         data = [r.to_dict() for r in rows]
@@ -35,7 +36,7 @@ def get_integration(user_id: str, provider: str) -> Optional[Dict]:
         integration_obj = (
             db.query(Integration)
             .filter(
-                Integration.user_id == user_id,
+                Integration.user_id == uuid_lib.UUID(user_id),
                 Integration.provider == provider,
             )
             .first()
@@ -99,8 +100,9 @@ def save_integration(
     expires_at: Optional[str] = None,
     settings: Optional[Dict] = None
 ) -> Dict:
+    uid = uuid_lib.UUID(user_id)
     integration_data = {
-        "user_id": user_id,
+        "user_id": uid,
         "provider": provider,
         "access_token": encrypt_value(access_token),
         "refresh_token": encrypt_value(refresh_token) if refresh_token else None,
@@ -128,7 +130,7 @@ def save_integration(
         result = (
             db.query(Integration)
             .filter(
-                Integration.user_id == user_id,
+                Integration.user_id == uid,
                 Integration.provider == provider,
             )
             .first()
@@ -145,7 +147,7 @@ def delete_integration(user_id: str, provider: str) -> None:
     db = get_sync_db()
     try:
         db.query(Integration).filter(
-            Integration.user_id == user_id,
+            Integration.user_id == uuid_lib.UUID(user_id),
             Integration.provider == provider,
         ).delete()
         db.flush()

@@ -32,7 +32,7 @@ class GeminiProvider(AIProvider):
                                     }
                                 })
                     except Exception as e:
-                        print(f"⚠️ GeminiProvider: Error downloading attachment: {e}")
+                        print(f"GeminiProvider: Error downloading attachment: {e}")
 
         content_parts.append({"text": user_content})
 
@@ -71,7 +71,7 @@ class GeminiProvider(AIProvider):
             response = await client.post(url, json=payload, headers=headers)
             
             if response.status_code != 200:
-                print(f"❌ GeminiProvider Error ({response.status_code}): {response.text}")
+                print(f"GeminiProvider Error ({response.status_code}): {response.text}")
                 response.raise_for_status()
                 
             data = response.json()

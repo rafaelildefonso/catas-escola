@@ -1,3 +1,4 @@
+import uuid as uuid_lib
 from datetime import datetime, timezone
 from typing import Optional, List, Dict
 
@@ -19,7 +20,7 @@ def create_session(user_id: str, title: Optional[str] = None, is_onboarding: boo
     db = get_sync_db()
     try:
         session = ChatSession(
-            user_id=user_id,
+            user_id=uuid_lib.UUID(user_id),
             title=title or "Nova Conversa",
             is_onboarding=is_onboarding,
         )
@@ -37,7 +38,7 @@ def get_user_sessions(user_id: str, limit: int = 50, offset: int = 0) -> List[Di
     try:
         sessions = (
             db.query(ChatSession)
-            .filter(ChatSession.user_id == user_id)
+            .filter(ChatSession.user_id == uuid_lib.UUID(user_id))
             .order_by(ChatSession.updated_at.desc())
             .offset(offset)
             .limit(limit)
@@ -71,8 +72,8 @@ def get_session(session_id: str, user_id: str) -> Optional[Dict]:
         session = (
             db.query(ChatSession)
             .filter(
-                ChatSession.id == session_id,
-                ChatSession.user_id == user_id,
+                ChatSession.id == uuid_lib.UUID(session_id),
+                ChatSession.user_id == uuid_lib.UUID(user_id),
             )
             .first()
         )
@@ -92,7 +93,7 @@ def get_session_messages(session_id: str, user_id: str, limit: int = 100, offset
     try:
         messages = (
             db.query(Message)
-            .filter(Message.session_id == session_id)
+            .filter(Message.session_id == uuid_lib.UUID(session_id))
             .order_by(Message.created_at.asc())
             .offset(offset)
             .limit(limit)
@@ -117,7 +118,7 @@ def save_message(
     db = get_sync_db()
     try:
         msg = Message(
-            session_id=session_id,
+            session_id=uuid_lib.UUID(session_id),
             role=role,
             content=content,
             metadata_=metadata or {},
@@ -142,7 +143,7 @@ def update_message(
 ) -> Dict:
     db = get_sync_db()
     try:
-        msg = db.query(Message).filter(Message.id == message_id).first()
+        msg = db.query(Message).filter(Message.id == uuid_lib.UUID(message_id)).first()
         if not msg:
             raise RuntimeError(f"Mensagem {message_id} não encontrada")
 
@@ -169,7 +170,7 @@ def update_session_title(session_id: str, user_id: str, title: str) -> Dict:
 
     db = get_sync_db()
     try:
-        s = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        s = db.query(ChatSession).filter(ChatSession.id == uuid_lib.UUID(session_id)).first()
         if not s:
             raise ValueError(f"Sessão {session_id} não encontrada")
         s.title = title
@@ -185,7 +186,7 @@ def update_session_title(session_id: str, user_id: str, title: str) -> Dict:
 def _update_session_updated_at(session_id: str):
     db = get_sync_db()
     try:
-        s = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+        s = db.query(ChatSession).filter(ChatSession.id == uuid_lib.UUID(session_id)).first()
         if s:
             s.updated_at = datetime.now(timezone.utc)
             db.flush()
@@ -203,8 +204,8 @@ def delete_session(session_id: str, user_id: str) -> bool:
     db = get_sync_db()
     try:
         db.query(ChatSession).filter(
-            ChatSession.id == session_id,
-            ChatSession.user_id == user_id,
+            ChatSession.id == uuid_lib.UUID(session_id),
+            ChatSession.user_id == uuid_lib.UUID(user_id),
         ).delete()
         db.flush()
         return True
@@ -234,7 +235,7 @@ def insert_message(
     db = get_sync_db()
     try:
         msg = Message(
-            session_id=session_id,
+            session_id=uuid_lib.UUID(session_id),
             role=role,
             content=content,
             metadata_=metadata or {},

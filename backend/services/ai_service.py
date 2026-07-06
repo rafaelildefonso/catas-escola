@@ -49,7 +49,7 @@ class AIService:
                         prev_intent = msg["metadata"].get("intent")
                         if prev_intent and prev_intent != "conversation":
                             intent = prev_intent
-                            print(f"🔄 [AIService] Intenção herdada do histórico: {intent}")
+                            print(f"[AIService] Intenção herdada do histórico: {intent}")
                             break
 
             # 1.5 - INJETAR CONTEXTO DE ONBOARDING (INDUSTRY/ROLE) NO SYSTEM PROMPT
@@ -65,7 +65,7 @@ class AIService:
                             user_context_info = f"\n[USER CONTEXT]\nIndustry: {industry}\nRole: {role}\n"
                             print(f"👤 [AIService] Contexto do usuário injetado: {industry} | {role}")
                 except Exception as e:
-                    print(f"⚠️ Erro ao buscar perfil para contexto: {e}")
+                    print(f"Erro ao buscar perfil para contexto: {e}")
 
             # 2. Extract entities if it's an action
             entities = {}
@@ -77,7 +77,7 @@ class AIService:
                             prev_entities = msg["metadata"].get("entities", {})
                             if prev_entities:
                                 entities = prev_entities.copy()
-                                print(f"🔄 [AIService] Entidades herdadas do histórico: {entities}")
+                                print(f"[AIService] Entidades herdadas do histórico: {entities}")
                                 break
                 else:
                     entities = await self.entity_extractor.extract_entities(text, intent, history)
@@ -90,20 +90,20 @@ class AIService:
                 contacts_text = text.replace('[CONTATOS SELECIONADOS]', '').strip()
                 contacts_list = [c.strip() for c in contacts_text.split(',') if c.strip()]
                 if contacts_list:
-                    print(f"📋 [AIService] Extraindo contatos da resposta do componente: {contacts_list}")
+                    print(f"[AIService] Extraindo contatos da resposta do componente: {contacts_list}")
                     entities['attendees'] = contacts_list
                     # Se já temos data/hora/title mas faltava attendees, agora completamos
                     if entities.get('date') and entities.get('time') and entities.get('title'):
-                        print("✅ [AIService] Entidades completas após contatos!")
+                        print("[AIService] Entidades completas após contatos!")
             
             elif text.startswith('[APROVADO]'):
-                print("✅ [AIService] Ação aprovada pelo usuário")
+                print("[AIService] Ação aprovada pelo usuário")
                 # Garantir que entities tenham dados mínimos se estiverem vazios
                 if not entities.get('title') and len(history) > 0:
                     # Tentar recuperar título do histórico anterior
                     pass  # O prompt vai instruir a IA a usar entities existentes
             elif text.startswith('[RECUSADO]'):
-                print("❌ [AIService] Ação recusada pelo usuário")
+                print("[AIService] Ação recusada pelo usuário")
                 # CRITICAL: Explicitly set action_triggered to false to prevent execution
                 action_triggered = False
                 # Clear action_details to prevent execution with stale data
@@ -114,7 +114,7 @@ class AIService:
             elif text.startswith('[INTEGRAÇÃO ATIVADA]') or text.startswith('[INTEGRAÇÃO CONECTADA]'):
                 # Usuário ativou/conectou uma integração - força a IA a continuar o fluxo original
                 # sem pedir para conectar novamente
-                print("🔗 [AIService] Integração ativada/conectada pelo usuário")
+                print("[AIService] Integração ativada/conectada pelo usuário")
                 # A mensagem indica que a integração está disponível - a IA deve continuar
                 # Forçamos intent como action para garantir o processamento
                 if intent == "conversation":
@@ -124,9 +124,9 @@ class AIService:
             # 3. Build action details (payload for AutomationWorkflow) if it's an action
             action_details = {}
             if intent != "conversation":
-                print(f"🔍 [AIService] Intent: {intent} | Entities: {entities}")
+                print(f"[AIService] Intent: {intent} | Entities: {entities}")
                 action_details = self.payload_builder.build_payload(intent, entities)
-                print(f"📦 [AIService] Final Plan: {json.dumps(action_details)}")
+                print(f"[AIService] Final Plan: {json.dumps(action_details)}")
 
             # 4. Generate response using standardized AI call
             components_schema_prompt = UIComponentLibrary.get_components_schema()
@@ -173,7 +173,7 @@ class AIService:
             Com base em feedbacks anteriores, o usuário prefere: {hints_text}.
             """
                 except Exception as ex:
-                    print(f"⚠️ Erro ao processar preferências do usuário: {ex}")
+                    print(f"Erro ao processar preferências do usuário: {ex}")
             
             # STATIC PART: Candidates for context caching
             base_instructions = """
@@ -281,25 +281,25 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
             usage = response_data.get("_system_usage", {})
             total_tokens = usage.get("total_tokens", 0)
             
-            print(f"📊 [Credits] Usage data: {usage}, total_tokens: {total_tokens}")
+            print(f"[Credits] Usage data: {usage}, total_tokens: {total_tokens}")
             
             credits_cost = credit_service.calculate_credits(total_tokens)
             
             # Minimum charge of 1 credit per successful AI interaction
             if credits_cost == 0 and total_tokens == 0:
                 credits_cost = 1
-                print("📊 [Credits] No token data from provider, applying minimum charge of 1 credit")
+                print("[Credits] No token data from provider, applying minimum charge of 1 credit")
             
-            print(f"📊 [Credits] Calculated cost: {credits_cost} credits for user {user_id}")
+            print(f"[Credits] Calculated cost: {credits_cost} credits for user {user_id}")
             
             # Update user quota if user_id is provided
             if user_id and credits_cost > 0:
                 try:
                     from repositories import profiles
                     profiles.increment_quota_usage(user_id, credits_to_add=credits_cost)
-                    print(f"✅ [Credits] Debited {credits_cost} credits from user {user_id}")
+                    print(f"[Credits] Debited {credits_cost} credits from user {user_id}")
                 except Exception as ex:
-                    print(f"❌ [Credits] Error updating credits: {ex}")
+                    print(f"[Credits] Error updating credits: {ex}")
 
             response_text = response_data.get("response_text", "")
             status = response_data.get("status", "idle")
@@ -338,7 +338,7 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
                                 filtered_components.append(comp)
                         
                         if len(filtered_components) < len(components):
-                            print(f"🔄 [AIService] Filtrado contact_select duplicado. Componentes restantes: {len(filtered_components)}")
+                            print(f"[AIService] Filtrado contact_select duplicado. Componentes restantes: {len(filtered_components)}")
                             components = filtered_components
 
             # Determine if action is actually confirmed and triggered
@@ -393,5 +393,5 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
             
             return title or "Nova Conversa"
         except Exception as e:
-            print(f"⚠️ Erro ao gerar título inteligente: {e}")
+            print(f"Erro ao gerar título inteligente: {e}")
             return "Nova Conversa"

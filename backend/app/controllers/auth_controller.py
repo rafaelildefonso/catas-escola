@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import uuid4, UUID as UUIDType
 from datetime import datetime, timezone
 
 from flask import Blueprint, request, jsonify
@@ -36,7 +36,7 @@ def signup():
     db.session.add(user)
 
     profile = Profile(
-        id=user_id,
+        id=UUIDType(user_id),
         subscription_tier="basic",
         quota_used=0,
         last_quota_reset=datetime.now(timezone.utc),
@@ -65,9 +65,9 @@ def login():
     if not user or not user.check_password(password):
         return jsonify({"detail": "Email ou senha inválidos."}), 401
 
-    profile = Profile.buscar_por_id(user.id)
+    profile = Profile.buscar_por_id(UUIDType(user.id))
     if not profile:
-        profile = Profile(id=user.id, subscription_tier="basic")
+        profile = Profile(id=UUIDType(user.id), subscription_tier="basic")
         db.session.add(profile)
         db.session.commit()
 
@@ -90,9 +90,9 @@ def me():
     if not user:
         return jsonify({"detail": "Usuário não encontrado"}), 404
 
-    profile = Profile.buscar_por_id(user_id)
+    profile = Profile.buscar_por_id(UUIDType(user_id))
     if not profile:
-        profile = Profile(id=user_id, subscription_tier="basic")
+        profile = Profile(id=UUIDType(user_id), subscription_tier="basic")
         db.session.add(profile)
         db.session.commit()
 

@@ -49,7 +49,7 @@ class GroqProvider(AIProvider):
             response = await client.post(self.api_url, json=payload, headers=headers)
             
             if response.status_code != 200:
-                print(f"❌ GroqProvider Error ({response.status_code}): {response.text}")
+                print(f"GroqProvider Error ({response.status_code}): {response.text}")
                 response.raise_for_status()
                 
             data = response.json()

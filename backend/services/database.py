@@ -1,3 +1,4 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from core.config import settings
@@ -5,13 +6,22 @@ from core.config import settings
 _engine = None
 _SessionLocal = None
 
+_INSTANCE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "instance")
+
+
+def _get_db_url():
+    db_url = settings.DATABASE_URL
+    if db_url:
+        return db_url
+    # Se for SQLite relativo, aponta para instance/ igual ao Flask-SQLAlchemy
+    return f"sqlite:///{os.path.join(_INSTANCE_DIR, 'catas_dev.db').replace(os.sep, '/')}"
+
 
 def _get_engine():
     global _engine
     if _engine is None:
-        db_url = settings.DATABASE_URL or "sqlite:///catas_dev.db"
         _engine = create_engine(
-            db_url,
+            _get_db_url(),
             pool_size=10,
             max_overflow=20,
             pool_pre_ping=True,
