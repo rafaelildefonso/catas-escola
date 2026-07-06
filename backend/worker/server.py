@@ -1,7 +1,7 @@
 """
 Worker HTTP server.
-Recebe requisições de execução do catas_server, roda o AutomationRunner
-e atualiza o resultado no Supabase.
+Recebe requisi����es de execu����o do catas_server, roda o AutomationRunner
+e atualiza o resultado no banco de dados.
 """
 import asyncio
 import logging

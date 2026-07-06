@@ -1,3 +1,4 @@
+from app.controllers.auth_controller import auth_bp
 from app.controllers.profile_controller import ProfileController
 from app.controllers.chat_session_controller import ChatSessionController
 from app.controllers.message_controller import MessageController
@@ -22,11 +23,22 @@ def _rota(app, url, methods, controller_func, endpoint):
 
 
 def registrar_rotas(app):
+    app.register_blueprint(auth_bp)
+
+    # Blueprints legados (chat, chatbot, feedback)
+    from controllers.chat import chat_bp
+    from controllers.chatbot import chatbot_bp
+    from controllers.feedback import feedback_bp
+    app.register_blueprint(chat_bp)
+    app.register_blueprint(chatbot_bp, url_prefix="/api/v1/chat")
+    app.register_blueprint(feedback_bp)
     _rota(app, "/api/v1/profiles", ["GET"], ProfileController.listar, "profile.listar")
     _rota(app, "/api/v1/profiles/<id>", ["GET"], ProfileController.buscar_por_id, "profile.buscar")
     _rota(app, "/api/v1/profiles", ["POST"], ProfileController.criar, "profile.criar")
     _rota(app, "/api/v1/profiles/<id>", ["PUT"], ProfileController.atualizar, "profile.atualizar")
+    _rota(app, "/api/v1/profiles/me", ["PUT"], ProfileController.atualizar_me, "profile.atualizar_me")
     _rota(app, "/api/v1/profiles/<id>", ["DELETE"], ProfileController.deletar, "profile.deletar")
+    _rota(app, "/api/v1/profiles/me", ["DELETE"], ProfileController.deletar_me, "profile.deletar_me")
 
     _rota(app, "/api/v1/chat-sessions", ["GET"], ChatSessionController.listar, "chat_session.listar")
     _rota(app, "/api/v1/chat-sessions/<id>", ["GET"], ChatSessionController.buscar_por_id, "chat_session.buscar")

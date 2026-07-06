@@ -1,35 +1,29 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../core/app_config.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:catas/models/user_model.dart';
-import '../data/user_repository.dart';
 import '../models/user_profile.dart';
 import '../providers/locale_provider.dart';
+import 'package:http/http.dart' as http;
+import '../services/token_holder.dart';
 
 class AuthProvider extends ChangeNotifier {
-  late final SupabaseClient _supabase;
   final UserRepository _userRepository = UserRepository();
   final LocaleProvider? _localeProvider;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
+
   bool _isAuthenticated = false;
   UserModel? _currentUser;
   UserProfile? _profile;
   bool _isLoading = true;
   final bool _isDemoMode;
-  
-  String get _redirectUrl => kIsWeb 
-      ? Uri.base.origin 
-      : 'io.supabase.flutter://callback';
 
-  // Flag que indica se o app acabou de inicializar (primeiros segundos).
-  // Usada para evitar logout forçado por 401 transiente durante restauração
-  // do token Supabase no startup.
   bool _isInitializing = true;
-
   bool _onboardingPrefsLoaded = false;
   bool _onboardingCompleted = false;
 
@@ -54,10 +48,15 @@ class AuthProvider extends ChangeNotifier {
   int? get quotaRemaining => _profile?.quotaRemaining;
   String? get subscriptionTier => _profile?.subscriptionTier;
 
-  AuthProvider({LocaleProvider? localeProvider}) : _localeProvider = localeProvider, _isDemoMode = AppConfig.isDemoMode {
-    if (!_isDemoMode) {
-      _supabase = Supabase.instance.client;
-    }
+  String? get _token {
+    return _tokenCache;
+  }
+
+  String? _tokenCache;
+
+  AuthProvider({LocaleProvider? localeProvider})
+      : _localeProvider = localeProvider,
+        _isDemoMode = AppConfig.isDemoMode {
     _initAuth();
   }
 
@@ -92,7 +91,6 @@ class AuthProvider extends ChangeNotifier {
 
     await refreshOnboardingState();
 
-    // 0. Carregar perfil do cache local (Quota Cache - Step 03)
     try {
       final prefs = await SharedPreferences.getInstance();
       final profileJson = prefs.getString('user_profile_cache');
@@ -108,89 +106,64 @@ class AuthProvider extends ChangeNotifier {
       debugPrint("⚠️ Erro ao carregar cache de perfil: $e");
     }
 
-    // Verifica se já existe uma sessão ativa ANTES de registrar o listener.
-    final existingSession = _supabase.auth.currentSession;
-    if (existingSession != null) {
-      _isAuthenticated = true;
-      _currentUser = UserModel.fromSupabase(existingSession.user);
-      _isLoading = false;
-      notifyListeners();
-      debugPrint("🚀 Sessão Supabase existente encontrada no startup.");
-    } else {
-      debugPrint("🔍 Nenhuma sessão imediata. Aguardando listener de auth...");
-      // No Web, damos um pequeno fôlego para o Supabase recuperar a sessão dos cookies
-      // antes de liberar o router, evitando redirecionamento precoce para o Login.
-      if (kIsWeb) {
-        await Future.delayed(const Duration(milliseconds: 1000));
-        if (_supabase.auth.currentSession != null) {
-           _isLoading = false;
-           notifyListeners();
-           return;
-        }
-      }
+    _tokenCache = await _secureStorage.read(key: 'jwt_token');
+    if (_tokenCache != null) {
+      await _loadUserFromToken(_tokenCache!);
     }
 
-    // Escutar mudanças futuras no estado de autenticação
-    _supabase.auth.onAuthStateChange.listen((data) {
-      final session = data.session;
-      _isAuthenticated = session != null;
-      _currentUser = session?.user != null
-          ? UserModel.fromSupabase(session!.user)
-          : null;
-      
-      if (!_isAuthenticated) {
-        _profile = null;
-        _clearProfileCache();
-      }
-      
-      _isLoading = false;
-      notifyListeners();
-
-      if (_isAuthenticated) {
-        refreshProfile();
-      }
-    });
-
-    // Após a janela de inicialização (3s), qualquer 401 subsequente
-    // já pode ser tratado como sessão genuinamente inválida.
     await Future.delayed(const Duration(seconds: 3));
     _isInitializing = false;
 
-    // Setup realtime listener para atualizações de perfil (créditos)
-    _setupProfileRealtimeListener();
+    await _checkServerAndAuth();
   }
 
-  void _setupProfileRealtimeListener() {
-    if (_isDemoMode) return;
-    final userId = _supabase.auth.currentUser?.id;
-    if (userId == null) return;
-
-    _supabase
-        .channel('profile_changes')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'profiles',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'id',
-            value: userId,
-          ),
-          callback: (payload) {
-            debugPrint('🔄 Perfil atualizado via realtime - recarregando...');
-            refreshProfile();
-          },
-        )
-        .subscribe();
+  Future<void> _checkServerAndAuth() async {
+    if (_tokenCache == null) {
+      _isLoading = false;
+      notifyListeners();
+      return;
+    }
+    await _loadUserFromToken(_tokenCache!);
   }
 
-  /// Atualiza a cota localmente e notifica ouvintes (Quota Sync - Step 02)
+  Future<void> _loadUserFromToken(String token) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/auth/me'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        _currentUser = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+        _profile = UserProfile.fromJson(data['profile'] as Map<String, dynamic>);
+        _onboardingCompleted = _profile!.onboardingCompleted;
+        _onboardingPrefsLoaded = true;
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            'user_profile_cache', jsonEncode(_profile!.toMap()));
+        await prefs.setBool('onboarding_completed', _onboardingCompleted);
+
+        _isAuthenticated = true;
+        _isLoading = false;
+        TokenHolder().token = token;
+        notifyListeners();
+        debugPrint("🚀 Usuário carregado com sucesso via token.");
+      } else {
+        await logout();
+      }
+    } catch (e) {
+      debugPrint("⚠️ Erro ao carregar usuário: $e");
+      await logout();
+    }
+  }
+
   void updateQuota(int used, int? limit) {
     if (_profile == null) return;
-    
-    // Mapping local limit if not provided (keeping consistency with UserProfile.fromJson)
+
     int finalLimit = limit ?? _profile!.monthlyQuotaLimit;
-    
+
     _profile = UserProfile(
       id: _profile!.id,
       email: _profile!.email,
@@ -204,86 +177,129 @@ class AuthProvider extends ChangeNotifier {
       role: _profile!.role,
       onboardingCompleted: _profile!.onboardingCompleted,
     );
-    
+
     notifyListeners();
     debugPrint("📊 [AuthProvider] Cota atualizada manualmente: $used/$finalLimit");
   }
 
-  Future<void> _clearProfileCache() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('user_profile_cache');
-    } catch (_) {}
+  Future<void> logout() async {
+    _isAuthenticated = false;
+    _currentUser = null;
+    _profile = null;
+    _tokenCache = null;
+    TokenHolder().token = null;
+    await _secureStorage.delete(key: 'jwt_token');
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_profile_cache');
+
+    _isLoading = false;
+    notifyListeners();
   }
 
-  Future<void> refreshProfile({int retries = 3}) async {
-    if (!_isAuthenticated || _isDemoMode) return;
+  Future<bool> loginWithEmail(String email, String password) async {
+    if (_isDemoMode) return true;
+    _isLoading = true;
+    notifyListeners();
 
-    final session = _supabase.auth.currentSession;
-    if (session == null) return;
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
 
-    for (int i = 0; i < retries; i++) {
-      try {
-        final response = await _userRepository.getMe();
-        final data = response['data'] as Map<String, dynamic>?;
-        if (data != null) {
-          _profile = UserProfile.fromJson(data);
-          _onboardingCompleted = _profile!.onboardingCompleted;
-          _onboardingPrefsLoaded = true;
-          
-          // Load language from database
-          final languageCode = _profile?.language;
-          if (languageCode != null && languageCode.isNotEmpty) {
-            try {
-              await _localeProvider?.loadLocaleFromDatabase(languageCode);
-            } catch (e) {
-              debugPrint("⚠️ Erro ao carregar idioma do banco: $e");
-            }
-          }
-          
-          // Salvar no cache local (Quota Cache - Step 03)
-          try {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString('user_profile_cache', jsonEncode(_profile!.toMap()));
-            await prefs.setBool('onboarding_completed', _onboardingCompleted);
-          } catch (e) {
-            debugPrint("⚠️ Erro ao salvar cache de perfil ou onboarding prefs: $e");
-          }
-
-          notifyListeners();
-          return;
-        }
-      } catch (e) {
-        final errorStr = e.toString();
-        debugPrint(
-          "Error fetching profile: $errorStr. Retries left: ${retries - i - 1}",
-        );
-
-        // Se o erro for 401 ou 403, verifica se ainda estamos no período de
-        // inicialização. Um 401 durante o startup é quase sempre transitório
-        // (token ainda sendo restaurado pelo Supabase) e NÃO deve causar logout.
-        if (errorStr.contains("401") || errorStr.contains("403")) {
-          if (_isInitializing) {
-            // Durante a inicialização: aguarda e tenta novamente (não faz logout).
-            debugPrint(
-              "Auth 401 during initialization window — retrying, NOT logging out.",
-            );
-            if (i < retries - 1) {
-              await Future.delayed(const Duration(seconds: 2));
-            }
-            continue;
-          } else {
-            // Fora da janela de inicialização: sessão genuinamente inválida.
-            debugPrint("Auth failure detected (401/403). Forcing logout.");
-            await logout();
-            return;
-          }
-        }
-
-        if (i < retries - 1) {
-          await Future.delayed(const Duration(seconds: 2));
-        }
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        await _saveSession(data['token'] as String, data);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        final error = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint('Email Sign-In Error: ${error['detail']}');
+        _isLoading = false;
+        notifyListeners();
+        return false;
       }
+    } catch (e) {
+      debugPrint('Email Sign-In Error: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<bool> signUpWithEmail(String email, String password) async {
+    if (_isDemoMode) return true;
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/auth/signup'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        await _saveSession(data['token'] as String, data);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        final error = jsonDecode(response.body) as Map<String, dynamic>;
+        debugPrint('Email Sign-Up Error: ${error['detail']}');
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      debugPrint('Email Sign-Up Error: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  Future<void> _saveSession(String token, Map<String, dynamic> data) async {
+    _tokenCache = token;
+    TokenHolder().token = token;
+    await _secureStorage.write(key: 'jwt_token', value: token);
+
+    _isAuthenticated = true;
+    _currentUser = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+    _profile = UserProfile.fromJson(data['profile'] as Map<String, dynamic>);
+    _onboardingCompleted = _profile!.onboardingCompleted;
+    _onboardingPrefsLoaded = true;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        'user_profile_cache', jsonEncode(_profile!.toMap()));
+    await prefs.setBool('onboarding_completed', _onboardingCompleted);
+  }
+
+  Future<void> refreshProfile() async {
+    if (!_isAuthenticated || _isDemoMode || _tokenCache == null) return;
+
+    try {
+      final response = await _userRepository.getMe(_tokenCache!);
+      final data = response['data'] as Map<String, dynamic>?;
+      if (data != null) {
+        _profile = UserProfile.fromJson(data);
+        _onboardingCompleted = _profile!.onboardingCompleted;
+        _onboardingPrefsLoaded = true;
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+            'user_profile_cache', jsonEncode(_profile!.toMap()));
+        await prefs.setBool('onboarding_completed', _onboardingCompleted);
+
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("⚠️ Erro ao atualizar perfil: $e");
     }
   }
 
@@ -294,7 +310,7 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    
+
     try {
       final prefs = await SharedPreferences.getInstance();
       _onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
@@ -320,10 +336,10 @@ class AuthProvider extends ChangeNotifier {
 
     _onboardingCompleted = true;
 
-    if (_isAuthenticated && !_isDemoMode) {
+    if (_isAuthenticated && !_isDemoMode && _tokenCache != null) {
       try {
         debugPrint('🔄 Atualizando perfil no backend: industry=$industry, role=$role, tools=$tools');
-        await _userRepository.updateMe({
+        await _userRepository.updateMe(_tokenCache!, {
           'industry': industry,
           'role': role,
           'onboarding_completed': true,
@@ -339,102 +355,12 @@ class AuthProvider extends ChangeNotifier {
       }
     }
 
-    // Notifica ouvintes (incluindo GoRouter) APÓS tudo estar atualizado
     notifyListeners();
     debugPrint('🔔 AuthProvider notificado: onboardingCompleted=$_onboardingCompleted, profile.industry=${_profile?.industry}');
   }
 
-  Future<bool> signInWithMagicLink(String email) async {
-    if (_isDemoMode) return true;
-    _isLoading = true;
-    notifyListeners();
-    try {
-      await _supabase.auth.signInWithOtp(
-        email: email.trim(),
-        emailRedirectTo: _redirectUrl,
-      );
-      _isLoading = false;
-      notifyListeners();
-      return true;
-    } catch (e) {
-      debugPrint('Magic link error: $e');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> loginWithEmail(String email, String password) async {
-    if (_isDemoMode) return true;
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final response = await _supabase.auth.signInWithPassword(
-        email: email,
-        password: password,
-      );
-
-      if (response.user != null && response.session != null) {
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    } catch (e) {
-      debugPrint('Email Sign-In Error: $e');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<bool> signUpWithEmail(String email, String password) async {
-    if (_isDemoMode) return true;
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      final response = await _supabase.auth.signUp(
-        email: email,
-        password: password,
-      );
-
-      if (response.user != null) {
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    } catch (e) {
-      debugPrint('Email Sign-Up Error: $e');
-      _isLoading = false;
-      notifyListeners();
-      return false;
-    }
-  }
-
-  Future<void> logout() async {
-    if (_isDemoMode) {
-      _isAuthenticated = false;
-      _currentUser = null;
-      notifyListeners();
-      return;
-    }
-    await _supabase.auth.signOut();
-    _isAuthenticated = false;
-    _currentUser = null;
-    notifyListeners();
-  }
-
   Future<void> updateProfile({String? name}) async {
-    if (!_isAuthenticated || _isDemoMode) return;
+    if (!_isAuthenticated || _isDemoMode || _tokenCache == null) return;
 
     try {
       final updates = <String, dynamic>{};
@@ -442,17 +368,15 @@ class AuthProvider extends ChangeNotifier {
 
       if (updates.isEmpty) return;
 
-      final response = await _userRepository.updateMe(updates);
+      final response = await _userRepository.updateMe(_tokenCache!, updates);
       final data = response['data'] as Map<String, dynamic>?;
       if (data != null) {
         _profile = UserProfile.fromJson(data);
         _onboardingCompleted = _profile!.onboardingCompleted;
         _onboardingPrefsLoaded = true;
-        
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setBool('onboarding_completed', _onboardingCompleted);
-        } catch (_) {}
+
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('onboarding_completed', _onboardingCompleted);
 
         notifyListeners();
       }
@@ -463,14 +387,59 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> deleteAccount() async {
-    if (!_isAuthenticated || _isDemoMode) return;
+    if (!_isAuthenticated || _isDemoMode || _tokenCache == null) return;
 
     try {
-      await _userRepository.deleteMe();
+      await _userRepository.deleteMe(_tokenCache!);
       await logout();
     } catch (e) {
       debugPrint('Erro ao remover conta: $e');
       rethrow;
+    }
+  }
+}
+
+class UserRepository {
+  final String _baseUrl = AppConfig.apiBaseUrl;
+
+  Future<Map<String, dynamic>> getMe(String token) async {
+    final response = await http.get(
+      Uri.parse('$_baseUrl/auth/me'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Failed to get user: ${response.statusCode}');
+    }
+  }
+
+  Future<Map<String, dynamic>> updateMe(String token, Map<String, dynamic> data) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/profiles/me'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode(data),
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Failed to update profile: ${response.statusCode}');
+    }
+  }
+
+  Future<void> deleteMe(String token) async {
+    final response = await http.delete(
+      Uri.parse('$_baseUrl/profiles/me'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to delete profile: ${response.statusCode}');
     }
   }
 }

@@ -506,8 +506,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get signingUp => 'Criando conta...';
 
   @override
-  String get signUpSuccess =>
-      'Conta criada! Verifique seu email para confirmar sua conta.';
+  String get signUpSuccess => 'Conta criada com sucesso!';
 
   @override
   String get signUpFailed => 'Falha ao criar conta. Tente novamente.';
@@ -692,16 +691,6 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get emailLabel => 'Email';
-
-  @override
-  String get magicLinkButton => 'Receber link por email';
-
-  @override
-  String get magicLinkSent =>
-      'Enviamos um link para seu email. Abra-o para entrar.';
-
-  @override
-  String get magicLinkFailed => 'Não foi possível enviar o link.';
 
   @override
   String get onboardingHeadline => 'O que você quer automatizar?';

@@ -506,8 +506,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get signingUp => 'Creating account...';
 
   @override
-  String get signUpSuccess =>
-      'Account created! Please check your email to verify your account.';
+  String get signUpSuccess => 'Account created successfully!';
 
   @override
   String get signUpFailed => 'Sign up failed. Please try again.';
@@ -692,15 +691,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get emailLabel => 'Email';
-
-  @override
-  String get magicLinkButton => 'Email me a magic link';
-
-  @override
-  String get magicLinkSent => 'Check your email. Open the link to sign in.';
-
-  @override
-  String get magicLinkFailed => 'Could not send the link.';
 
   @override
   String get onboardingHeadline => 'What do you want to automate?';

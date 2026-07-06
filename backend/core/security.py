@@ -1,12 +1,10 @@
 import re
 import os
-import httpx
 from functools import wraps
 from flask import request, jsonify, g
+from jose import jwt, JWTError
 
 from core.config import settings
-
-security = None
 
 
 def get_current_user():
@@ -21,36 +19,30 @@ def get_current_user():
         user = {
             "id": DEV_USER_ID,
             "email": "developer@catas.app",
-            "token": "dev-token"
+            "token": "dev-token",
         }
         g.current_user = user
         return user
 
     try:
-        resp = httpx.get(
-            f"{settings.SUPABASE_URL}/auth/v1/user",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "apikey": settings.SUPABASE_SERVICE_ROLE_KEY,
-            },
-            timeout=10,
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=["HS256"],
         )
-        if resp.status_code != 200:
-            return None
-
-        data = resp.json()
-        user_id = data.get("id")
+        user_id = payload.get("user_id")
+        email = payload.get("email", "")
         if not user_id:
             return None
 
         user = {
             "id": user_id,
-            "email": data.get("email", ""),
+            "email": email,
             "token": token,
         }
         g.current_user = user
         return user
-    except Exception:
+    except JWTError:
         return None
 
 

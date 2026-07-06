@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_config.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import '../services/token_holder.dart';
 import '../l10n/app_localizations.dart';
 
 class LocaleProvider extends ChangeNotifier {
@@ -94,19 +96,21 @@ class LocaleProvider extends ChangeNotifier {
         debugPrint('LocaleProvider: Skipping database save in demo mode');
         return;
       }
-      final session = Supabase.instance.client.auth.currentSession;
-      if (session == null) {
+      final token = TokenHolder().token;
+      if (token == null) {
         debugPrint('LocaleProvider: No user logged in, skipping database save');
         return;
       }
 
-      final userId = session.user.id;
       final languageCode = locale?.languageCode;
-      await Supabase.instance.client
-          .from('profiles')
-          .update({'language': languageCode})
-          .eq('id', userId);
-      
+      await http.put(
+        Uri.parse('${AppConfig.apiBaseUrl}/profiles/me'),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({"language": languageCode}),
+      );
       debugPrint('LocaleProvider: Saved locale to database: $languageCode');
     } catch (e) {
       debugPrint('LocaleProvider: Error saving locale to database: $e');

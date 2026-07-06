@@ -5,7 +5,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:app_links/app_links.dart';
 import 'package:go_router/go_router.dart';
@@ -26,8 +25,6 @@ import 'screens/splash_screen.dart';
 import 'core/theme.dart';
 import 'core/router.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:catas/core/secure_storage.dart';
-import 'package:catas/core/cookie_storage.dart';
 import 'core/app_config.dart';
 import 'package:flutter/foundation.dart';
 import 'l10n/app_localizations.dart';
@@ -78,17 +75,6 @@ Future<void> main() async {
   final isDemoMode = AppConfig.isDemoMode;
 
   if (!isDemoMode) {
-    await Supabase.initialize(
-      url: AppConfig.supabaseUrl,
-      anonKey: AppConfig.supabaseAnonKey,
-      authOptions: FlutterAuthClientOptions(
-        localStorage: kIsWeb
-            ? const CookieSupabaseStorage()
-            : SecureSupabaseStorage(),
-      ),
-    );
-
-    // Initialize deep links (only needed with real backend)
     _initDeepLinks();
   }
 
@@ -148,11 +134,6 @@ void _initDeepLinks() {
 }
 
 void _handleDeepLink(Uri uri) {
-  if (uri.scheme == 'io.supabase.flutter' ||
-      (uri.scheme == 'https' && uri.host.contains('supabase'))) {
-    debugPrint('Auth deep link recebido; sessão é restaurada pelo Supabase Auth.');
-    return;
-  }
   if (uri.scheme == 'catas') {
     final context = navigatorKey.currentContext;
     if (context == null) return;

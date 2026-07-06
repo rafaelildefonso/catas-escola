@@ -1,3 +1,4 @@
+from app.models.user import User
 from app.models.profile import Profile
 from app.models.chat_session import ChatSession
 from app.models.message import Message

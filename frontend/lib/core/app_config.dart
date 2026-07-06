@@ -28,16 +28,6 @@ class AppConfig {
     return url;
   }
 
-  static String get supabaseUrl {
-    const injected = String.fromEnvironment('SUPABASE_URL');
-    return injected.isNotEmpty ? injected : _fallback('SUPABASE_URL', defaultValue: 'https://placeholder.supabase.co');
-  }
-
-  static String get supabaseAnonKey {
-    const injected = String.fromEnvironment('SUPABASE_ANON_KEY');
-    return injected.isNotEmpty ? injected : _fallback('SUPABASE_ANON_KEY', defaultValue: 'placeholder-key');
-  }
-
   static String get cloudinaryCloudName {
     const injected = String.fromEnvironment('CLOUDINARY_CLOUD_NAME');
     return injected.isNotEmpty ? injected : _fallback('CLOUDINARY_CLOUD_NAME');

@@ -9,13 +9,9 @@ _SessionLocal = None
 def _get_engine():
     global _engine
     if _engine is None:
-        if not settings.DATABASE_URL:
-            raise RuntimeError(
-                "DATABASE_URL não configurada. "
-                "Adicione DATABASE_URL ao .env para usar SQLAlchemy."
-            )
+        db_url = settings.DATABASE_URL or "sqlite:///catas_dev.db"
         _engine = create_engine(
-            settings.DATABASE_URL,
+            db_url,
             pool_size=10,
             max_overflow=20,
             pool_pre_ping=True,

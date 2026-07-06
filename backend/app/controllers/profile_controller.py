@@ -4,6 +4,7 @@ from app.services.profile.listar_profiles_service import ListarProfilesService
 from app.services.profile.buscar_profile_service import BuscarProfileService
 from app.services.profile.atualizar_profile_service import AtualizarProfileService
 from app.services.profile.deletar_profile_service import DeletarProfileService
+from core.security import get_current_user
 
 
 class ProfileController:
@@ -36,6 +37,29 @@ class ProfileController:
         try:
             model = AtualizarProfileService.executar(id, dados)
             return jsonify(model.to_dict()), 200
+        except ValueError as e:
+            return jsonify({'detail': str(e)}), 404
+
+    @staticmethod
+    def atualizar_me():
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"detail": "Não autorizado"}), 401
+        dados = request.get_json(silent=True)
+        try:
+            model = AtualizarProfileService.executar(current_user["id"], dados)
+            return jsonify(model.to_dict()), 200
+        except ValueError as e:
+            return jsonify({'detail': str(e)}), 404
+
+    @staticmethod
+    def deletar_me():
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"detail": "Não autorizado"}), 401
+        try:
+            DeletarProfileService.executar(current_user["id"])
+            return '', 204
         except ValueError as e:
             return jsonify({'detail': str(e)}), 404
 

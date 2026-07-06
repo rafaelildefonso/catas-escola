@@ -15,8 +15,8 @@ Acessar: http://localhost:8000/health
 ```bash
 cd backend
 .\venv\Scripts\activate
-$env:PYTHONPATH = "."
 python -m worker.entrypoint
+$env:PYTHONPATH = "."
 ```
 
 ## Frontend (Flutter)

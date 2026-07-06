@@ -6,7 +6,7 @@ class PickedAttachment {
   final String name;
   final bool isImage;
   final Uint8List? bytes; // Útil para web ou preview em memória
-  final String? url; // URL do Supabase após upload
+  final String? url; // URL do arquivo após upload
 
   PickedAttachment({
     required this.id,

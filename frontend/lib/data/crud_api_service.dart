@@ -1,7 +1,7 @@
 import 'dart:convert';
 import '../core/app_config.dart';
 import 'package:http/http.dart' as http;
-import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/token_holder.dart';
 
 class CrudApiService {
   final String resourcePath;
@@ -11,8 +11,7 @@ class CrudApiService {
   String get _baseUrl => AppConfig.apiBaseUrl;
 
   Map<String, String> _headers() {
-    final session = Supabase.instance.client.auth.currentSession;
-    final token = session?.accessToken ?? "dev-token";
+    final token = TokenHolder().token ?? "dev-token";
     return {
       "Content-Type": "application/json",
       "Authorization": "Bearer $token",

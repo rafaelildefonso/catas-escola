@@ -1,18 +1,19 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../data/chat_repository.dart';
 import '../models/chat_message.dart';
 import '../models/chat_session.dart';
 import '../data/chat_repository_interface.dart';
 import '../data/demo_repository.dart';
+import '../services/token_holder.dart';
 import '../core/app_config.dart';
-import 'dart:convert';
 import '../models/picked_attachment.dart';
 import 'package:catas/data/storage_repository.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'dart:async';
 import 'package:catas/main.dart' show navigatorKey;
 import 'package:catas/providers/auth_provider.dart';
 import 'package:catas/providers/demo_automations_provider.dart';
@@ -139,7 +140,7 @@ class ChatProvider extends ChangeNotifier {
   String? _currentAutomationId;
 
   // Execution Feedback (Realtime - Step 13)
-  RealtimeChannel? _automationChannel;
+  Timer? _automationPollingTimer;
   List<Map<String, dynamic>> _automationSteps = [];
   List<Map<String, dynamic>> get automationSteps => _automationSteps;
 
@@ -389,67 +390,67 @@ class ChatProvider extends ChangeNotifier {
       return;
     }
 
-    debugPrint("📡 Subscribing to automation: $automationId");
+    debugPrint("📡 Polling automation steps: $automationId");
 
-    _automationChannel = Supabase.instance.client
-        .channel('public:automation_step_logs:automation_id=eq.$automationId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'automation_step_logs',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'automation_id',
-            value: automationId,
-          ),
-          callback: (payload) {
-            final Map<String, dynamic> data = payload.newRecord;
-            debugPrint(
-              "📥 Step Update Received: ${data['module_id']} -> ${data['status']}",
-            );
+    _automationPollingTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      try {
+        final response = await http.get(
+          Uri.parse('${AppConfig.apiBaseUrl}/automation-step-logs?automation_id=$automationId'),
+          headers: {"Authorization": "Bearer ${TokenHolder().token ?? ""}"},
+        );
 
+        if (response.statusCode == 200) {
+          final body = jsonDecode(response.body);
+          final data = body is List ? body : (body['data'] as List? ?? []);
+
+          for (final step in data) {
+            final stepMap = step as Map<String, dynamic>;
             final index = _automationSteps.indexWhere(
-              (s) => s['step_index'] == data['step_index'],
+              (s) => s['step_index'] == stepMap['step_index'],
             );
             if (index != -1) {
-              _automationSteps[index] = data;
+              _automationSteps[index] = stepMap;
             } else {
-              _automationSteps.add(data);
+              _automationSteps.add(stepMap);
               _automationSteps.sort(
                 (a, b) =>
                     (a['step_index'] as int).compareTo(b['step_index'] as int),
               );
             }
 
-            if (data['status'] == 'success' &&
-                data['module_id'] == 'completion_notification') {
+            if (stepMap['status'] == 'success' &&
+                stepMap['module_id'] == 'completion_notification') {
+              _automationPollingTimer?.cancel();
+              _automationPollingTimer = null;
               Future.delayed(const Duration(seconds: 2), () async {
                 try {
-                  final userId = Supabase.instance.client.auth.currentUser?.id;
-                  if (userId != null) {
-                    final response = await Supabase.instance.client
-                        .from('profiles')
-                        .select(
-                          'quota_used, monthly_quota_limit, subscription_tier',
-                        )
-                        .eq('id', userId)
-                        .single();
-                    
-                    debugPrint(
-                      "📊 Créditos atualizados: ${response['quota_used']}/${response['monthly_quota_limit']}",
-                    );
-                    _updateAuthQuota(response);
+                  final quotaResp = await http.get(
+                    Uri.parse('${AppConfig.apiBaseUrl}/auth/me'),
+                    headers: {"Authorization": "Bearer ${TokenHolder().token ?? ""}"},
+                  );
+                  if (quotaResp.statusCode == 200) {
+                    final quotaData = jsonDecode(quotaResp.body) as Map<String, dynamic>;
+                    final profile = quotaData['profile'] as Map<String, dynamic>?;
+                    if (profile != null) {
+                      debugPrint(
+                        "📊 Créditos atualizados: ${profile['quota_used']}/${profile['monthly_quota_limit']}",
+                      );
+                      _updateAuthQuota(profile);
+                    }
                   }
                 } catch (e) {
                   debugPrint("⚠️ Erro ao atualizar créditos: $e");
                 }
               });
             }
+          }
 
-            notifyListeners();
-          },
-        )
-        .subscribe();
+          notifyListeners();
+        }
+      } catch (e) {
+        debugPrint("⚠️ Erro no polling de automação: $e");
+      }
+    });
   }
 
   static const Map<String, String> _moduleLabels = {
@@ -535,12 +536,13 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void _unsubscribeFromAutomation() {
-    if (_isDemoMode || _automationChannel == null) {
-      _automationChannel = null;
+    if (_isDemoMode || _automationPollingTimer == null) {
+      _automationPollingTimer?.cancel();
+      _automationPollingTimer = null;
       return;
     }
-    Supabase.instance.client.removeChannel(_automationChannel!);
-    _automationChannel = null;
+    _automationPollingTimer?.cancel();
+    _automationPollingTimer = null;
   }
 
   /// Sincroniza a cota do usuário no AuthProvider (Quota Sync - Step 01)

@@ -8,8 +8,8 @@ class Settings:
     FLAT_RATE_COST: int = 1
     MAX_ROLLOVER_MULTIPLIER: int = 3
 
-    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
-    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "dev-secret-change-in-production")
+    JWT_EXPIRATION_SECONDS: int = int(os.getenv("JWT_EXPIRATION_SECONDS", "86400"))
     DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
@@ -41,8 +41,6 @@ class Settings:
 
     def validate(self):
         missing = []
-        if not self.SUPABASE_URL or not self.SUPABASE_SERVICE_ROLE_KEY:
-            missing.append("SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY")
         if not self.OPENAI_API_KEY:
             missing.append("OPENAI_API_KEY")
         if missing:

@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/app_config.dart';
+import '../services/token_holder.dart';
 import 'chat_repository_interface.dart';
 
 class ChatRepository implements IChatRepository {
@@ -11,8 +11,7 @@ class ChatRepository implements IChatRepository {
   }
 
   Options _getOptions() {
-    final session = Supabase.instance.client.auth.currentSession;
-    final token = session?.accessToken ?? "dev-token";
+    final token = TokenHolder().token ?? "dev-token";
 
     return Options(
       headers: {

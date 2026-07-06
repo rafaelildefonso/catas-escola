@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../core/app_config.dart';
+import '../services/token_holder.dart';
 
 class IntegrationsProvider extends ChangeNotifier {
   bool _isLoading = false;
@@ -39,8 +39,7 @@ class IntegrationsProvider extends ChangeNotifier {
     if (AppConfig.isDemoMode) {
       return {"Content-Type": "application/json", "Authorization": "Bearer demo-token"};
     }
-    final session = Supabase.instance.client.auth.currentSession;
-    final token = session?.accessToken ?? "";
+    final token = TokenHolder().token ?? "";
     return {
       "Content-Type": "application/json",
       "Authorization": "Bearer $token",

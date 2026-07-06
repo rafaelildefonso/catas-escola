@@ -1055,7 +1055,7 @@ abstract class AppLocalizations {
   /// No description provided for @signUpSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Account created! Please check your email to verify your account.'**
+  /// **'Account created successfully!'**
   String get signUpSuccess;
 
   /// No description provided for @signUpFailed.
@@ -1411,24 +1411,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Email'**
   String get emailLabel;
-
-  /// No description provided for @magicLinkButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Email me a magic link'**
-  String get magicLinkButton;
-
-  /// No description provided for @magicLinkSent.
-  ///
-  /// In en, this message translates to:
-  /// **'Check your email. Open the link to sign in.'**
-  String get magicLinkSent;
-
-  /// No description provided for @magicLinkFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Could not send the link.'**
-  String get magicLinkFailed;
 
   /// No description provided for @onboardingHeadline.
   ///
