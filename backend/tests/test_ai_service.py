@@ -4,10 +4,10 @@ from services.ai_service import AIService
 
 @pytest.fixture
 def ai_service():
-    with patch("app.services.ai_service.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai, \
-         patch("app.services.ai_service.IntentClassifier") as _, \
-         patch("app.services.ai_service.EntityExtractor") as _, \
-         patch("app.services.ai_service.PayloadBuilder") as _:
+    with patch("services.ai_service.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai, \
+         patch("services.ai_service.IntentClassifier") as _, \
+         patch("services.ai_service.EntityExtractor") as _, \
+         patch("services.ai_service.PayloadBuilder") as _:
         
         service = AIService()
         yield service, mock_call_ai

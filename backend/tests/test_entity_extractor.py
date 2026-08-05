@@ -4,7 +4,7 @@ from services.entity_extractor import EntityExtractor
 
 @pytest.fixture
 def entity_extractor_fixture():
-    with patch("app.services.entity_extractor.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai:
+    with patch("services.entity_extractor.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai:
         extractor = EntityExtractor()
         yield extractor, mock_call_ai
 

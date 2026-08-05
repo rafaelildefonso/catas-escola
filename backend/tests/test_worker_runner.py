@@ -265,8 +265,8 @@ class TestAutomationRunnerService:
             }],
         }
 
-        with patch("app.repositories.automations.update_automation_run_status"), \
-             patch("app.repositories.automations.upsert_automation_run", return_value=[]):
+        with patch("repositories.automations.update_automation_run_status"), \
+             patch("repositories.automations.upsert_automation_run", return_value=[]):
 
             result = await AutomationRunnerService.start_automation(
                 "run_123", plan, user_id="user_123",
@@ -298,7 +298,7 @@ class TestAutomationRunnerService:
             }],
         }
 
-        with patch("app.services.automation_runner_service.httpx.AsyncClient.post") as mock_post:
+        with patch("services.automation_runner_service.httpx.AsyncClient.post") as mock_post:
             mock_post.return_value.status_code = 202
             mock_post.return_value.json = lambda: {"status": "accepted", "automation_id": "run_123"}
 
@@ -315,7 +315,7 @@ class TestAutomationRunnerService:
 
         plan = {"name": "Worker Fail Test", "steps": []}
 
-        with patch("app.services.automation_runner_service.httpx.AsyncClient.post") as mock_post:
+        with patch("services.automation_runner_service.httpx.AsyncClient.post") as mock_post:
             mock_post.side_effect = httpx.ConnectError("Worker unreachable")
 
             result = await AutomationRunnerService.start_automation("user_123", plan)

@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime, timezone
 
 from app.extensions import db
-from sqlalchemy.dialects.postgresql import UUID
 
 
 def utcnow():
@@ -12,7 +11,7 @@ def utcnow():
 class Profile(db.Model):
     __tablename__ = "profiles"
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     subscription_tier = db.Column(db.String, default="basic")
     monthly_quota_limit = db.Column(db.Integer, default=500)
     quota_used = db.Column(db.Integer, default=0)

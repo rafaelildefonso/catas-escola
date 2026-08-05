@@ -36,6 +36,34 @@ class User(db.Model):
         }
         return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
 
+    def salvar(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def atualizar(self, **kwargs):
+        for key, value in kwargs.items():
+            if key in ("password", "password_hash"):
+                continue
+            if hasattr(self, key) and value is not None:
+                setattr(self, key, value)
+        db.session.commit()
+
+    def deletar(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    @staticmethod
+    def listar_todos():
+        return User.query.all()
+
+    @staticmethod
+    def buscar_por_id(id):
+        return User.query.get(id)
+
+    @staticmethod
+    def buscar_por_email(email):
+        return User.query.filter_by(email=email).first()
+
     def to_dict(self):
         return {
             "id": self.id,

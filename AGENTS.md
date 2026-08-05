@@ -6,9 +6,9 @@
 app/
 ├── extensions.py          # db = SQLAlchemy()
 ├── __init__.py             # create_app(), init_firebase(), error handlers
-├── routes.py               # Centralized route registration (85 CRUD routes)
-├── models/*.py             # 17 SQLAlchemy models with CRUD methods
-├── controllers/*.py        # 17 generic CRUD controllers
+├── routes.py               # Centralized route registration (90 CRUD routes)
+├── models/*.py             # 18 SQLAlchemy models with CRUD methods
+├── controllers/*.py        # 18 generic CRUD controllers
 └── services/*/             # Business logic services
     └── criar_*_service.py  # One service per create operation
 ```
@@ -46,6 +46,7 @@ HTTP POST /api/v1/profiles
 cd backend
 python -m pytest tests/test_new_architecture.py -v
 python -m pytest tests/test_all_entities.py -v
+python -m pytest tests/test_auth_user.py -v
 ```
 
 ## Run

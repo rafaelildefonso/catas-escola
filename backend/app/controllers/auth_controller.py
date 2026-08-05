@@ -1,102 +1,52 @@
-from uuid import uuid4, UUID as UUIDType
-from datetime import datetime, timezone
+from flask import request, jsonify
 
-from flask import Blueprint, request, jsonify
-
-from app.extensions import db
-from app.models.user import User
-from app.models.profile import Profile
+from app.services.auth.criar_conta_service import CriarContaService
+from app.services.auth.autenticar_usuario_service import AutenticarUsuarioService, AutenticacaoError
+from app.services.auth.obter_conta_service import ObterContaService
+from app.services.user.criar_user_service import EmailJaCadastradoError
 from core.security import get_current_user
 
-auth_bp = Blueprint("auth", __name__, url_prefix="/api/v1/auth")
 
+class AuthController:
 
-@auth_bp.route("/signup", methods=["POST"])
-def signup():
-    data = request.get_json(silent=True) or {}
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
+    @staticmethod
+    def signup():
+        dados = request.get_json(silent=True) or {}
+        try:
+            conta = CriarContaService.executar(dados)
+            return jsonify({
+                "token": conta["token"],
+                "user": conta["user"].to_dict(),
+                "profile": conta["profile"].to_dict(),
+            }), 201
+        except EmailJaCadastradoError as e:
+            return jsonify({"detail": str(e)}), 409
+        except ValueError as e:
+            return jsonify({"detail": str(e)}), 400
 
-    if not email or not password:
-        return jsonify({"detail": "Email e senha são obrigatórios."}), 400
+    @staticmethod
+    def login():
+        dados = request.get_json(silent=True) or {}
+        try:
+            conta = AutenticarUsuarioService.executar(dados)
+            return jsonify({
+                "token": conta["token"],
+                "user": conta["user"].to_dict(),
+                "profile": conta["profile"].to_dict(),
+            })
+        except AutenticacaoError as e:
+            return jsonify({"detail": str(e)}), e.status_code
 
-    if "@" not in email:
-        return jsonify({"detail": "Email inválido."}), 400
-
-    if len(password) < 8:
-        return jsonify({"detail": "Senha deve ter no mínimo 8 caracteres."}), 400
-
-    existing = User.query.filter_by(email=email).first()
-    if existing:
-        return jsonify({"detail": "Email já cadastrado."}), 409
-
-    user_id = str(uuid4())
-    user = User(id=user_id, email=email)
-    user.set_password(password)
-    db.session.add(user)
-
-    profile = Profile(
-        id=UUIDType(user_id),
-        subscription_tier="basic",
-        quota_used=0,
-        last_quota_reset=datetime.now(timezone.utc),
-    )
-    db.session.add(profile)
-    db.session.commit()
-
-    token = user.generate_token()
-    return jsonify({
-        "token": token,
-        "user": user.to_dict(),
-        "profile": profile.to_dict(),
-    }), 201
-
-
-@auth_bp.route("/login", methods=["POST"])
-def login():
-    data = request.get_json(silent=True) or {}
-    email = (data.get("email") or "").strip().lower()
-    password = data.get("password") or ""
-
-    if not email or not password:
-        return jsonify({"detail": "Email e senha são obrigatórios."}), 400
-
-    user = User.query.filter_by(email=email).first()
-    if not user or not user.check_password(password):
-        return jsonify({"detail": "Email ou senha inválidos."}), 401
-
-    profile = Profile.buscar_por_id(UUIDType(user.id))
-    if not profile:
-        profile = Profile(id=UUIDType(user.id), subscription_tier="basic")
-        db.session.add(profile)
-        db.session.commit()
-
-    token = user.generate_token()
-    return jsonify({
-        "token": token,
-        "user": user.to_dict(),
-        "profile": profile.to_dict(),
-    })
-
-
-@auth_bp.route("/me", methods=["GET"])
-def me():
-    current_user = get_current_user()
-    if not current_user:
-        return jsonify({"detail": "Não autorizado"}), 401
-
-    user_id = current_user["id"]
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({"detail": "Usuário não encontrado"}), 404
-
-    profile = Profile.buscar_por_id(UUIDType(user_id))
-    if not profile:
-        profile = Profile(id=UUIDType(user_id), subscription_tier="basic")
-        db.session.add(profile)
-        db.session.commit()
-
-    return jsonify({
-        "user": user.to_dict(),
-        "profile": profile.to_dict(),
-    })
+    @staticmethod
+    def me():
+        current_user = get_current_user()
+        if not current_user:
+            return jsonify({"detail": "Não autorizado"}), 401
+        try:
+            conta = ObterContaService.executar(current_user["id"])
+            return jsonify({
+                "user": conta["user"].to_dict(),
+                "profile": conta["profile"].to_dict(),
+            })
+        except ValueError as e:
+            return jsonify({"detail": str(e)}), 404

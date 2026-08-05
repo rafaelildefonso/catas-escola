@@ -1,4 +1,5 @@
-from app.controllers.auth_controller import auth_bp
+from app.controllers.auth_controller import AuthController
+from app.controllers.user_controller import UserController
 from app.controllers.profile_controller import ProfileController
 from app.controllers.chat_session_controller import ChatSessionController
 from app.controllers.message_controller import MessageController
@@ -23,7 +24,10 @@ def _rota(app, url, methods, controller_func, endpoint):
 
 
 def registrar_rotas(app):
-    app.register_blueprint(auth_bp)
+    # Auth
+    _rota(app, "/api/v1/auth/signup", ["POST"], AuthController.signup, "auth.signup")
+    _rota(app, "/api/v1/auth/login", ["POST"], AuthController.login, "auth.login")
+    _rota(app, "/api/v1/auth/me", ["GET"], AuthController.me, "auth.me")
 
     # Blueprints legados (chat, chatbot, feedback)
     from controllers.chat import chat_bp
@@ -39,6 +43,12 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/profiles/me", ["PUT"], ProfileController.atualizar_me, "profile.atualizar_me")
     _rota(app, "/api/v1/profiles/<id>", ["DELETE"], ProfileController.deletar, "profile.deletar")
     _rota(app, "/api/v1/profiles/me", ["DELETE"], ProfileController.deletar_me, "profile.deletar_me")
+
+    _rota(app, "/api/v1/users", ["GET"], UserController.listar, "user.listar")
+    _rota(app, "/api/v1/users/<id>", ["GET"], UserController.buscar_por_id, "user.buscar")
+    _rota(app, "/api/v1/users", ["POST"], UserController.criar, "user.criar")
+    _rota(app, "/api/v1/users/<id>", ["PUT"], UserController.atualizar, "user.atualizar")
+    _rota(app, "/api/v1/users/<id>", ["DELETE"], UserController.deletar, "user.deletar")
 
     _rota(app, "/api/v1/chat-sessions", ["GET"], ChatSessionController.listar, "chat_session.listar")
     _rota(app, "/api/v1/chat-sessions/<id>", ["GET"], ChatSessionController.buscar_por_id, "chat_session.buscar")
