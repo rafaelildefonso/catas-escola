@@ -2,13 +2,18 @@
 
 Backend Flask do CATAS - Sistema de Automação de Tarefas com IA usando Temporal.io.
 
+# CATAS Backend API
+
+Backend Flask do CATAS - Sistema de Automação de Tarefas com IA usando Temporal.io.
+
 ## 🚀 Funcionalidades
 
 - ✅ API REST com Flask
 - ✅ Arquitetura CRUD (Model → Service → Controller → Route)
-- ✅ 17 Models com CRUD completo (listadas abaixo)
-- ✅ 85 endpoints REST (5 por entidade)
-- ✅ Autenticação via Supabase Auth (Bearer Token)
+- ✅ 18 Models com CRUD completo (listadas abaixo)
+- ✅ 90 endpoints REST (5 por entidade)
+- ✅ **Relatórios além do CRUD básico** via Repository + procedures PostgreSQL (dashboard, automações, conversas, busca de mensagens)
+- ✅ Autenticação via Firebase Auth (Bearer Token)
 - ✅ Pipeline de IA multi-agente (Intent → Entities → Action)
 - ✅ Orquestração de automações com Temporal.io
 - ✅ Integrações: Google Calendar, Gmail, Google Sheets
@@ -22,7 +27,8 @@ Cada Model em `app/models/` herda de `db.Model` e implementa os métodos `salvar
 
 | # | Model | Controller | Services (5) | Rotas CRUD |
 |---|-------|-----------|-------------|------------|
-| 1 | **Profile** | `profile_controller.py` | `services/profile/` | `GET/POST /api/v1/profiles`, `GET/PUT/DELETE /api/v1/profiles/<id>` |
+| 1 | **User** | `user_controller.py` | `services/user/` | `GET/POST /api/v1/users`, `GET/PUT/DELETE /api/v1/users/<id>` |
+| 2 | **Profile** | `profile_controller.py` | `services/profile/` | `GET/POST /api/v1/profiles`, `GET/PUT/DELETE /api/v1/profiles/<id>` |
 | 2 | **ChatSession** | `chat_session_controller.py` | `services/chat_session/` | `GET/POST /api/v1/chat-sessions`, `GET/PUT/DELETE /api/v1/chat-sessions/<id>` |
 | 3 | **Message** | `message_controller.py` | `services/message/` | `GET/POST /api/v1/messages`, `GET/PUT/DELETE /api/v1/messages/<id>` |
 | 4 | **Automation** | `automation_controller.py` | `services/automation/` | `GET/POST /api/v1/automations`, `GET/PUT/DELETE /api/v1/automations/<id>` |
@@ -40,7 +46,7 @@ Cada Model em `app/models/` herda de `db.Model` e implementa os métodos `salvar
 | 16 | **UserWebhookConfig** | `user_webhook_config_controller.py` | `services/user_webhook_config/` | `GET/POST /api/v1/user-webhook-configs`, `GET/PUT/DELETE /api/v1/user-webhook-configs/<id>` |
 | 17 | **IaMemory** | `ia_memory_controller.py` | `services/ia_memory/` | `GET/POST /api/v1/ia-memories`, `GET/PUT/DELETE /api/v1/ia-memories/<id>` |
 
-**Total: 17 Models × 5 endpoints = 85 rotas CRUD**
+**Total: 18 Models × 5 endpoints = 90 rotas CRUD**
 
 ## 📋 Pré-requisitos
 
@@ -102,12 +108,11 @@ Copie `.env.example` para `.env` e preencha as variáveis. As principais:
 
 | Variável | Descrição |
 |----------|-----------|
-| `DATABASE_URL` | PostgreSQL. Deixe vazio para SQLite local |
-| `SUPABASE_URL` | URL do projeto Supabase |
-| `SUPABASE_SERVICE_ROLE_KEY` | Chave de serviço Supabase |
+| `DATABASE_URL` | PostgreSQL/outro via SQLAlchemy. Deixe vazio para SQLite local (dev/teste) |
 | `OPENAI_API_KEY` | API Key OpenAI |
 | `GROQ_API_KEY` | API Key Groq (modelos gratuitos) |
 | `ENCRYPTION_KEY` | Chave para criptografia interna |
+| `FIREBASE_ADMIN_CREDENTIALS_JSON` | Credenciais do Firebase Admin (JSON) para autenticação |
 
 ## 🧪 Testar
 
@@ -129,6 +134,35 @@ HTTP POST /api/v1/profiles
     → return jsonify(model.to_dict()), 201
 ```
 
+### Relatórios Flow (além do CRUD — Repository + Procedures)
+
+As consultas complexas do domínio (filtros, buscas, ordenações, agregações, combinação de tabelas com WHERE / ORDER BY / JOIN / GROUP BY) ficam na camada **Repository**, que no PostgreSQL despacha para **procedures** `public.fn_*`. Em dev/teste (SQLite) usa fallback em SQL inline equivalente.
+
+```
+HTTP GET /api/v1/relatorios/automacoes?user_id=...&status=...&busca=...
+  → routes.py → RelatorioController.relatorio_automacoes()
+    → GerarRelatorioAutomacoesService.executar(...)
+      → AutomacaoRepository.listar_runs_filtrados(...)
+        → SELECT * FROM public.fn_relatorio_automacoes(...)
+    → response.jsonify(resultado), 200
+```
+
+### Funcionalidades de relatório (esta etapa)
+
+| Funcionalidade | Endpoint | Procedure | Repository |
+|----------------|----------|-----------|------------|
+| Painel de estatísticas | `GET /api/v1/relatorios/dashboard` | `public.fn_dashboard_estatisticas(user_id, dias DEFAULT 7)` | `DashboardRepository.estatisticas_dashboard` |
+| Relatório de automações | `GET /api/v1/relatorios/automacoes` | `public.fn_relatorio_automacoes(user_id, status, data_inicio, data_fim, busca, ordem, limite, deslocamento)` | `AutomacaoRepository.listar_runs_filtrados` |
+| Relatório de conversas | `GET /api/v1/relatorios/chat` | `public.fn_relatorio_chat(user_id, dias DEFAULT 30)` | `ChatRepository.relatorio_chat` |
+| Busca de mensagens | `GET /api/v1/relatorios/mensagens/busca` | `public.fn_buscar_mensagens(user_id, termo, limite, deslocamento)` | `ChatRepository.buscar_mensagens` |
+
+As procedures estão definidas em `migrations/018_procedures_relatorios.sql`. Para criar no PostgreSQL:
+
+- **Supabase Dashboard**: SQL Editor → cole o conteúdo do arquivo → **Run**
+- **Supabase CLI**: `supabase link --project-ref <ref> && supabase db push`
+
+Testes: `tests/test_relatorios.py` cobre os 4 endpoints (com fallback SQLite do Repository).
+
 ### Pipeline de IA
 
 ```
@@ -148,16 +182,17 @@ backend/
 ├── app/
 │   ├── __init__.py         # create_app(), init_firebase()
 │   ├── extensions.py       # db = SQLAlchemy()
-│   ├── routes.py           # 85 rotas CRUD centralizadas
-│   ├── models/             # 17 modelos SQLAlchemy
-│   ├── controllers/        # 17 controllers CRUD
-│   └── services/           # Lógica de negócio
+│   ├── routes.py           # rotas CRUD + relatórios centralizadas
+│   ├── models/             # 18 modelos SQLAlchemy com CRUD
+│   ├── controllers/        # 18 controllers CRUD + RelatorioController
+│   ├── services/           # um service por caso de uso (CRUD + relatório)
+│   └── repositories/       # acesso complexo via procedures PostgreSQL
 ├── core/
 │   ├── config.py           # Settings via Pydantic
 │   └── errors.py           # Error handling
 ├── worker/                 # Temporal Worker
 ├── tests/                  # Testes
-├── migrations/             # Alembic
+├── migrations/             # Migrations SQL (procedures relatórios em 018)
 ├── run.py                  # Entrypoint
 └── requirements.txt
 ```
