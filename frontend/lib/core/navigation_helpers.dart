@@ -29,6 +29,9 @@ AppPage getPageFromLocation(String location) {
   if (location.startsWith(AppRoutes.crud)) {
     return AppPage.crud;
   }
+  if (location.startsWith(AppRoutes.relatorios)) {
+    return AppPage.relatorios;
+  }
   return AppPage.chat;
 }
 
@@ -51,6 +54,8 @@ String getLocalizedPageTitle(BuildContext context, AppPage page) {
       return l10n.pageTitleDashboard;
     case AppPage.crud:
       return 'Gerenciar Dados';
+    case AppPage.relatorios:
+      return 'Relatórios';
   }
 }
 
@@ -72,6 +77,8 @@ String getRouteForPage(AppPage page) {
       return AppRoutes.settings;
     case AppPage.crud:
       return AppRoutes.crud;
+    case AppPage.relatorios:
+      return AppRoutes.relatorios;
   }
 }
 

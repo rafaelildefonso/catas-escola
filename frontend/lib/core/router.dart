@@ -10,6 +10,7 @@ import 'package:catas/screens/settings_screen.dart';
 import 'package:catas/screens/web/web_main_layout.dart';
 import 'package:catas/screens/automation_detail_screen.dart';
 import 'package:catas/screens/crud/crud_management_screen.dart';
+import 'package:catas/screens/relatorios/relatorio_screen.dart';
 import 'package:catas/screens/main_layout.dart';
 // Demo screens
 import 'package:catas/screens/demo_report_screen.dart';
@@ -48,6 +49,7 @@ class AppRoutes {
   static const String notifications = '/app/notifications';
   static const String automationDetail = '/app/automations/:runId';
   static const String crud = '/app/crud';
+  static const String relatorios = '/app/relatorios';
   static const String suggestedPrompts = '/app/prompts';
   // Demo routes
   static const String demoReport = '/app/report/demo';
@@ -258,6 +260,16 @@ GoRouter createRouter(
             name: 'crud',
             pageBuilder: (context, state) => _buildPageWithTransition(
               child: const CrudManagementScreen(),
+              state: state,
+            ),
+          ),
+
+          // Relatórios
+          GoRoute(
+            path: AppRoutes.relatorios,
+            name: 'relatorios',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              child: const RelatorioScreen(),
               state: state,
             ),
           ),

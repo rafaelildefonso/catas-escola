@@ -17,6 +17,7 @@ from app.controllers.page_analysis_cache_controller import PageAnalysisCacheCont
 from app.controllers.user_device_controller import UserDeviceController
 from app.controllers.user_webhook_config_controller import UserWebhookConfigController
 from app.controllers.ia_memory_controller import IaMemoryController
+from app.controllers.relatorio_controller import RelatorioController
 
 
 def _rota(app, url, methods, controller_func, endpoint):
@@ -145,3 +146,9 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/ia-memories", ["POST"], IaMemoryController.criar, "ia_memory.criar")
     _rota(app, "/api/v1/ia-memories/<id>", ["PUT"], IaMemoryController.atualizar, "ia_memory.atualizar")
     _rota(app, "/api/v1/ia-memories/<id>", ["DELETE"], IaMemoryController.deletar, "ia_memory.deletar")
+
+    # Relatórios e buscas (além do CRUD básico)
+    _rota(app, "/api/v1/relatorios/dashboard", ["GET"], RelatorioController.estatisticas_dashboard, "relatorio.dashboard")
+    _rota(app, "/api/v1/relatorios/automacoes", ["GET"], RelatorioController.relatorio_automacoes, "relatorio.automacoes")
+    _rota(app, "/api/v1/relatorios/chat", ["GET"], RelatorioController.relatorio_chat, "relatorio.chat")
+    _rota(app, "/api/v1/relatorios/mensagens/busca", ["GET"], RelatorioController.buscar_mensagens, "relatorio.mensagens.busca")

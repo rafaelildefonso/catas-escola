@@ -210,6 +210,13 @@ class _WebSidebarState extends State<WebSidebar> {
             page: AppPage.crud,
             isSelected: nav.currentPage == AppPage.crud,
           ),
+          _buildNavItem(
+            context,
+            icon: Icons.insights_outlined,
+            label: "Relatórios",
+            page: AppPage.relatorios,
+            isSelected: nav.currentPage == AppPage.relatorios,
+          ),
 
           // Divider only when expanded
           if (!_isCollapsed) const Divider(height: 24),

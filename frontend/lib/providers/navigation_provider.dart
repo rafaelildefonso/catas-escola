@@ -10,6 +10,7 @@ enum AppPage {
   pricing,
   dashboard,
   crud,
+  relatorios,
 }
 
 class NavigationProvider with ChangeNotifier {
