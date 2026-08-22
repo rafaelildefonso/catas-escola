@@ -42,12 +42,14 @@ class IaMemory(db.Model):
         return IaMemory.query.get(id)
 
     def to_dict(self):
-        result = {}
-        for col in self.__table__.columns:
-            value = getattr(self, col.key)
-            if isinstance(value, uuid.UUID):
-                value = str(value)
-            elif isinstance(value, datetime):
-                value = value.replace(tzinfo=None).isoformat()
-            result[col.name] = value
-        return result
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "key": self.key,
+            "content": self.content,
+            "embedding": self.embedding,
+            "metadata": dict(self.metadata_) if self.metadata_ else {},
+            "created_at": (
+                self.created_at.replace(tzinfo=None).isoformat() if self.created_at else None
+            ),
+        }

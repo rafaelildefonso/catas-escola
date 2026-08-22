@@ -18,6 +18,9 @@ from app.controllers.user_device_controller import UserDeviceController
 from app.controllers.user_webhook_config_controller import UserWebhookConfigController
 from app.controllers.ia_memory_controller import IaMemoryController
 from app.controllers.relatorio_controller import RelatorioController
+from app.controllers.chat_controller import ChatController
+from app.controllers.chatbot_controller import ChatbotController
+from app.controllers.feedback_controller import FeedbackController
 
 
 def _rota(app, url, methods, controller_func, endpoint):
@@ -30,13 +33,20 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/auth/login", ["POST"], AuthController.login, "auth.login")
     _rota(app, "/api/v1/auth/me", ["GET"], AuthController.me, "auth.me")
 
-    # Blueprints legados (chat, chatbot, feedback)
-    from controllers.chat import chat_bp
-    from controllers.chatbot import chatbot_bp
-    from controllers.feedback import feedback_bp
-    app.register_blueprint(chat_bp)
-    app.register_blueprint(chatbot_bp, url_prefix="/api/v1/chat")
-    app.register_blueprint(feedback_bp)
+    # Chat (sessões, histórico e mensagens com IA)
+    _rota(app, "/api/v1/chat/sessions", ["POST"], ChatController.criar_sessao, "chat.criar_sessao")
+    _rota(app, "/api/v1/chat/sessions", ["GET"], ChatController.listar_sessoes, "chat.listar_sessoes")
+    _rota(app, "/api/v1/chat/sessions/<session_id>", ["GET"], ChatController.obter_sessao, "chat.obter_sessao")
+    _rota(app, "/api/v1/chat/history/<session_id>", ["GET"], ChatController.obter_historico, "chat.obter_historico")
+    _rota(app, "/api/v1/chat/sessions/<session_id>/title", ["PATCH"], ChatController.renomear_sessao, "chat.renomear_sessao")
+    _rota(app, "/api/v1/chat/sessions/<session_id>", ["DELETE"], ChatController.excluir_sessao, "chat.excluir_sessao")
+
+    _rota(app, "/api/v1/chat/message", ["POST"], ChatbotController.enviar_mensagem, "chatbot.enviar_mensagem")
+    _rota(app, "/api/v1/chat/message/continue", ["POST"], ChatbotController.continuar_mensagem, "chatbot.continuar_mensagem")
+
+    _rota(app, "/api/v1/chat/messages/<message_id>/feedback", ["POST"], FeedbackController.registrar_feedback, "feedback.registrar")
+    _rota(app, "/api/v1/chat/sessions/<session_id>/feedback", ["GET"], FeedbackController.resumo_da_sessao, "feedback.resumo")
+
     _rota(app, "/api/v1/profiles", ["GET"], ProfileController.listar, "profile.listar")
     _rota(app, "/api/v1/profiles/<id>", ["GET"], ProfileController.buscar_por_id, "profile.buscar")
     _rota(app, "/api/v1/profiles", ["POST"], ProfileController.criar, "profile.criar")
