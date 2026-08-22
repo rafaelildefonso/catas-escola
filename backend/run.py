@@ -12,13 +12,11 @@ logger = logging.getLogger(__name__)
 
 from app import create_app, init_firebase
 from app.extensions import db
-from models.db_models import Base
 
 app = create_app()
 
 with app.app_context():
     db.create_all()
-    Base.metadata.create_all(db.engine)
     logger.info("Tabelas do banco verificadas/criadas.")
 
 init_firebase()

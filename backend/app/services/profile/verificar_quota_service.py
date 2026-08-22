@@ -72,7 +72,7 @@ class VerificarQuotaService:
 
     @staticmethod
     def _reiniciar_quota(user_id: str, perfil: dict, config: dict):
-        from services.credit_service import credit_service
+        from app.services.profile.credit_service import credit_service
 
         usado = perfil.get("quota_used", 0) or 0
         limite = perfil.get("monthly_quota_limit") or config["limit"]

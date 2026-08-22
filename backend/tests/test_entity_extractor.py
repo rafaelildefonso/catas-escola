@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from services.entity_extractor import EntityExtractor
+from app.services.ia.entity_extractor import EntityExtractor
 
 @pytest.fixture
 def entity_extractor_fixture():
-    with patch("services.entity_extractor.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai:
+    with patch("app.services.ia.entity_extractor.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai:
         extractor = EntityExtractor()
         yield extractor, mock_call_ai
 

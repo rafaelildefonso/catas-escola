@@ -1,6 +1,6 @@
 import asyncio
 from core.config import settings
-from services.ai_base import AIBase
+from app.services.ia.base import AIBase
 
 class IntentClassifier:
     def __init__(self):

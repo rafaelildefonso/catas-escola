@@ -1,6 +1,6 @@
 import asyncio
 
-from services.ai_service import AIService
+from app.services.ia.ai_service import AIService
 
 from app.repositories.integracoes_repository import listar_integracoes_do_usuario
 from app.services.chat.excecoes_chat import (

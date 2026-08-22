@@ -1,6 +1,6 @@
 import json
 from typing import List, Dict, Any
-from .ai_providers.factory import AIFactory
+from .providers.factory import AIFactory
 
 class AIBase:
     """

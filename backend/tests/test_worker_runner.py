@@ -234,7 +234,7 @@ class TestRunnerUnit:
 
     @pytest.mark.asyncio
     async def test_plan_accepts_automationplan_object(self, runner, mock_http):
-        from models.automation_plan_schema import AutomationPlan, AutomationStep
+        from app.models.automation_plan_schema import AutomationPlan, AutomationStep
 
         plan_obj = AutomationPlan(
             name="Object Test",
@@ -254,7 +254,7 @@ class TestAutomationRunnerService:
 
     @pytest.mark.asyncio
     async def test_start_automation_runs_background_task(self):
-        from services.automation_runner_service import AutomationRunnerService
+        from app.services.automacao.runner_service import AutomationRunnerService
 
         plan = {
             "name": "Service Test",
@@ -265,8 +265,8 @@ class TestAutomationRunnerService:
             }],
         }
 
-        with patch("repositories.automations.update_automation_run_status"), \
-             patch("repositories.automations.upsert_automation_run", return_value=[]):
+        with patch("worker.repositorio_dados.atualizar_status_run"), \
+             patch("app.services.automacao.registrar_automation_run_service.RegistrarAutomationRunService.executar", return_value=None):
 
             result = await AutomationRunnerService.start_automation(
                 "run_123", plan, user_id="user_123",
@@ -277,7 +277,7 @@ class TestAutomationRunnerService:
 
     @pytest.mark.asyncio
     async def test_trigger_automation_from_webhook_returns_webhook_id(self):
-        from services.automation_runner_service import AutomationRunnerService
+        from app.services.automacao.runner_service import AutomationRunnerService
 
         plan = {"name": "Webhook Test", "steps": []}
         result = await AutomationRunnerService.trigger_automation_from_webhook(
@@ -288,7 +288,7 @@ class TestAutomationRunnerService:
 
     @pytest.mark.asyncio
     async def test_start_automation_calls_worker_http_and_returns_run_id(self):
-        from services.automation_runner_service import AutomationRunnerService
+        from app.services.automacao.runner_service import AutomationRunnerService
 
         plan = {
             "name": "Worker HTTP Test",
@@ -298,7 +298,7 @@ class TestAutomationRunnerService:
             }],
         }
 
-        with patch("services.automation_runner_service.httpx.AsyncClient.post") as mock_post:
+        with patch("app.services.automacao.runner_service.httpx.AsyncClient.post") as mock_post:
             mock_post.return_value.status_code = 202
             mock_post.return_value.json = lambda: {"status": "accepted", "automation_id": "run_123"}
 
@@ -311,77 +311,14 @@ class TestAutomationRunnerService:
 
     @pytest.mark.asyncio
     async def test_start_automation_logs_error_when_worker_unreachable(self):
-        from services.automation_runner_service import AutomationRunnerService
+        from app.services.automacao.runner_service import AutomationRunnerService
 
         plan = {"name": "Worker Fail Test", "steps": []}
 
-        with patch("services.automation_runner_service.httpx.AsyncClient.post") as mock_post:
+        with patch("app.services.automacao.runner_service.httpx.AsyncClient.post") as mock_post:
             mock_post.side_effect = httpx.ConnectError("Worker unreachable")
 
             result = await AutomationRunnerService.start_automation("user_123", plan)
 
         assert "first_execution_run_id" in result
         assert result["first_execution_run_id"].startswith("direct-")
-
-
-class TestAutomationRepositories:
-    """Testa os repositórios de automação (stats + history)."""
-
-    def test_get_user_stats_returns_7_days(self):
-        from repositories import automations as automations_repo
-        from datetime import timedelta, timezone
-
-        now = datetime.now(timezone.utc)
-        mock_dates = [
-            now - timedelta(days=1),
-            now - timedelta(days=1),
-            now - timedelta(days=3),
-        ]
-
-        with patch("repositories.automations.get_sync_db") as mock_get_db:
-            mock_db = MagicMock()
-            mock_get_db.return_value = mock_db
-            mock_query = MagicMock()
-            mock_db.query.return_value = mock_query
-            mock_query.filter.return_value = mock_query
-            mock_query.all.return_value = [
-                MagicMock(created_at=d) for d in mock_dates
-            ]
-
-            data = automations_repo.get_user_stats("user_123")
-
-            assert len(data) == 7
-            assert any(d["automations"] > 0 for d in data)
-            assert sum(d["automations"] for d in data) == 3
-
-    def test_get_user_history_returns_mapped_rows(self):
-        from repositories import automations as automations_repo
-        from datetime import timezone
-
-        now = datetime.now(timezone.utc)
-
-        with patch("repositories.automations.get_sync_db") as mock_get_db:
-            mock_db = MagicMock()
-            mock_get_db.return_value = mock_db
-            mock_query = MagicMock()
-            mock_db.query.return_value = mock_query
-            mock_query.filter.return_value = mock_query
-            mock_query.order_by.return_value = mock_query
-            mock_query.limit.return_value = mock_query
-            mock_query.all.return_value = [
-                MagicMock(to_dict=lambda: {
-                    "id": "run_1",
-                    "run_type": "direct",
-                    "status": "completed",
-                    "input_summary": "Test 1",
-                    "created_at": now.isoformat(),
-                    "result_metadata": {},
-                    "input_payload": {},
-                })
-            ]
-
-            history = automations_repo.get_user_history("user_123", limit=5)
-
-            assert len(history) == 1
-            assert history[0]["id"] == "run_1"
-            assert history[0]["status"] == "completed"

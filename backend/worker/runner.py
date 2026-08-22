@@ -1,7 +1,7 @@
 import asyncio
 import logging
 from typing import Any, List, Dict, Union
-from models.automation_plan_schema import AutomationPlan, AutomationStep, FlowConditionStep
+from app.models.automation_plan_schema import AutomationPlan, AutomationStep, FlowConditionStep
 from worker.utils.resolver import resolve_variables
 from worker.modules.registry import get_module_function
 
@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 
 def _log_step(automation_id: str, step_index: int, module_id: str, status: str, user_id: str = None, result: dict = None):
     try:
-        from repositories.automations import log_step
-        log_step(automation_id, step_index, module_id, status, user_id=user_id, result=result)
+        from worker.repositorio_dados import registrar_passo_execucao
+        registrar_passo_execucao(automation_id, step_index, module_id, status, user_id=user_id, result=result)
     except Exception as e:
         logger.warning(f"⚠️ Falha ao logar step {step_index} ({module_id}): {e}")
 

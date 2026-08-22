@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 from typing import Any, List, Dict, Optional
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
-from models.automation_plan_schema import AutomationPlan
-from services.module_registry import get_full_catalog
+from app.models.automation_plan_schema import AutomationPlan
+from app.services.automacao.module_registry import get_full_catalog
 
 load_dotenv()
 
@@ -72,13 +72,12 @@ class AutomationPipelineService:
         
         # Créditos (simplificado aqui para brevidade, mantendo lógica do original)
         try:
-            from services.credit_service import credit_service
+            from app.services.profile.credit_service import credit_service
             usage = resp.usage
             total_tokens = getattr(usage, "total_tokens", 0)
             credits_cost = credit_service.calculate_credits(total_tokens)
             if estado.user_id and credits_cost > 0:
-                from repositories import profiles
-                profiles.increment_quota_usage(estado.user_id, credits_to_add=credits_cost)
+                credit_service.debit_credits(estado.user_id, credits_cost)
         except Exception:
             pass
             

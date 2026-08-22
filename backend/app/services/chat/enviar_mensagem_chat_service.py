@@ -2,8 +2,8 @@ import asyncio
 import os
 
 from core.security import is_prompt_injection_safe
-from services.ai_service import AIService
-from services.automation_pipeline_service import AutomationPipelineService
+from app.services.ia.ai_service import AIService
+from app.services.automacao.pipeline_service import AutomationPipelineService
 
 from app.models.execution_log import ExecutionLog
 from app.models.automation_generation_log import AutomationGenerationLog

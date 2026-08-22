@@ -24,7 +24,7 @@ class IniciarAutomacaoAssincronaService:
     @staticmethod
     def _executar_em_thread(automation_id: str, plan: dict, user_id: str = None):
         try:
-            from services.automation_runner_service import AutomationRunnerService
+            from app.services.automacao.runner_service import AutomationRunnerService
 
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)

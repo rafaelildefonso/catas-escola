@@ -21,9 +21,9 @@ def get_google_access_token(user_id: str, provider: str = "google_gmail") -> str
             "Certifique-se de que o plano passa o user_id no trigger."
         )
 
-    from repositories.integrations import get_integration
+    from worker.repositorio_dados import obter_integracao
 
-    integration = get_integration(user_id, provider)
+    integration = obter_integracao(user_id, provider)
     if not integration:
         raise ValueError(
             f"Integração '{provider}' não encontrada para o usuário. "

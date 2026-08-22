@@ -16,7 +16,7 @@ def _get_provider():
     Lê AGENT_WORKER_TRANSFORM do .env no formato 'provider|model|api_url|env_key_name'
     e retorna a instância do AIProvider via AIFactory (mesmo padrão do backend).
     """
-    from services.ai_providers.factory import AIFactory
+    from app.services.ia.providers.factory import AIFactory
 
     config_str = os.getenv("AGENT_WORKER_TRANSFORM", _DEFAULT_AGENT_CONFIG)
     return AIFactory.create(config_str)

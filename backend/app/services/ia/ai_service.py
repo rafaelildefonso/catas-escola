@@ -3,11 +3,11 @@ import json
 from typing import TypedDict, Any
 from core.config import settings
 from core.errors import sanitize_error
-from services.intent_classifier import IntentClassifier
-from services.entity_extractor import EntityExtractor
-from services.payload_builder import PayloadBuilder
-from services.ui_components_library import UIComponentLibrary
-from services.ai_base import AIBase
+from app.services.ia.intent_classifier import IntentClassifier
+from app.services.ia.entity_extractor import EntityExtractor
+from app.services.ia.payload_builder import PayloadBuilder
+from app.services.ia.ui_components_library import UIComponentLibrary
+from app.services.ia.base import AIBase
 
 class AIResponseSchema(TypedDict):
     response_text: str
@@ -56,14 +56,15 @@ class AIService:
             user_context_info = ""
             if user_id:
                 try:
-                    from repositories import profiles
-                    profile = profiles.get_user_profile(user_id)
-                    if profile:
+                    from app.models.profile import Profile
+                    profile_model = Profile.buscar_por_id(user_id)
+                    if profile_model:
+                        profile = profile_model.to_dict()
                         industry = profile.get("industry")
                         role = profile.get("role")
                         if industry or role:
                             user_context_info = f"\n[USER CONTEXT]\nIndustry: {industry}\nRole: {role}\n"
-                            print(f"👤 [AIService] Contexto do usuário injetado: {industry} | {role}")
+                            print(f"✅ [AIService] Contexto do usuário injetado: {industry} | {role}")
                 except Exception as e:
                     print(f"Erro ao buscar perfil para contexto: {e}")
 
@@ -136,8 +137,8 @@ class AIService:
             feedback_context = ""
             if user_id:
                 try:
-                    from repositories import feedback
-                    preferences = feedback.get_user_preferences_summary(user_id)
+                    from app.repositories.feedbacks_repository import preferencias_do_usuario
+                    preferences = preferencias_do_usuario(user_id)
 
                     # Só adiciona contexto se há dados suficientes (>3 feedbacks)
                     if preferences.get("total", 0) >= 3:
@@ -277,7 +278,7 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
             )
 
             # --- CREDIT CALCULATION ---
-            from services.credit_service import credit_service
+            from app.services.profile.credit_service import credit_service
             usage = response_data.get("_system_usage", {})
             total_tokens = usage.get("total_tokens", 0)
             
@@ -295,8 +296,7 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
             # Update user quota if user_id is provided
             if user_id and credits_cost > 0:
                 try:
-                    from repositories import profiles
-                    profiles.increment_quota_usage(user_id, credits_to_add=credits_cost)
+                    credit_service.debit_credits(user_id, credits_cost)
                     print(f"[Credits] Debited {credits_cost} credits from user {user_id}")
                 except Exception as ex:
                     print(f"[Credits] Error updating credits: {ex}")

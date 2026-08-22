@@ -1,7 +1,7 @@
 import asyncio
 from datetime import datetime, timezone, timedelta
 from core.config import settings
-from services.ai_base import AIBase
+from app.services.ia.base import AIBase
 import re
 
 class EntityExtractor:
