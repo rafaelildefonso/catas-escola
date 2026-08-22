@@ -26,7 +26,7 @@ class ExecuteRequest(BaseModel):
 
 async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str]):
     from worker.runner import AutomationRunner
-    from repositories import automations as automations_repo
+    from worker.repositorio_dados import atualizar_status_run
 
     logger.info(
         "📥 [Worker] Executando automação %s (user=%s, steps=%s)",
@@ -42,7 +42,7 @@ async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str])
             user_id=user_id,
         )
 
-        automations_repo.update_automation_run_status(
+        atualizar_status_run(
             automation_id,
             "completed",
             result_metadata={"run_context": result_context},
@@ -52,7 +52,7 @@ async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str])
     except Exception as e:
         logger.error("❌ [Worker] Falha na automação %s: %s", automation_id, traceback.format_exc())
         try:
-            automations_repo.update_automation_run_status(
+            atualizar_status_run(
                 automation_id,
                 "failed",
                 error_details={"message": str(e), "traceback": traceback.format_exc()},

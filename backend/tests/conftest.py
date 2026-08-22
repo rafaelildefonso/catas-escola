@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import pytest
 
@@ -14,8 +14,8 @@ os.environ.setdefault("OPENAI_API_KEY", "test-openai")
 os.environ.setdefault("GOOGLE_API_KEY", "test-google")
 os.environ.setdefault("STRIPE_SECRET_KEY", "test-stripe")
 
-from app import create_app
-from app.extensions import db as _db
+from application import create_app
+from extensions import db as _db
 
 
 @pytest.fixture(scope="session")

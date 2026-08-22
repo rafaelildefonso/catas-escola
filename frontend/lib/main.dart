@@ -1,5 +1,4 @@
 import 'package:catas/providers/cloudinary_provider.dart';
-import 'package:catas/providers/payments_provider.dart';
 import 'package:catas/providers/server_status_provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +91,6 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => CloudinaryProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
         ChangeNotifierProvider(create: (_) => IntegrationsProvider()),
-        ChangeNotifierProvider(create: (_) => PaymentsProvider()),
         ChangeNotifierProvider(create: (_) => NativeContextProvider()),
         ChangeNotifierProvider(create: (_) => RelatorioProvider()),
         // Always register base provider types, but use demo implementations when in demo mode

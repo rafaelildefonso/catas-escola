@@ -3,10 +3,10 @@ import inspect
 import json
 import pkgutil
 
-import app.models
-import app.controllers
-from app.extensions import db
-from app.models.user import User
+import models
+import controllers
+from extensions import db
+from models.user import User
 
 
 CRUD_METHODS = ["salvar", "atualizar", "deletar", "listar_todos", "buscar_por_id", "to_dict"]
@@ -15,8 +15,8 @@ CRUD_METHODS = ["salvar", "atualizar", "deletar", "listar_todos", "buscar_por_id
 def _all_models():
     from sqlalchemy.orm import DeclarativeMeta
     result = []
-    for name in dir(app.models):
-        obj = getattr(app.models, name)
+    for name in dir(models):
+        obj = getattr(models, name)
         if isinstance(obj, DeclarativeMeta) and issubclass(obj, db.Model):
             result.append(obj)
     return result
@@ -24,10 +24,10 @@ def _all_models():
 
 def _controller_modules():
     modules = []
-    for _, modname, ispkg in pkgutil.iter_modules(app.controllers.__path__):
+    for _, modname, ispkg in pkgutil.iter_modules(controllers.__path__):
         if ispkg:
             continue
-        modules.append(importlib.import_module(f"{app.controllers.__name__}.{modname}"))
+        modules.append(importlib.import_module(f"{controllers.__name__}.{modname}"))
     return modules
 
 
@@ -215,10 +215,10 @@ class TestArchitectureCompliance:
         for mod in _controller_modules():
             src = inspect.getsource(mod)
             assert "db.session." not in src, f"{mod.__name__} usa persistencia direta"
-            assert "from app.extensions import db" not in src, f"{mod.__name__} importa db"
+            assert "from extensions import db" not in src, f"{mod.__name__} importa db"
             assert "import db" not in src
 
     def test_controller_chama_service(self):
         for mod in _controller_modules():
             src = inspect.getsource(mod)
-            assert "from app.services" in src, f"{mod.__name__} nao chama services"
+            assert "from services" in src, f"{mod.__name__} nao chama services"

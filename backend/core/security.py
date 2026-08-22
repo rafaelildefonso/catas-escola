@@ -1,4 +1,4 @@
-import re
+﻿import re
 import os
 from functools import wraps
 from flask import request, jsonify, g
@@ -81,20 +81,21 @@ def is_prompt_injection_safe(text: str) -> bool:
 
 
 def get_user_rate_limit(user_id: str) -> str:
-    from repositories import profiles as profiles_repo
-    import uuid
+    import uuid as uuid_lib
 
     try:
-        uuid.UUID(str(user_id))
+        uuid_lib.UUID(str(user_id))
     except (ValueError, TypeError):
         return "100/minute"
 
     try:
-        profile = profiles_repo.get_user_profile(user_id)
+        from models.profile import Profile
+
+        profile = Profile.buscar_por_id(user_id)
         if not profile:
             return "100/minute"
 
-        tier = profile.get("subscription_tier", "basic").lower()
+        tier = (profile.subscription_tier or "basic").lower()
 
         if tier == "max":
             return "500/minute"

@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../providers/navigation_provider.dart';
-import '../providers/notifications_provider.dart';
 import '../core/router.dart';
 import '../core/navigation_helpers.dart';
 import 'package:skeletonizer/skeletonizer.dart';
@@ -116,15 +115,7 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
 
     final chat = context.watch<ChatProvider>();
     final screenWidth = MediaQuery.of(context).size.width;
-    final notificationsProvider = context.watch<NotificationsProvider>();
-    final unreadCount = notificationsProvider.unreadCount;
-
-    // Carrega notificações se ainda não carregou
-    if (!notificationsProvider.hasLoaded && !notificationsProvider.isLoading) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.read<NotificationsProvider>().loadNotifications();
-      });
-    }
+    final unreadCount = 0;
 
     if (chat.sessions.isEmpty &&
         !chat.isLoadingSessions &&

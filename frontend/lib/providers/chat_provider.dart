@@ -578,11 +578,8 @@ class ChatProvider extends ChangeNotifier {
     _activeCancelToken?.cancel("User stopped generation");
     _activeCancelToken = null;
 
-    // 2. Abort backend automation if we have an ID
-    if (_currentAutomationId != null) {
-      _repository.cancelAutomation(_currentAutomationId!);
-      _currentAutomationId = null;
-    }
+    // 2. Clear automation state
+    _currentAutomationId = null;
 
     _unsubscribeFromAutomation();
     notifyListeners();
@@ -1055,11 +1052,20 @@ class ChatProvider extends ChangeNotifier {
 
       _thinkingStage = ThinkingStage.idle;
       _lastError = e.toString();
-      String friendlyError = "Erro ao enviar mensagem: $e";
 
-      if (_lastError!.contains("401") || _lastError!.contains("403")) {
-        friendlyError =
-            "Sua sessão expirou ou sua conta não foi encontrada. Por favor, faça login novamente.";
+      String friendlyError = "Erro ao enviar mensagem: $e";
+      if (e is DioException) {
+        final data = e.response?.data;
+        final detail =
+            data is Map ? data['detail']?.toString() : data?.toString();
+        final statusCode = e.response?.statusCode ?? 0;
+
+        if (detail != null && detail.isNotEmpty) {
+          friendlyError = detail;
+        } else if (statusCode == 401) {
+          friendlyError =
+              "Sua sessão expirou ou sua conta não foi encontrada. Por favor, faça login novamente.";
+        }
       }
 
       if (!_isStopped) {

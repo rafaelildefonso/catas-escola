@@ -1,9 +1,9 @@
-import pytest
+﻿import pytest
 import json
 
-from app.models.profile import Profile
-from app.models.chat_session import ChatSession
-from app.models.message import Message
+from models.profile import Profile
+from models.chat_session import ChatSession
+from models.message import Message
 
 
 class TestProfileModelCRUD:

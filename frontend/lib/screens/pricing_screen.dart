@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../data/payments_service.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:skeletonizer/skeletonizer.dart';
 
 class PricingScreen extends StatefulWidget {
   const PricingScreen({super.key});
@@ -14,56 +11,12 @@ class PricingScreen extends StatefulWidget {
 }
 
 class _PricingScreenState extends State<PricingScreen> {
-  final PaymentsService _paymentsService = PaymentsService();
-  bool _isLoading = false;
-  String? _loadingPlan;
-
-  Future<void> _handlePlanSelection(String planTier) async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-      _loadingPlan = planTier;
-    });
-
-    try {
-      final checkoutUrl = await _paymentsService.createPlanCheckout(planTier);
-      if (!mounted) return;
-
-      // No Web e Mobile, redireciona diretamente para a Stripe (Prática recomendada de segurança)
-      final uri = Uri.parse(checkoutUrl);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-
-        if (!mounted) return;
-
-        // No mobile, após abrir o navegador, o usuário voltará via Deep Link.
-        // No web, ele apenas completa a aba.
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Abrindo checkout no navegador seguro...'),
-          ),
-        );
-      } else {
-        throw 'Não foi possível abrir o link de pagamento';
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro ao processar pagamento: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _loadingPlan = null;
-        });
-      }
-    }
+  void _handlePlanSelection(String planTier) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Assinatura em breve! Aguarde.'),
+      ),
+    );
   }
 
   @override
@@ -74,9 +27,7 @@ class _PricingScreenState extends State<PricingScreen> {
     final currentTier = auth.subscriptionTier ?? 'free';
 
     return Scaffold(
-      body: Skeletonizer(
-        enabled: _isLoading && _loadingPlan == null,
-        child: SingleChildScrollView(
+      body: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
           child: Center(
             child: ConstrainedBox(
@@ -165,7 +116,6 @@ class _PricingScreenState extends State<PricingScreen> {
                 ],
               ),
             ),
-          ),
         ),
       ),
     );
@@ -278,7 +228,6 @@ class _PricingScreenState extends State<PricingScreen> {
     bool isCurrent = false,
     required String currentTier,
   }) {
-    final isLoadingThisPlan = _isLoading && _loadingPlan == planTier;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
@@ -422,7 +371,7 @@ class _PricingScreenState extends State<PricingScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: isCurrent || _isLoading
+                    onPressed: isCurrent
                         ? null
                         : () => _handlePlanSelection(planTier),
                     style: FilledButton.styleFrom(
@@ -441,16 +390,7 @@ class _PricingScreenState extends State<PricingScreen> {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    child: isLoadingThisPlan
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
+                    child: Text(
                             isCurrent
                                 ? "Plano Atual"
                                 : (_getTierRank(currentTier) >

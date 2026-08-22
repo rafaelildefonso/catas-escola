@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../components/clickable_wrapper.dart';
 import '../providers/auth_provider.dart';
-import '../providers/notifications_provider.dart';
 import '../components/catas_dialog.dart';
 import '../components/catas_input.dart';
 
@@ -102,7 +101,6 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
 
     if (confirmed == true) {
       try {
-        await context.read<NotificationsProvider>().deactivateCurrentToken();
         await auth.deleteAccount();
       } catch (e) {
         _showSnack(e.toString(), isError: true);

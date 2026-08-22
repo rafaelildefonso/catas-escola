@@ -196,23 +196,6 @@ class ChatRepository implements IChatRepository {
   }
 
   @override
-  Future<void> cancelAutomation(String automationId) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/automations/$automationId/cancel";
-
-    try {
-      final response = await _dio.post(url, options: _getOptions());
-
-      if (response.statusCode == 200) {
-        return;
-      }
-      throw Exception("HttpError: ${response.statusCode}");
-    } catch (e) {
-      throw Exception("Erro ao cancelar automação: $e");
-    }
-  }
-
-  @override
   Future<void> sendFeedback({
     required String messageId,
     required String sessionId,

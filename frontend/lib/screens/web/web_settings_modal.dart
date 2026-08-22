@@ -1,12 +1,11 @@
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../../core/web_page_renderer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
-import '../../providers/notifications_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../components/catas_dropdown.dart';
 import '../../components/catas_dialog.dart';
@@ -356,13 +355,13 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                               _buildTapTile(
                                 icon: Icons.info_outline,
                                 title: AppLocalizations.of(context)!.settingsAbout,
-                                onTap: () { if (kIsWeb) html.window.location.href = '/about'; },
+                                onTap: () { if (kIsWeb) navigateTo('/about'); },
                               ),
                               _buildDivider(),
                               _buildTapTile(
                                 icon: Icons.help_outline_rounded,
                                 title: AppLocalizations.of(context)!.settingsGetHelp,
-                                onTap: () { if (kIsWeb) html.window.location.href = '/contact'; },
+                                onTap: () { if (kIsWeb) navigateTo('/contact'); },
                               ),
                             ],
                           ),
@@ -396,7 +395,6 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                                   ],
                                 );
                                 if (confirmed == true && context.mounted) {
-                                  await context.read<NotificationsProvider>().deactivateCurrentToken();
                                   if (context.mounted) {
                                     context.read<AuthProvider>().logout();
                                     Navigator.pop(context);
