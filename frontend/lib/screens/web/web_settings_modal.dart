@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
-import '../../providers/notifications_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../components/catas_dropdown.dart';
 import '../../components/catas_dialog.dart';
@@ -396,7 +395,6 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                                   ],
                                 );
                                 if (confirmed == true && context.mounted) {
-                                  await context.read<NotificationsProvider>().deactivateCurrentToken();
                                   if (context.mounted) {
                                     context.read<AuthProvider>().logout();
                                     Navigator.pop(context);

@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import '../core/app_config.dart';
 import '../services/token_holder.dart';
@@ -85,70 +84,9 @@ class IntegrationsProvider extends ChangeNotifier {
     if (isConnected(provider)) {
       return await disconnectProvider(provider);
     } else {
-      if (provider.startsWith('google_')) {
-        return await connectGoogleWorkspace(provider);
-      } else {
-        _lastError = "Provedor $provider não configurado no client.";
-        notifyListeners();
-        return false;
-      }
-    }
-  }
-
-  Future<bool> connectGoogleWorkspace(String provider) async {
-    _busyProviders.add(provider);
-    _lastError = null;
-    notifyListeners();
-
-    try {
-      final url = Uri.parse(
-        "${_getBaseUrl()}/integrations/google/auth-url?provider=$provider",
-      );
-      final response = await http.get(url, headers: _getHeaders());
-
-      if (response.statusCode != 200) {
-        _lastError = "Erro ao obter URL de autenticação.";
-        return false;
-      }
-
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      final authUrl = data['auth_url'] as String?;
-
-      if (authUrl == null || authUrl.isEmpty) {
-        _lastError = "URL de autenticação inválida.";
-        return false;
-      }
-
-      final uri = Uri.parse(authUrl);
-      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        _lastError = "Não foi possível abrir o navegador.";
-        return false;
-      }
-
-      // Poll em background — quando o OAuth server-side concluir, a UI será atualizada
-      _pollForProvider(provider);
-      return true;
-    } catch (e) {
-      _lastError = "Erro ao conectar. Verifique sua conexão e tente novamente.";
-      return false;
-    } finally {
-      _busyProviders.remove(provider);
+      _lastError = "Conexão com $provider ainda não disponível.";
       notifyListeners();
-    }
-  }
-
-  void _pollForProvider(String provider) async {
-    int attempts = 0;
-    while (attempts < 20) {
-      await Future.delayed(const Duration(seconds: 3));
-      try {
-        await fetchIntegrations(force: true, silent: true);
-      } catch (_) {
-        // Ignore network errors during polling — user will see the result
-        // when they come back to the app after authentication.
-      }
-      if (_connectedProviders.contains(provider)) break;
-      attempts++;
+      return false;
     }
   }
 

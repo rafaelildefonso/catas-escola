@@ -419,13 +419,6 @@ class DemoRepository implements IChatRepository {
   }
 
   @override
-  Future<void> cancelAutomation(String automationId) async {
-    await _delay();
-    // No-op for demo
-    return;
-  }
-
-  @override
   Future<void> sendFeedback({
     required String messageId,
     required String sessionId,

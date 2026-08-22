@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
-import '../providers/notifications_provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/locale_provider.dart';
 import '../core/router.dart';
@@ -314,8 +313,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ],
               );
               if (confirmed == true && context.mounted) {
-                // Desativa o token FCM antes de sair
-                await context.read<NotificationsProvider>().deactivateCurrentToken();
                 if (context.mounted) {
                   context.read<AuthProvider>().logout();
                 }

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../providers/auth_provider.dart';
-import '../providers/payments_provider.dart';
 import '../core/router.dart';
 import '../l10n/app_localizations.dart';
 
@@ -24,36 +22,10 @@ class ManageSubscriptionScreen extends StatefulWidget {
 }
 
 class _ManageSubscriptionScreenState extends State<ManageSubscriptionScreen> {
-  void _showSnack(String message, {bool isError = false}) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : null,
-      ),
-    );
-  }
-
-  Future<void> _openStripePortal() async {
-    final payments = context.read<PaymentsProvider>();
-
-    try {
-      final url = await payments.createBillingPortalSession();
-      if (url != null && await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      } else {
-        _showSnack('Não foi possível abrir o portal de cobrança.', isError: true);
-      }
-    } catch (e) {
-      _showSnack(e.toString(), isError: true);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final auth = context.watch<AuthProvider>();
-    final payments = context.watch<PaymentsProvider>();
     final l10n = AppLocalizations.of(context)!;
 
     final tier = auth.subscriptionTier ?? 'free';
@@ -211,96 +183,6 @@ class _ManageSubscriptionScreenState extends State<ManageSubscriptionScreen> {
         ),
 
         const SizedBox(height: 32),
-
-        // Gerenciamento Stripe
-        Text(
-          l10n.paymentMethod.toUpperCase(),
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: theme.colorScheme.onSurfaceVariant,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 16),
-        
-        Card(
-          elevation: 0,
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: theme.colorScheme.outline.withValues(alpha: 0.1)),
-          ),
-          child: InkWell(
-            onTap: payments.isLoading ? null : _openStripePortal,
-            borderRadius: BorderRadius.circular(16),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.payments_outlined,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          l10n.manageBillingStripe,
-                          style: GoogleFonts.inter(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Assinaturas, cartões e faturas',
-                          style: GoogleFonts.inter(
-                            fontSize: 13,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (payments.isLoading)
-                    const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    Icon(
-                      Icons.open_in_new,
-                      size: 18,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        
-        const SizedBox(height: 24),
-        
-        Text(
-          'O CATAS utiliza o Stripe para processar pagamentos de forma segura. Nenhuma informação de cartão é armazenada em nossos servidores.',
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: theme.colorScheme.onSurfaceVariant,
-            height: 1.5,
-          ),
-          textAlign: TextAlign.center,
-        ),
       ],
     );
 

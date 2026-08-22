@@ -578,11 +578,8 @@ class ChatProvider extends ChangeNotifier {
     _activeCancelToken?.cancel("User stopped generation");
     _activeCancelToken = null;
 
-    // 2. Abort backend automation if we have an ID
-    if (_currentAutomationId != null) {
-      _repository.cancelAutomation(_currentAutomationId!);
-      _currentAutomationId = null;
-    }
+    // 2. Clear automation state
+    _currentAutomationId = null;
 
     _unsubscribeFromAutomation();
     notifyListeners();

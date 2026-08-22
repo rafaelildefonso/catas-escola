@@ -25,9 +25,6 @@ abstract class IChatRepository {
     CancelToken? cancelToken,
   });
 
-  /// Cancela uma automação em execução no backend
-  Future<void> cancelAutomation(String automationId);
-
   /// Envia like/dislike para uma mensagem do assistente.
   /// [isLiked] null = remove o feedback (toggle off).
   /// [reason] motivo do feedback (opcional).
