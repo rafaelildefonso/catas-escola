@@ -234,7 +234,7 @@ class TestRunnerUnit:
 
     @pytest.mark.asyncio
     async def test_plan_accepts_automationplan_object(self, runner, mock_http):
-        from app.models.automation_plan_schema import AutomationPlan, AutomationStep
+        from models.automation_plan_schema import AutomationPlan, AutomationStep
 
         plan_obj = AutomationPlan(
             name="Object Test",
@@ -254,7 +254,7 @@ class TestAutomationRunnerService:
 
     @pytest.mark.asyncio
     async def test_start_automation_runs_background_task(self):
-        from app.services.automacao.runner_service import AutomationRunnerService
+        from services.automacao.runner_service import AutomationRunnerService
 
         plan = {
             "name": "Service Test",
@@ -266,7 +266,7 @@ class TestAutomationRunnerService:
         }
 
         with patch("worker.repositorio_dados.atualizar_status_run"), \
-             patch("app.services.automacao.registrar_automation_run_service.RegistrarAutomationRunService.executar", return_value=None):
+             patch("services.automacao.registrar_automation_run_service.RegistrarAutomationRunService.executar", return_value=None):
 
             result = await AutomationRunnerService.start_automation(
                 "run_123", plan, user_id="user_123",
@@ -277,7 +277,7 @@ class TestAutomationRunnerService:
 
     @pytest.mark.asyncio
     async def test_trigger_automation_from_webhook_returns_webhook_id(self):
-        from app.services.automacao.runner_service import AutomationRunnerService
+        from services.automacao.runner_service import AutomationRunnerService
 
         plan = {"name": "Webhook Test", "steps": []}
         result = await AutomationRunnerService.trigger_automation_from_webhook(
@@ -288,7 +288,7 @@ class TestAutomationRunnerService:
 
     @pytest.mark.asyncio
     async def test_start_automation_calls_worker_http_and_returns_run_id(self):
-        from app.services.automacao.runner_service import AutomationRunnerService
+        from services.automacao.runner_service import AutomationRunnerService
 
         plan = {
             "name": "Worker HTTP Test",
@@ -298,7 +298,7 @@ class TestAutomationRunnerService:
             }],
         }
 
-        with patch("app.services.automacao.runner_service.httpx.AsyncClient.post") as mock_post:
+        with patch("services.automacao.runner_service.httpx.AsyncClient.post") as mock_post:
             mock_post.return_value.status_code = 202
             mock_post.return_value.json = lambda: {"status": "accepted", "automation_id": "run_123"}
 
@@ -311,11 +311,11 @@ class TestAutomationRunnerService:
 
     @pytest.mark.asyncio
     async def test_start_automation_logs_error_when_worker_unreachable(self):
-        from app.services.automacao.runner_service import AutomationRunnerService
+        from services.automacao.runner_service import AutomationRunnerService
 
         plan = {"name": "Worker Fail Test", "steps": []}
 
-        with patch("app.services.automacao.runner_service.httpx.AsyncClient.post") as mock_post:
+        with patch("services.automacao.runner_service.httpx.AsyncClient.post") as mock_post:
             mock_post.side_effect = httpx.ConnectError("Worker unreachable")
 
             result = await AutomationRunnerService.start_automation("user_123", plan)

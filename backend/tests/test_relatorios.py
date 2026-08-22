@@ -1,13 +1,13 @@
-import json
+﻿import json
 from datetime import datetime, timedelta, timezone
 
-from app.models.automation import Automation
-from app.models.automation_run import AutomationRun
-from app.models.chat_session import ChatSession
-from app.models.integration import Integration
-from app.models.message import Message
-from app.models.message_feedback import MessageFeedback
-from app.models.profile import Profile
+from models.automation import Automation
+from models.automation_run import AutomationRun
+from models.chat_session import ChatSession
+from models.integration import Integration
+from models.message import Message
+from models.message_feedback import MessageFeedback
+from models.profile import Profile
 
 
 class _Contexto:

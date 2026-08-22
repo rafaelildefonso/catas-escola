@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import logging
 from worker.utils.decorators import async_retry
@@ -16,7 +16,7 @@ def _get_provider():
     Lê AGENT_WORKER_TRANSFORM do .env no formato 'provider|model|api_url|env_key_name'
     e retorna a instância do AIProvider via AIFactory (mesmo padrão do backend).
     """
-    from app.services.ia.providers.factory import AIFactory
+    from services.ia.providers.factory import AIFactory
 
     config_str = os.getenv("AGENT_WORKER_TRANSFORM", _DEFAULT_AGENT_CONFIG)
     return AIFactory.create(config_str)
@@ -70,12 +70,12 @@ async def ai_transform_data(params: dict) -> dict:
         result_text = result.get("raw_text", "").strip()
 
     except Exception as e:
-        logger.error(f"❌ [ai.transform_data] Falha no provider: {e}. Usando Mock local.")
+        logger.error(f"âŒ [ai.transform_data] Falha no provider: {e}. Usando Mock local.")
         result_text = None
 
     # Mock Fallback — garante que o fluxo nunca trava sem chaves de API
     if not result_text:
-        logger.warning("⚠️ [ai.transform_data] Retornando Mock local (sem chave de API ou erro).")
+        logger.warning("âš ï¸ [ai.transform_data] Retornando Mock local (sem chave de API ou erro).")
         if out_format == "json":
             result_text = json.dumps({
                 "status": "mock",
@@ -103,6 +103,6 @@ async def ai_transform_data(params: dict) -> dict:
 
             return {"text": result_text, "parsed": json.loads(cleaned)}
         except Exception:
-            logger.warning("⚠️ [ai.transform_data] IA retornou JSON inválido. Retornando texto bruto.")
+            logger.warning("âš ï¸ [ai.transform_data] IA retornou JSON inválido. Retornando texto bruto.")
 
     return {"text": result_text}

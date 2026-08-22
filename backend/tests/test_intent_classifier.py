@@ -1,10 +1,10 @@
 import pytest
 from unittest.mock import AsyncMock, patch
-from app.services.ia.intent_classifier import IntentClassifier
+from services.ia.intent_classifier import IntentClassifier
 
 @pytest.fixture
 def intent_classifier_fixture():
-    with patch("app.services.ia.intent_classifier.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai:
+    with patch("services.ia.intent_classifier.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai:
         classifier = IntentClassifier()
         yield classifier, mock_call_ai
 

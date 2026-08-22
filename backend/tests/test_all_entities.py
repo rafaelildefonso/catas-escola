@@ -1,24 +1,24 @@
-import pytest
+﻿import pytest
 from datetime import datetime, timezone, timedelta
 
-from app.extensions import db
-from app.models.profile import Profile
-from app.models.chat_session import ChatSession
-from app.models.message import Message
-from app.models.integration import Integration
-from app.models.automation import Automation
-from app.models.automation_run import AutomationRun
-from app.models.automation_step_log import AutomationStepLog
-from app.models.automation_generation_log import AutomationGenerationLog
-from app.models.execution_log import ExecutionLog
-from app.models.message_feedback import MessageFeedback
-from app.models.ai_suggestion import AiSuggestion
-from app.models.page_context import PageContext
-from app.models.browser_session import BrowserSession
-from app.models.page_analysis_cache import PageAnalysisCache
-from app.models.user_device import UserDevice
-from app.models.user_webhook_config import UserWebhookConfig
-from app.models.ia_memory import IaMemory
+from extensions import db
+from models.profile import Profile
+from models.chat_session import ChatSession
+from models.message import Message
+from models.integration import Integration
+from models.automation import Automation
+from models.automation_run import AutomationRun
+from models.automation_step_log import AutomationStepLog
+from models.automation_generation_log import AutomationGenerationLog
+from models.execution_log import ExecutionLog
+from models.message_feedback import MessageFeedback
+from models.ai_suggestion import AiSuggestion
+from models.page_context import PageContext
+from models.browser_session import BrowserSession
+from models.page_analysis_cache import PageAnalysisCache
+from models.user_device import UserDevice
+from models.user_webhook_config import UserWebhookConfig
+from models.ia_memory import IaMemory
 
 
 def utcnow():

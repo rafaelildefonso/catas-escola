@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import logging
 
@@ -10,8 +10,8 @@ if sys.platform == "win32":
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from app import create_app, init_firebase
-from app.extensions import db
+from application import create_app, init_firebase
+from extensions import db
 
 app = create_app()
 

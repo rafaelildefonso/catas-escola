@@ -1,7 +1,7 @@
-import asyncio
+﻿import asyncio
 import logging
 from typing import Any, List, Dict, Union
-from app.models.automation_plan_schema import AutomationPlan, AutomationStep, FlowConditionStep
+from models.automation_plan_schema import AutomationPlan, AutomationStep, FlowConditionStep
 from worker.utils.resolver import resolve_variables
 from worker.modules.registry import get_module_function
 
@@ -15,7 +15,7 @@ def _log_step(automation_id: str, step_index: int, module_id: str, status: str, 
         from worker.repositorio_dados import registrar_passo_execucao
         registrar_passo_execucao(automation_id, step_index, module_id, status, user_id=user_id, result=result)
     except Exception as e:
-        logger.warning(f"⚠️ Falha ao logar step {step_index} ({module_id}): {e}")
+        logger.warning(f"âš ï¸ Falha ao logar step {step_index} ({module_id}): {e}")
 
 
 class AutomationRunner:
@@ -72,7 +72,7 @@ class AutomationRunner:
                 timeout=timeout,
             )
         except asyncio.TimeoutError:
-            logger.error(f"{log_prefix} ⏰ Timeout de {timeout}s excedido na receita '{plan.name}'.")
+            logger.error(f"{log_prefix} â° Timeout de {timeout}s excedido na receita '{plan.name}'.")
             raise TimeoutError(
                 f"Automação '{plan.name}' excedeu o limite de {timeout}s de execução."
             )
@@ -98,7 +98,7 @@ class AutomationRunner:
                 else:
                     condition_met = bool(resolved_expr)
                     
-                logger.info(f"{log_prefix} 🔍 Condicional '{step.step_id}' resolvida como: {condition_met}")
+                logger.info(f"{log_prefix} ðŸ” Condicional '{step.step_id}' resolvida como: {condition_met}")
 
                 true_branch = getattr(step, "true_branch", [])
                 false_branch = getattr(step, "false_branch", [])
@@ -151,7 +151,7 @@ class AutomationRunner:
                 try:
                     result = await func(resolved_params)
                 except Exception as e:
-                    logger.error(f"{log_prefix} ❌ Erro crítico no passo '{step.step_id}': {e}")
+                    logger.error(f"{log_prefix} âŒ Erro crítico no passo '{step.step_id}': {e}")
                     if automation_id:
                         _log_step(automation_id, step_index, step.module_id, "error", user_id=user_id, result={"error": str(e)})
                     raise

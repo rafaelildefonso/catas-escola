@@ -1,4 +1,4 @@
-import re
+﻿import re
 import os
 from functools import wraps
 from flask import request, jsonify, g
@@ -89,7 +89,7 @@ def get_user_rate_limit(user_id: str) -> str:
         return "100/minute"
 
     try:
-        from app.models.profile import Profile
+        from models.profile import Profile
 
         profile = Profile.buscar_por_id(user_id)
         if not profile:

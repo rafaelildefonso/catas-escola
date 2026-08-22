@@ -1,17 +1,17 @@
-import json
+﻿import json
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-from app.models.user import User
-from app.models.profile import Profile
-from app.services.chat.criar_sessao_chat_service import CriarSessaoChatService
-from app.services.chat.salvar_mensagem_chat_service import SalvarMensagemChatService
-from app.services.feedback.registrar_feedback_service import RegistrarFeedbackService
-from app.services.feedback.resumo_feedback_sessao_service import ResumoFeedbackSessaoService
-from app.services.profile.verificar_quota_service import VerificarQuotaService
-from app.services.chat.detectar_onboarding_demo_service import DetectarOnboardingDemoService
-from app.services.chat.montar_plano_onboarding_service import MontarPlanoOnboardingService
-from app.services.chat.excecoes_chat import ErroPermissao
+from models.user import User
+from models.profile import Profile
+from services.chat.criar_sessao_chat_service import CriarSessaoChatService
+from services.chat.salvar_mensagem_chat_service import SalvarMensagemChatService
+from services.feedback.registrar_feedback_service import RegistrarFeedbackService
+from services.feedback.resumo_feedback_sessao_service import ResumoFeedbackSessaoService
+from services.profile.verificar_quota_service import VerificarQuotaService
+from services.chat.detectar_onboarding_demo_service import DetectarOnboardingDemoService
+from services.chat.montar_plano_onboarding_service import MontarPlanoOnboardingService
+from services.chat.excecoes_chat import ErroPermissao
 
 
 def _criar_usuario(app, tier="pro"):

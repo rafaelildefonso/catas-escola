@@ -1,5 +1,5 @@
-import pytest
-from app.services.profile.credit_service import CreditService
+﻿import pytest
+from services.profile.credit_service import CreditService
 
 @pytest.fixture
 def credit_service():

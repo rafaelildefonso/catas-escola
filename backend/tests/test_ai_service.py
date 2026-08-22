@@ -1,13 +1,13 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
-from app.services.ia.ai_service import AIService
+from services.ia.ai_service import AIService
 
 @pytest.fixture
 def ai_service():
-    with patch("app.services.ia.ai_service.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai, \
-         patch("app.services.ia.ai_service.IntentClassifier") as _, \
-         patch("app.services.ia.ai_service.EntityExtractor") as _, \
-         patch("app.services.ia.ai_service.PayloadBuilder") as _:
+    with patch("services.ia.ai_service.AIBase.call_ai", new_callable=AsyncMock) as mock_call_ai, \
+         patch("services.ia.ai_service.IntentClassifier") as _, \
+         patch("services.ia.ai_service.EntityExtractor") as _, \
+         patch("services.ia.ai_service.PayloadBuilder") as _:
         
         service = AIService()
         yield service, mock_call_ai

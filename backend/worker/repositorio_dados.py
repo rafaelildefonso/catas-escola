@@ -1,4 +1,4 @@
-"""
+﻿"""
 Ponte de acesso a dados do Worker.
 
 O worker roda como serviço FastAPI separado, mas usa os MESMOS Models
@@ -22,7 +22,7 @@ def obter_app():
     if _flask_app is None:
         with _lock:
             if _flask_app is None:
-                from app import create_app
+                from application import create_app
                 _flask_app = create_app()
     return _flask_app
 
@@ -38,7 +38,7 @@ def registrar_passo_execucao(
 ) -> None:
     """Cria ou atualiza o log de um passo da automação (upsert por automation_id + step_index)."""
     with obter_app().app_context():
-        from app.models.automation_step_log import AutomationStepLog
+        from models.automation_step_log import AutomationStepLog
 
         registro = (
             AutomationStepLog.query
@@ -56,7 +56,7 @@ def registrar_passo_execucao(
                 registro.result = result
             if intent:
                 registro.intent = intent
-            from app.extensions import db
+            from extensions import db
             db.session.commit()
         else:
             registro = AutomationStepLog(
@@ -81,7 +81,7 @@ def atualizar_status_run(
 ) -> None:
     """Atualiza o status de uma execução; grava finished_at em status terminais."""
     with obter_app().app_context():
-        from app.models.automation_run import AutomationRun
+        from models.automation_run import AutomationRun
 
         run = AutomationRun.buscar_por_id(run_id)
         if not run:
@@ -104,10 +104,10 @@ def atualizar_status_run(
 def obter_integracao(user_id: str, provider: str) -> Optional[Dict]:
     """Busca a integração do usuário com tokens descriptografados, renovando se necessário."""
     with obter_app().app_context():
-        from app.extensions import db
+        from extensions import db
         from core.crypto import decrypt_value
         from core.oauth_token_service import is_google_provider, refresh_google_tokens, token_expires_soon
-        from app.models.integration import Integration
+        from models.integration import Integration
 
         integration_model = (
             Integration.query
