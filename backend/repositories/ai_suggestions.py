@@ -25,7 +25,7 @@ def save_suggestion(
             suggested_workflow=suggested_workflow,
         )
         db.add(suggestion)
-        db.flush()
+        db.commit()
         return suggestion.to_dict()
     finally:
         db.close()
@@ -38,7 +38,7 @@ def update_suggestion_status(suggestion_id: str, status: str) -> Dict:
         if not suggestion:
             raise RuntimeError(f"Sugestão {suggestion_id} não encontrada")
         suggestion.status = status
-        db.flush()
+        db.commit()
         return suggestion.to_dict()
     finally:
         db.close()

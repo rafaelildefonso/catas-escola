@@ -95,7 +95,7 @@ def check_and_increment_quota(user_id: str, model_requested: Optional[str] = Non
                 "rollover_credits": new_rollover,
                 "last_quota_reset": profile_dict["last_quota_reset"],
             })
-            db.flush()
+            db.commit()
         finally:
             db.close()
 
@@ -130,7 +130,7 @@ def create_default_profile(user_id: str) -> Dict:
     try:
         profile = Profile(**default_profile)
         db.add(profile)
-        db.flush()
+        db.commit()
         return profile.to_dict()
     finally:
         db.close()
@@ -155,7 +155,7 @@ def update_subscription_tier(user_id: str, tier: str) -> Optional[Dict]:
         profile.quota_used = 0
         profile.monthly_quota_limit = config["limit"]
         profile.updated_at = datetime.now(timezone.utc)
-        db.flush()
+        db.commit()
 
         print(f"[Stripe] User {user_id} plan updated to {tier.upper()} (quota limit: {config['limit']})")
         return profile.to_dict()
@@ -174,7 +174,7 @@ def update_profile_info(user_id: str, updates: Dict) -> Optional[Dict]:
             if hasattr(profile, key):
                 setattr(profile, key, value)
 
-        db.flush()
+        db.commit()
         return profile.to_dict()
     finally:
         db.close()
@@ -186,6 +186,6 @@ def delete_user_data(user_id: str):
         uid = uuid_lib.UUID(user_id)
         db.query(Integration).filter(Integration.user_id == uid).delete()
         db.query(Profile).filter(Profile.id == uid).delete()
-        db.flush()
+        db.commit()
     finally:
         db.close()

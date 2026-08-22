@@ -29,7 +29,7 @@ def log_automation(
             session_id=session_id,
         )
         db.add(log)
-        db.flush()
+        db.commit()
         return log.to_dict()
     finally:
         db.close()
@@ -67,7 +67,7 @@ def update_execution_log(
             log.result_data = result_data
         if error_message:
             log.error_message = error_message
-        db.flush()
+        db.commit()
         return log.to_dict()
     finally:
         db.close()

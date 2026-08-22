@@ -29,7 +29,7 @@ def log_generation(
             tokens_used=tokens_used,
         )
         db.add(row)
-        db.flush()
+        db.commit()
         return [row.to_dict()]
     finally:
         db.close()

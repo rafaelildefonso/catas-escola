@@ -125,7 +125,7 @@ def save_integration(
             },
         )
         db.execute(stmt)
-        db.flush()
+        db.commit()
 
         result = (
             db.query(Integration)
@@ -150,6 +150,6 @@ def delete_integration(user_id: str, provider: str) -> None:
             Integration.user_id == uuid_lib.UUID(user_id),
             Integration.provider == provider,
         ).delete()
-        db.flush()
+        db.commit()
     finally:
         db.close()

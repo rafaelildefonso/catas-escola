@@ -27,4 +27,4 @@ if not os.getenv("GROQ_API_KEY"):
     logger.warning("GROQ_API_KEY nao configurada. Pipeline de meta-automacao estara indisponivel.")
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8000)), debug=True)

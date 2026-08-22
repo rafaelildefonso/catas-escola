@@ -32,7 +32,7 @@ def upsert_feedback(
             },
         )
         db.execute(stmt)
-        db.flush()
+        db.commit()
 
         result = (
             db.query(MessageFeedback)
@@ -58,7 +58,7 @@ def delete_feedback(message_id: str, user_id: str) -> bool:
             MessageFeedback.message_id == message_id,
             MessageFeedback.user_id == user_id,
         ).delete()
-        db.flush()
+        db.commit()
         return True
     except Exception as e:
         raise RuntimeError(f"Erro ao remover feedback: {e}")

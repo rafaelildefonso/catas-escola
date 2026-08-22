@@ -23,7 +23,7 @@ def save_page_context(
             html_summary=html_summary,
         )
         db.add(context)
-        db.flush()
+        db.commit()
         return context.to_dict()
     finally:
         db.close()

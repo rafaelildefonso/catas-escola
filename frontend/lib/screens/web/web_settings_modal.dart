@@ -1,6 +1,6 @@
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import '../../core/web_page_renderer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -356,13 +356,13 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                               _buildTapTile(
                                 icon: Icons.info_outline,
                                 title: AppLocalizations.of(context)!.settingsAbout,
-                                onTap: () { if (kIsWeb) html.window.location.href = '/about'; },
+                                onTap: () { if (kIsWeb) navigateTo('/about'); },
                               ),
                               _buildDivider(),
                               _buildTapTile(
                                 icon: Icons.help_outline_rounded,
                                 title: AppLocalizations.of(context)!.settingsGetHelp,
-                                onTap: () { if (kIsWeb) html.window.location.href = '/contact'; },
+                                onTap: () { if (kIsWeb) navigateTo('/contact'); },
                               ),
                             ],
                           ),

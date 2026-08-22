@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:html' as html;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import '../../core/web_page_renderer.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catas/l10n/app_localizations.dart';
@@ -63,7 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _navigateToPage(String path) {
-    if (kIsWeb) html.window.location.href = path;
+    if (kIsWeb) navigateTo(path);
   }
 
   void _loginWithEmail() async {

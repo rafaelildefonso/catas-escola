@@ -4,10 +4,40 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Integer, Boolean, Float, Text, DateTime,
-    ForeignKey, UniqueConstraint, CheckConstraint, JSON, ARRAY
+    ForeignKey, UniqueConstraint, CheckConstraint, JSON, ARRAY,
+    types as sqltypes
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, class_mapper
 from sqlalchemy.dialects.postgresql import UUID, JSONB, ARRAY as PG_ARRAY
+
+
+class GUID(sqltypes.TypeDecorator):
+    """UUID portavel: tipo nativo no PostgreSQL; String(36) com hifens no SQLite.
+
+    Mantenho os hifens no SQLite para casar com os ids gravados pelos models
+    do novo stack (app/models/*), que usam String(36) com str(uuid4()).
+    """
+    impl = sqltypes.String(36)
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(GUID)
+        return dialect.type_descriptor(String(36))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if dialect.name == "postgresql":
+            return value
+        return str(value)
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return None
+        if isinstance(value, uuid.UUID):
+            return value
+        return uuid.UUID(str(value))
 
 
 class Base(DeclarativeBase):
@@ -31,7 +61,7 @@ def utcnow():
 class Profile(Base):
     __tablename__ = "profiles"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True)
     subscription_tier: Mapped[str] = mapped_column(String, default="basic")
     monthly_quota_limit: Mapped[int] = mapped_column(Integer, default=500)
     quota_used: Mapped[int] = mapped_column(Integer, default=0)
@@ -53,8 +83,8 @@ class Profile(Base):
 class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String, default="Nova Conversa")
     is_onboarding: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -67,8 +97,8 @@ class ChatSession(Base):
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="CASCADE"))
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    session_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("chat_sessions.id", ondelete="CASCADE"))
     role: Mapped[str] = mapped_column(String)
     content: Mapped[str] = mapped_column(Text)
     metadata_: Mapped[dict | None] = mapped_column("metadata", JSONB, default=dict)
@@ -84,8 +114,8 @@ class Message(Base):
 class Integration(Base):
     __tablename__ = "integrations"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
     provider: Mapped[str] = mapped_column(String)
     is_connected: Mapped[bool] = mapped_column(Boolean, default=False)
     access_token: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -105,8 +135,8 @@ class Integration(Base):
 class Automation(Base):
     __tablename__ = "automations"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
     name: Mapped[str | None] = mapped_column(String, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     trigger: Mapped[dict] = mapped_column(JSONB, default=dict)
@@ -126,9 +156,9 @@ class Automation(Base):
 class AutomationRun(Base):
     __tablename__ = "automation_runs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
-    automation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("automations.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
+    automation_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("automations.id", ondelete="SET NULL"), nullable=True)
     temporal_workflow_id: Mapped[str | None] = mapped_column(String, nullable=True)
     temporal_run_id: Mapped[str | None] = mapped_column(String, nullable=True)
     correlation_id: Mapped[str] = mapped_column(String)
@@ -164,15 +194,15 @@ class AutomationRun(Base):
 class AutomationStepLog(Base):
     __tablename__ = "automation_step_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
     automation_id: Mapped[str] = mapped_column(String)
     step_index: Mapped[int] = mapped_column(Integer)
     module_id: Mapped[str] = mapped_column(String)
     status: Mapped[str] = mapped_column(String)
     result: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     intent: Mapped[str | None] = mapped_column(String, nullable=True)
-    run_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("automation_runs.id", ondelete="SET NULL"), nullable=True)
-    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True)
+    run_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("automation_runs.id", ondelete="SET NULL"), nullable=True)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True)
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
@@ -183,9 +213,9 @@ class AutomationStepLog(Base):
 class AutomationGenerationLog(Base):
     __tablename__ = "automation_generation_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
-    session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
+    session_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("chat_sessions.id", ondelete="SET NULL"), nullable=True)
     intent_raw: Mapped[str | None] = mapped_column(Text, nullable=True)
     attempts: Mapped[dict] = mapped_column(JSONB, default=list)
     errors: Mapped[dict] = mapped_column(JSONB, default=list)
@@ -198,10 +228,10 @@ class AutomationGenerationLog(Base):
 class ExecutionLog(Base):
     __tablename__ = "execution_logs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
-    suggestion_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("ai_suggestions.id", ondelete="SET NULL"), nullable=True)
-    session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("chat_sessions.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
+    suggestion_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("ai_suggestions.id", ondelete="SET NULL"), nullable=True)
+    session_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("chat_sessions.id", ondelete="SET NULL"), nullable=True)
     workflow_name: Mapped[str | None] = mapped_column(String, nullable=True)
     status: Mapped[str] = mapped_column(String, default="running")
     input_data: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
@@ -218,9 +248,9 @@ class ExecutionLog(Base):
 class AiSuggestion(Base):
     __tablename__ = "ai_suggestions"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
-    context_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("page_contexts.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
+    context_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("page_contexts.id", ondelete="SET NULL"), nullable=True)
     title: Mapped[str] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence_score: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -240,9 +270,9 @@ class AiSuggestion(Base):
 class PageContext(Base):
     __tablename__ = "page_contexts"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
-    session_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("browser_sessions.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
+    session_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("browser_sessions.id", ondelete="SET NULL"), nullable=True)
     url: Mapped[str] = mapped_column(Text)
     domain: Mapped[str] = mapped_column(String)
     page_title: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -253,10 +283,10 @@ class PageContext(Base):
 class MessageFeedback(Base):
     __tablename__ = "message_feedback"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    message_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
-    session_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True))
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    message_id: Mapped[uuid.UUID] = mapped_column(GUID)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID)
+    session_id: Mapped[uuid.UUID] = mapped_column(GUID)
     is_liked: Mapped[bool] = mapped_column(Boolean)
     reason: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -270,9 +300,9 @@ class MessageFeedback(Base):
 class UserWebhookConfig(Base):
     __tablename__ = "user_webhook_configs"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
-    automation_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("automations.id", ondelete="SET NULL"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
+    automation_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("automations.id", ondelete="SET NULL"), nullable=True)
     slug: Mapped[str] = mapped_column(String, unique=True)
     name: Mapped[str] = mapped_column(String)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -287,8 +317,8 @@ class UserWebhookConfig(Base):
 class UserDevice(Base):
     __tablename__ = "user_devices"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
     fcm_token: Mapped[str] = mapped_column(String)
     platform: Mapped[str | None] = mapped_column(String, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True)
@@ -308,8 +338,8 @@ class UserDevice(Base):
 class IaMemory(Base):
     __tablename__ = "ia_memory"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"))
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"))
     key: Mapped[str] = mapped_column(String, default="user_preference")
     content: Mapped[str] = mapped_column(Text)
     embedding: Mapped[list | None] = mapped_column(JSONB, nullable=True)
@@ -320,8 +350,8 @@ class IaMemory(Base):
 class BrowserSession(Base):
     __tablename__ = "browser_sessions"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True)
+    id: Mapped[uuid.UUID] = mapped_column(GUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(GUID, ForeignKey("profiles.id", ondelete="CASCADE"), nullable=True)
     user_agent: Mapped[str | None] = mapped_column(String, nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)
     last_activity_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)

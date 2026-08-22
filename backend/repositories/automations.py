@@ -50,7 +50,7 @@ def upsert_automation_run(
             set_={k: stmt.excluded[k] for k in row if k != "id"},
         )
         db.execute(stmt)
-        db.flush()
+        db.commit()
 
         result = db.query(AutomationRun).filter(AutomationRun.id == run_id).first()
         return [result.to_dict()] if result else []
@@ -70,7 +70,7 @@ def update_automation_run_execution(
         run.updated_at = datetime.now(timezone.utc)
         if execution_run_id:
             run.execution_run_id = execution_run_id
-        db.flush()
+        db.commit()
         return [run.to_dict()]
     finally:
         db.close()
@@ -99,7 +99,7 @@ def update_automation_run_status(
             run.error_details = error_details
         if steps_summary is not None:
             run.steps_summary = steps_summary
-        db.flush()
+        db.commit()
         return [run.to_dict()]
     finally:
         db.close()
@@ -140,7 +140,7 @@ def log_step(
             },
         )
         db.execute(stmt)
-        db.flush()
+        db.commit()
 
         result_obj = (
             db.query(AutomationStepLog)

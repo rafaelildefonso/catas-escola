@@ -25,7 +25,7 @@ def create_session(user_id: str, title: Optional[str] = None, is_onboarding: boo
             is_onboarding=is_onboarding,
         )
         db.add(session)
-        db.flush()
+        db.commit()
         return session.to_dict()
     except Exception as e:
         raise RuntimeError(f"Erro ao criar sessão: {e}")
@@ -124,7 +124,7 @@ def save_message(
             metadata_=metadata or {},
         )
         db.add(msg)
-        db.flush()
+        db.commit()
         result = msg.to_dict()
     except Exception as e:
         raise RuntimeError(f"Erro ao salvar mensagem: {e}")
@@ -155,7 +155,7 @@ def update_message(
             current_metadata.update(metadata)
             msg.metadata_ = current_metadata
 
-        db.flush()
+        db.commit()
         return msg.to_dict()
     except Exception as e:
         raise RuntimeError(f"Erro ao atualizar mensagem: {e}")
@@ -175,7 +175,7 @@ def update_session_title(session_id: str, user_id: str, title: str) -> Dict:
             raise ValueError(f"Sessão {session_id} não encontrada")
         s.title = title
         s.updated_at = datetime.now(timezone.utc)
-        db.flush()
+        db.commit()
         return s.to_dict()
     except Exception as e:
         raise RuntimeError(f"Erro ao atualizar título: {e}")
@@ -189,7 +189,7 @@ def _update_session_updated_at(session_id: str):
         s = db.query(ChatSession).filter(ChatSession.id == uuid_lib.UUID(session_id)).first()
         if s:
             s.updated_at = datetime.now(timezone.utc)
-            db.flush()
+            db.commit()
     except Exception as e:
         print(f"⚠️ Aviso: Erro ao atualizar updated_at da sessão {session_id}: {e}")
     finally:
@@ -207,7 +207,7 @@ def delete_session(session_id: str, user_id: str) -> bool:
             ChatSession.id == uuid_lib.UUID(session_id),
             ChatSession.user_id == uuid_lib.UUID(user_id),
         ).delete()
-        db.flush()
+        db.commit()
         return True
     except Exception as e:
         raise RuntimeError(f"Erro ao deletar sessão: {e}")
@@ -241,7 +241,7 @@ def insert_message(
             metadata_=metadata or {},
         )
         db.add(msg)
-        db.flush()
+        db.commit()
         return msg.to_dict()
     except Exception as e:
         raise RuntimeError(f"Erro ao inserir mensagem: {e}")
