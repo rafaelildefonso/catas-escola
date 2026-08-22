@@ -29,6 +29,21 @@ Agente de Automação Inteligente baseado em Linguagem Natural que **executa aç
 
 ---
 
+## Funcionalidades Implementadas
+
+1. **Criar conta (cadastro)** — Tela de cadastro → `POST /api/v1/auth/signup` → `AuthController` → `CriarContaService` → User + Profile
+2. **Login/logout (autenticação)** — Tela de login → `POST /api/v1/auth/login` → `AuthController` → `AutenticarUsuarioService` → User
+3. **Enviar mensagem no chat com resposta de IA** — Tela de chat → `POST /api/v1/chat/message` → `ChatbotController` → `EnviarMensagemChatService` → AIService (Gemini/Groq) + Message
+4. **Gerenciar sessões de chat (criar/listar/renomear/excluir)** — Tela de chat → `GET/POST/PATCH/DELETE /api/v1/chat/sessions` → `ChatController` → services/chat → ChatSession
+5. **Listar e gerenciar integrações** — Tela de integrações → `GET/POST/PUT/DELETE /api/v1/integrations` → `IntegrationController` → services/integration → Integration
+6. **Cadastrar/listar/atualizar/excluir automações** — Tela de automações → `GET/POST/PUT/DELETE /api/v1/automations` → `AutomationController` → services/automation → Automation
+7. **Listar histórico de mensagens** — Tela de chat → `GET /api/v1/chat/history/<session_id>` → `ChatController` → `ObterHistoricoChatService` → Message
+8. **Atualizar dados da conta (perfil)** — Tela de configurações → `PUT /api/v1/profiles/<id>` → `ProfileController` → `AtualizarProfileService` → Profile
+9. **Painel de estatísticas (dashboard)** — Tela de dashboard → `GET /api/v1/relatorios/dashboard` → `RelatorioController` → `DashboardRepository` → procedure `fn_dashboard_estatisticas`
+10. **Busca de mensagens** — Tela de relatórios → `GET /api/v1/relatorios/mensagens/busca` → `RelatorioController` → `ChatRepository` → procedure `fn_buscar_mensagens`
+
+---
+
 ## Quick Start (Recomendado)
 
 ### Pré-requisitos
@@ -83,7 +98,7 @@ flutter run -d chrome --web-port 52159
 
 ## Models Implementadas (CRUD Completo)
 
-Todas as 18 Models do domínio estão implementadas na camada `backend/app/models/`, herdando de `db.Model` com métodos `salvar()`, `atualizar()`, `deletar()`, `listar_todos()`, `buscar_por_id()` e `to_dict()`.
+Todas as 18 Models do domínio estão implementadas na camada `backend/models/`, herdando de `db.Model` com métodos `salvar()`, `atualizar()`, `deletar()`, `listar_todos()`, `buscar_por_id()` e `to_dict()`.
 
 | # | Model | Tabela | Descrição |
 |---|-------|--------|-----------|
@@ -106,7 +121,7 @@ Todas as 18 Models do domínio estão implementadas na camada `backend/app/model
 | 17 | **UserWebhookConfig** | `user_webhook_configs` | Configurações de webhook |
 | 18 | **IaMemory** | `ia_memory` | Memória semântica (RAG) |
 
-## Rotas da API (90 Endpoints CRUD + Relatórios)
+## Rotas da API (112 Rotas)
 
 Cada Model possui 5 endpoints REST no padrão `/api/v1/<recursos>`:
 
@@ -148,21 +163,22 @@ HTTP Request → Route → Controller → Service → Repository → Procedure (
 
 ```
 backend/
-├── app/
-│   ├── __init__.py         # create_app(), init_firebase()
-│   ├── extensions.py       # db = SQLAlchemy()
-│   ├── routes.py           # rotas CRUD + relatórios centralizadas
-│   ├── models/             # 18 modelos SQLAlchemy com CRUD
-│   ├── controllers/        # 18 controllers CRUD + RelatorioController
-│   ├── services/           # um service por caso de uso (CRUD + relatório)
-│   └── repositories/       # acesso complexo via procedures PostgreSQL
-├── core/                   # Config, error handling
-├── worker/                 # Temporal Worker
-├── tests/                  # Testes automatizados
-├── migrations/             # Migrations SQL (procedures de relatórios em 018)
-├── run.py                  # Entrypoint da API
-├── run_catas.ps1           # Script de atalho
-└── frontend/               # App Flutter (Dart)
+├── __init__.py         # create_app(), init_firebase()
+├── extensions.py       # db = SQLAlchemy()
+├── routes.py           # rotas CRUD + relatórios centralizadas
+├── application.py      # create_app()
+├── models/             # 18 modelos SQLAlchemy com CRUD
+├── controllers/        # 18 controllers CRUD + RelatorioController
+├── services/           # um service por caso de uso (CRUD + relatório)
+├── repositories/       # acesso complexo via procedures PostgreSQL
+├── core/               # Config, error handling
+├── worker/             # Temporal Worker
+├── tests/              # Testes automatizados
+├── migrations/         # Migrations SQL (procedures de relatórios em 018)
+├── run.py              # Entrypoint da API
+└── run_catas.ps1       # Script de atalho
+
+frontend/               # App Flutter (Dart)
 ```
 
 ## Funcionalidades Além do CRUD (Relatórios) — Esta Etapa
