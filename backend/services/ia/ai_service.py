@@ -305,6 +305,25 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
             status = response_data.get("status", "idle")
             components = response_data.get("components", [])
 
+            # SINCRONIZAR BODY DO EMAIL: Copiar body_preview do componente para action_details
+            if components and action_details.get("steps"):
+                for comp in components:
+                    if comp.get("type") == "preview_email_draft":
+                        email_body = comp.get("body_preview") or comp.get("body", "")
+                        email_to = comp.get("to")
+                        email_subject = comp.get("subject")
+
+                        for step in action_details["steps"]:
+                            if step.get("module_id") == "gmail.send_email":
+                                if email_body:
+                                    step["params"]["body"] = email_body
+                                if email_to:
+                                    step["params"]["to"] = email_to[0] if isinstance(email_to, list) else email_to
+                                if email_subject:
+                                    step["params"]["subject"] = email_subject
+                        print(f"[AIService] Body do email sincronizado do preview_email_draft")
+                        break
+
             # PROTEÇÃO ANTI-LOOP: Verificar se última mensagem já tinha contact_select
             if components and len(formatted_history) > 0:
                 last_assistant_msg = None

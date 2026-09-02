@@ -2,7 +2,7 @@
 
 
 class ObterSessaoChatService:
-    """Obtém uma sessão de chat garantindo que pertence ao usuário."""
+    """Obtem uma sessao de chat garantindo que pertence ao usuario."""
 
     @staticmethod
     def executar(session_id: str, user_id: str) -> dict:
@@ -19,5 +19,5 @@ class ObterSessaoChatService:
 
         sessao = buscar_sessao_do_usuario(session_id, user_id)
         if not sessao:
-            raise ValueError(f"Sessão {session_id} não encontrada ou não pertence ao usuário")
-        return sessao.to_dict()
+            raise ValueError(f"Sessao {session_id} nao encontrada ou nao pertence ao usuario")
+        return sessao

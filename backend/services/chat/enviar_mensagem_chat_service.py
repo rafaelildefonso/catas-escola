@@ -211,7 +211,7 @@ class EnviarMensagemChatService:
     def _eh_sessao_onboarding(session_id: str, user_id: str) -> bool:
         try:
             sessao = buscar_sessao_do_usuario(session_id, user_id)
-            return bool(sessao and sessao.is_onboarding)
+            return bool(sessao and sessao.get("is_onboarding"))
         except Exception:
             return False
 

@@ -1,15 +1,12 @@
-﻿from models.integration import Integration
+﻿from repositories.base import executar_linha
 
 
 def listar_integracoes_do_usuario(user_id: str) -> list:
-    """Integrações do usuário sem expor tokens (filtro por posse)."""
-    rows = (
-        Integration.query
-        .filter(Integration.user_id == user_id)
-        .all()
+    """Integracoes do usuario sem expor tokens (filtro por posse)."""
+    rows = executar_linha(
+        """SELECT id, user_id, provider, is_connected, settings, created_at, updated_at
+           FROM integrations
+           WHERE user_id = :user_id""",
+        user_id=user_id,
     )
-    dados = [r.to_dict() for r in rows]
-    for item in dados:
-        item.pop("access_token", None)
-        item.pop("refresh_token", None)
-    return dados
+    return rows
