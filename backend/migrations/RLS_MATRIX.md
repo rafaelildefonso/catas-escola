@@ -1,20 +1,26 @@
-# Matriz RLS (resumo pós-migrações 009–010)
+# Controle de Acesso por Tabela (pós-migração MySQL)
 
-| Tabela | Cliente (anon/authenticated) | Service role / backend |
-|--------|------------------------------|-------------------------|
-| `profiles` | SELECT/UPDATE próprio `id` | bypass |
-| `chat_sessions`, `messages` | políticas `chat_manage` / `messages_manage` | bypass |
-| `integrations` | ALL onde `user_id = auth.uid()` (tokens criptografados) | bypass |
-| `automations` (definições) | ALL próprio `user_id` | bypass |
-| `automation_runs` | SELECT próprio `user_id` | bypass (INSERT/UPDATE) |
-| `automation_step_logs` | SELECT se `user_id = auth.uid()` e `user_id` preenchido | bypass (worker) |
-| `automation_feedback` | ALL próprio `user_id` | bypass |
-| `automation_generation_logs` | SELECT negado (`false`) | bypass (INSERT leitura admin) |
-| `ia_memory` | ALL próprio `user_id` | bypass |
-| `notifications` | SELECT/UPDATE próprio | bypass |
-| `user_devices` | ALL próprio | bypass |
+> **NOTA**: O projeto migrou de PostgreSQL/Supabase para **MySQL 8.0+**.
+> O MySQL não possui Row Level Security (RLS). A matriz abaixo registra o
+> comportamento **equivalente implementado na camada de aplicação (backend)**.
+
+| Tabela | Regra de acesso (backend) |
+|--------|---------------------------|
+| `profiles` | SELECT/UPDATE apenas do próprio `id` (usuário autenticado) |
+| `chat_sessions`, `messages` | SELECT/INSERT apenas onde `user_id` (sessão) pertence ao usuário |
+| `integrations` | ALL filtrado por `user_id = <usuário>` (tokens criptografados) |
+| `automations` (definições) | ALL filtrado por `user_id` |
+| `automation_runs` | SELECT/INSERT/UPDATE filtrado por `user_id` |
+| `automation_step_logs` | SELECT se `user_id = <usuário>` e `user_id` preenchido |
+| `automation_feedback` | ALL filtrado por `user_id` |
+| `automation_generation_logs` | apenas leitura administrativa (INSERT do worker) |
+| `ia_memory` | ALL filtrado por `user_id` |
+| `notifications` | SELECT/UPDATE filtrado por `user_id` |
+| `user_devices` | ALL filtrado por `user_id` |
 
 **Notas**
 
-- O worker Temporal e o FastAPI devem usar `SUPABASE_SERVICE_ROLE_KEY` para escrita em `automation_step_logs` e `automation_runs`.
-- O app Flutter assina Realtime em `automation_step_logs` filtrando por `automation_id`; com RLS, cada linha precisa de `user_id` preenchido pelo worker (`report_status`).
+- O worker FastAPI/automations escreve em `automation_step_logs` e `automation_runs`
+  usando o `user_id` da execução (não há bypass de segurança no MySQL).
+- O app Flutter lê dados sempre com filtro `user_id` do usuário autenticado.
+- Toda query de leitura/escrita do backend deve incluir `WHERE user_id = <autenticado>`.

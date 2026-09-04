@@ -1,75 +1,62 @@
-# Row Level Security (RLS) Policies - Chat Schema
+# Controle de Acesso (RLS) - Chat Schema
 
-## Visão Geral
+> **NOTA IMPORTANTE**: Este documento descreve o esquema **antigo** de Row Level
+> Security do PostgreSQL/Supabase. O projeto foi migrado para **MySQL 8.0+**,
+> que **não possui RLS**. O controle de acesso agora é feito **na camada de
+> aplicação (backend)**: toda query filtra por `WHERE user_id = ?` usando o
+> usuário autenticado. Mantemos este documento apenas como registro histórico
+> do que as políticas RLS faziam.
 
-As políticas RLS garantem que os usuários só possam acessar seus próprios dados. Todas as três tabelas (`chat_sessions`, `messages`, `automation_logs`) têm RLS habilitado.
+## Visão Geral (contexto histórico)
 
-## Tabela: `chat_sessions`
+As políticas RLS garantiam que os usuários só pudessem acessar seus próprios dados. Todas as três tabelas (`chat_sessions`, `messages`, `automation_logs`) tinham RLS habilitado.
 
-### Políticas Implementadas:
+## Tabela: `chat_sessions` (políticas antigas)
 
-1. **SELECT**: Usuários podem ver apenas suas próprias sessões
+1. **SELECT**: Usuários podiam ver apenas suas próprias sessões
+   - Condição: `auth.uid() = user_id`
+2. **INSERT**: Usuários podiam criar suas próprias sessões
+   - Condição: `auth.uid() = user_id`
+3. **UPDATE**: Usuários podiam atualizar suas próprias sessões
+   - Condição: `auth.uid() = user_id` (USING e WITH CHECK)
+4. **DELETE**: Usuários podiam deletar suas próprias sessões
    - Condição: `auth.uid() = user_id`
 
-2. **INSERT**: Usuários podem criar suas próprias sessões
-   - Condição: `auth.uid() = user_id`
+## Tabela: `messages` (políticas antigas)
 
-3. **UPDATE**: Usuários podem atualizar suas próprias sessões
-   - Condição: `auth.uid() = user_id` (tanto no USING quanto no WITH CHECK)
+1. **SELECT**: Usuários viam mensagens apenas de suas próprias sessões (JOIN com `chat_sessions`)
+2. **INSERT**: Usuários criavam mensagens em suas próprias sessões
+3. **UPDATE/DELETE**: Não implementado (mensagens imutáveis para manter histórico íntegro)
 
-4. **DELETE**: Usuários podem deletar suas próprias sessões
-   - Condição: `auth.uid() = user_id`
+## Tabela: `automation_logs` (políticas antigas)
 
-## Tabela: `messages`
+1. **SELECT/INSERT**: Apenas próprios logs (`auth.uid() = user_id`)
+2. **UPDATE**: Apenas próprios logs (USING e WITH CHECK)
 
-### Políticas Implementadas:
+## No MySQL
 
-1. **SELECT**: Usuários podem ver mensagens apenas de suas próprias sessões
-   - Condição: Verifica se a sessão pertence ao usuário através de um JOIN com `chat_sessions`
+Em vez de políticas RLS, o backend aplica as mesmas regras em código:
 
-2. **INSERT**: Usuários podem criar mensagens em suas próprias sessões
-   - Condição: Verifica se a sessão pertence ao usuário antes de inserir
+- Todos os controllers/repositories filtram por `user_id` do token autenticado.
+- As FKs usam `ON DELETE CASCADE` (sessão deletada → mensagens deletadas).
+- Mensagens continuam imutáveis via regra de aplicação (sem rotas de update/delete).
 
-3. **UPDATE/DELETE**: Não implementado (mensagens são imutáveis para manter histórico íntegro)
-
-## Tabela: `automation_logs`
-
-### Políticas Implementadas:
-
-1. **SELECT**: Usuários podem ver apenas seus próprios logs
-   - Condição: `auth.uid() = user_id`
-
-2. **INSERT**: Usuários podem criar seus próprios logs
-   - Condição: `auth.uid() = user_id`
-
-3. **UPDATE**: Usuários podem atualizar seus próprios logs
-   - Condição: `auth.uid() = user_id` (tanto no USING quanto no WITH CHECK)
-
-## Testando as Políticas
-
-Para testar se as políticas estão funcionando corretamente:
+## Testando o Controle de Acesso
 
 ```sql
 -- Como usuário autenticado, você só deve ver suas próprias sessões
-SELECT * FROM chat_sessions;
+SELECT * FROM chat_sessions WHERE user_id = '<seu-user-id>';
 
--- Tentar inserir uma sessão com user_id diferente deve falhar
-INSERT INTO chat_sessions (user_id, title) 
-VALUES ('outro-user-id', 'Tentativa de Hack'); -- Deve falhar
-
--- Verificar se as políticas estão ativas
-SELECT tablename, policyname, permissive, roles, cmd, qual 
-FROM pg_policies 
-WHERE schemaname = 'public' 
-AND tablename IN ('chat_sessions', 'messages', 'automation_logs');
+-- (Equivalente MySQL do teste de política)
+SELECT tablename FROM information_schema.tables
+WHERE table_schema = DATABASE() AND table_name IN ('chat_sessions', 'messages', 'automation_logs');
 ```
 
 ## Notas Importantes
 
-1. **Service Role Key**: O backend Python usa `SUPABASE_SERVICE_ROLE_KEY`, que **bypassa** as políticas RLS. Isso é necessário para operações administrativas, mas deve ser usado com cuidado.
-
-2. **Anon Key**: O frontend Flutter usa `SUPABASE_ANON_KEY`, que **respeita** as políticas RLS. Isso garante segurança no cliente.
-
-3. **Cascading Deletes**: Quando uma sessão é deletada, todas as mensagens associadas são automaticamente deletadas devido ao `ON DELETE CASCADE`.
-
-4. **Imutabilidade de Mensagens**: Mensagens não podem ser editadas ou deletadas diretamente pelos usuários para manter a integridade do histórico de conversas.
+1. **Autenticação**: O backend valida o token (JWT/Firebase) e usa o `user_id` extraído
+   para filtrar todas as consultas. Não existe bypass por service role no MySQL.
+2. **Cascading Deletes**: As FKs com `ON DELETE CASCADE` garantem integridade
+   (sessão deletada remove mensagens associadas).
+3. **Imutabilidade de Mensagens**: Mensagens não podem ser editadas ou deletadas
+   diretamente — regra mantida no backend.

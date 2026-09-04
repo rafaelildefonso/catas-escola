@@ -30,7 +30,7 @@ def listar_runs_filtrados(
     busca = (busca or "").strip() or None
     ordem = ordem if ordem in _ORDENACOES else "created_at"
 
-    if nome_dialeto() == "postgresql":
+    if nome_dialeto() in ("postgresql", "mysql"):
         linhas = executar_procedure(
             "fn_relatorio_automacoes",
             user_id=user_id,

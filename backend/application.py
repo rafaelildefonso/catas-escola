@@ -22,9 +22,13 @@ def create_app():
     app = Flask(__name__)
 
     app.config.from_prefixed_env()
-    db_url = settings.DATABASE_URL or "sqlite:///catas_dev.db"
+    db_url = settings.DATABASE_URL or "mysql+pymysql://root:root@localhost:3306/catas_db"
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 280,
+    }
 
     CORS(app)
     db.init_app(app)

@@ -6,22 +6,22 @@ from extensions import db
 
 
 def nome_dialeto() -> str:
-    """Nome do dialeto do banco configurado (ex.: 'postgresql', 'sqlite')."""
+    """Nome do dialeto do banco configurado (ex.: 'mysql', 'postgresql', 'sqlite')."""
     try:
-        return db.session.get_bind().dialect.name or "sqlite"
+        return db.session.get_bind().dialect.name or "mysql"
     except Exception:
-        return "sqlite"
+        return "mysql"
 
 
 def executar_procedure(nome: str, **parametros) -> list:
-    """Chama procedure do banco (PostgreSQL): SELECT * FROM public.nome(args)."""
+    """Chama procedure do banco (MySQL): CALL nome(args)."""
     cols = ", ".join(f":{k}" for k in parametros)
-    stmt = text(f"SELECT * FROM public.{nome}({cols})")
+    stmt = text(f"CALL {nome}({cols})")
     return executar(stmt, parametros)
 
 
 def executar_linha(sql: str, **parametros) -> list:
-    """Executa consulta inline (fallback para SQLite, onde nao ha procedures)."""
+    """Executa consulta inline (fallback para ambientes sem procedures)."""
     return executar(text(sql), parametros)
 
 

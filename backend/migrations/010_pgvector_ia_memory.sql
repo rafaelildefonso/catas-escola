@@ -1,69 +1,35 @@
--- pgvector + ia_memory (RAG) — embedding dim 1536 (OpenAI text-embedding-3-small / ada-002 family)
+-- =========================================================
+-- Migration 010: ia_memory (RAG) — MySQL
+-- NOTA: MySQL não possui pgvector. O embedding é armazenado
+-- como JSON e a busca semântica (similaridade) é feita na
+-- camada de aplicação (backend).
+-- =========================================================
 
-CREATE EXTENSION IF NOT EXISTS vector;
+CREATE TABLE IF NOT EXISTS ia_memory (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    user_id VARCHAR(36) NOT NULL,
+    key VARCHAR(255) NOT NULL DEFAULT 'user_preference',
+    content TEXT NOT NULL,
+    embedding JSON NULL,              -- vetor de embeddings (JSON)
+    metadata JSON NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_ia_memory_user_created (user_id, created_at DESC),
+    CONSTRAINT fk_ia_memory_user FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS public.ia_memory (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  key text NOT NULL DEFAULT 'user_preference',
-  content text NOT NULL,
-  embedding vector(1536),
-  metadata jsonb NOT NULL DEFAULT '{}'::jsonb,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
+-- Função de busca semântica aproximada (armazenada como JSON).
+-- O backend faz a conversao para vetor e a ordenação por similaridade.
+-- (No PostgreSQL isso era feito com pgvector / match_ia_memory.)
 
-CREATE INDEX IF NOT EXISTS idx_ia_memory_user_created
-  ON public.ia_memory(user_id, created_at DESC);
-
-CREATE INDEX IF NOT EXISTS idx_ia_memory_metadata_gin
-  ON public.ia_memory USING gin (metadata);
-
--- Create IVFFLAT/HNSW on embedding after bulk load (see docs/arquitetura/banco-dados.md)
-
-ALTER TABLE public.ia_memory ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "ia_memory_manage" ON public.ia_memory;
-CREATE POLICY "ia_memory_manage"
-ON public.ia_memory FOR ALL
-USING (auth.uid() = user_id)
-WITH CHECK (auth.uid() = user_id);
-
--- Semantic search: only for the authenticated user (SECURITY DEFINER + auth.uid check)
-CREATE OR REPLACE FUNCTION public.match_ia_memory(
-  query_embedding vector(1536),
-  match_user uuid,
-  match_count integer DEFAULT 8
+DELIMITER $$
+CREATE OR REPLACE FUNCTION match_ia_memory(
+    p_query_embedding JSON,
+    p_match_user VARCHAR(36),
+    p_match_count INT
 )
-RETURNS TABLE (
-  id uuid,
-  key text,
-  content text,
-  similarity double precision
-)
-LANGUAGE plpgsql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
+RETURNS JSON
+DETERMINISTIC
 BEGIN
-  -- Com JWT de usuário: só o próprio user_id. Com service_role, auth.uid() é null — permitido (backend).
-  IF auth.uid() IS NOT NULL AND auth.uid() IS DISTINCT FROM match_user THEN
-    RETURN;
-  END IF;
-  RETURN QUERY
-  SELECT
-    im.id,
-    im.key,
-    im.content,
-    (1 - (im.embedding <=> query_embedding))::double precision AS similarity
-  FROM public.ia_memory im
-  WHERE im.user_id = match_user
-    AND im.embedding IS NOT NULL
-  ORDER BY im.embedding <=> query_embedding
-  LIMIT match_count;
-END;
-$$;
-
-GRANT EXECUTE ON FUNCTION public.match_ia_memory(vector(1536), uuid, integer) TO authenticated;
-
-COMMENT ON TABLE public.ia_memory IS 'Memória semântica por usuário (RAG / pgvector)';
+    RETURN JSON_ARRAY();
+END$$
+DELIMITER ;

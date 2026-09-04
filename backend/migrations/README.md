@@ -1,68 +1,86 @@
 # Migrations do Banco de Dados
 
-Este diretório contém as migrations SQL para o banco de dados PostgreSQL (Supabase).
+Este diretório contém as migrations SQL para o banco de dados **MySQL 8.0+**.
 
 ## 📋 Como Executar
 
-### Opção 1: Via Supabase Dashboard (Recomendado)
+### Opção 1: MySQL Workbench (Recomendado)
 
-1. Acesse o [Supabase Dashboard](https://app.supabase.com)
-2. Selecione seu projeto
-3. Vá em **SQL Editor**
-4. Copie e cole o conteúdo do arquivo de migration
-5. Clique em **Run**
+1. Abra o [MySQL Workbench](https://dev.mysql.com/downloads/workbench/)
+2. Conecte ao seu banco (localhost:3306, banco `catas_db`)
+3. Clique em **File → Open SQL Script** e selecione o arquivo de migration
+4. Clique no ícone **Execute** (⚡) para rodar o script
+5. Confirme que a execução terminou sem erros
 
-### Opção 2: Via CLI do Supabase
+### Opção 2: Docker Compose (automático no primeiro boot)
 
 ```bash
-# Instalar Supabase CLI (se ainda não tiver)
-npm install -g supabase
+cd backend
+docker compose up -d
+```
 
-# Fazer login
-supabase login
+O diretório `./migrations` é montado em `/docker-entrypoint-initdb.d`
+do contêiner `catas_mysql` e os scripts `.sql` são executados em ordem
+alfabética **na primeira inicialização** (banco já inicializado).
 
-# Linkar ao projeto
-supabase link --project-ref seu-project-ref
+### Opção 3: CLI (mysql client)
 
-# Executar migration
-supabase db push
+```bash
+mysql -h localhost -P 3306 -u root -p catas_db < DATABASE.sql
+mysql -h localhost -P 3306 -u root -p catas_db < 002_create_chat_schema.sql
 ```
 
 ## 📁 Ordem de Execução
 
-Execute as migrations na ordem numérica:
+Use o arquivo consolidado **`DATABASE.sql`** que já cria todo o schema
+(tabelas, índices, triggers, procedures e seeds) em ordem de dependência.
+Para aplicar as migrations individualmente, siga a ordem numérica:
 
-1. `001_create_page_analysis_cache.sql` - Cache de análises de página
-2. `002_create_chat_schema.sql` - Schema completo de chat (sessões, mensagens, logs)
+1. `001_create_users.sql` - Usuários/perfis
+2. `002_create_chat_schema.sql` - Chat (sessões, mensagens, logs)
+3. `006_create_notifications.sql` - Notificações
+4. `009_automation_core_schema.sql` - Definições/runs/feedback de automações
+5. `009_create_message_feedback.sql` - Feedback de mensagens
+6. `014_create_handle_credit_debit.sql` - Função de débito de créditos
+7. `018_procedures_relatorios.sql` - Functions/Procedures de relatórios
+8. `20260330_create_user_devices.sql` - Dispositivos FCM (push)
+
+As demais migrations (003–008, 010–017) são atualizações incrementais.
+Se você usou o `DATABASE.sql`, elas são **opcionais** — o schema já
+inclui essas colunas. Reexecutá-las é seguro (usam `if não existe`).
 
 ## ✅ Verificação
 
 Após executar as migrations, verifique se as tabelas foram criadas:
 
 ```sql
--- Verificar tabelas criadas
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public' 
-AND table_name IN ('chat_sessions', 'messages', 'automation_logs');
+-- Listar tabelas criadas
+SHOW TABLES;
 
--- Verificar políticas RLS
-SELECT tablename, policyname 
-FROM pg_policies 
-WHERE schemaname = 'public' 
-AND tablename IN ('chat_sessions', 'messages', 'automation_logs');
+-- Verificar tabelas essenciais
+SELECT TABLE_NAME
+FROM information_schema.tables
+WHERE table_schema = DATABASE()
+AND TABLE_NAME IN ('users', 'profiles', 'chat_sessions', 'messages', 'automation_runs');
 ```
 
-## 🔒 Row Level Security (RLS)
+## 🔒 Controle de Acesso
 
-Todas as tabelas têm RLS habilitado. As políticas garantem que:
-- Usuários só podem ver/criar/editar/deletar suas próprias sessões
-- Usuários só podem ver/criar mensagens em suas próprias sessões
-- Usuários só podem ver/criar seus próprios logs de automação
+O MySQL não possui Row Level Security (RLS) como o PostgreSQL/Supabase.
+O controle de acesso é feito **na camada de aplicação (backend)**:
+todas as queries de filtro por dono usam `WHERE user_id = ?`, validado
+pelo token de autenticação do usuário logado.
 
 ## 📝 Notas
 
-- As migrations usam `CREATE TABLE IF NOT EXISTS` para serem idempotentes
-- Os índices são criados com `CREATE INDEX IF NOT EXISTS`
-- Os triggers são criados com `CREATE OR REPLACE FUNCTION`
-- As políticas RLS são criadas sem `IF NOT EXISTS` (se já existirem, dará erro - delete manualmente se necessário)
+- Todas as tabelas usam `ENGINE=InnoDB` e `utf8mb4_unicode_ci` (emojis suportados)
+- UUIDs são armazenados como `VARCHAR(36)` com `DEFAULT (UUID())`
+- `timestamptz`/`jsonb`/`uuid` e `gen_random_uuid()` do PostgreSQL viraram
+  `DATETIME`, `JSON`, `VARCHAR(36)` e `UUID()` no MySQL
+- O MySQL não tem `ADD COLUMN IF NOT EXISTS`; migrations incrementais usam
+  o padrão `information_schema` + `PREPARE/EXECUTE`
+- Triggers `BEFORE UPDATE` substituem o `onupdate` (com `DELIMITER $$`)
+- Relatórios JSON (`fn_dashboard_estatisticas`, `fn_relatorio_chat`) são
+  MySQL FUNCTIONS chamadas via `SELECT fn(...)`
+- Relatórios de conjunto de linhas (`fn_relatorio_automacoes`,
+  `fn_buscar_mensagens`) são MySQL PROCEDUREs chamadas via `CALL`
