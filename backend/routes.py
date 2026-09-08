@@ -9,6 +9,7 @@ from controllers.automation_step_log_controller import AutomationStepLogControll
 from controllers.automation_generation_log_controller import AutomationGenerationLogController
 from controllers.execution_log_controller import ExecutionLogController
 from controllers.integration_controller import IntegrationController
+from controllers.google_integration_controller import GoogleIntegrationController
 from controllers.message_feedback_controller import MessageFeedbackController
 from controllers.ai_suggestion_controller import AiSuggestionController
 from controllers.page_context_controller import PageContextController
@@ -103,9 +104,14 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/execution-logs/<id>", ["PUT"], ExecutionLogController.atualizar, "execution_log.atualizar")
     _rota(app, "/api/v1/execution-logs/<id>", ["DELETE"], ExecutionLogController.deletar, "execution_log.deletar")
 
+    _rota(app, "/api/v1/integrations/google/auth-url", ["GET"], GoogleIntegrationController.auth_url, "google_integration.auth_url")
+    _rota(app, "/api/v1/integrations/google/callback", ["GET"], GoogleIntegrationController.callback, "google_integration.callback")
+
+    _rota(app, "/api/v1/integrations/provider/<provider>", ["DELETE"], IntegrationController.deletar_por_provider, "integration.deletar_por_provider")
+
     _rota(app, "/api/v1/integrations", ["GET"], IntegrationController.listar, "integration.listar")
-    _rota(app, "/api/v1/integrations/<id>", ["GET"], IntegrationController.buscar_por_id, "integration.buscar")
     _rota(app, "/api/v1/integrations", ["POST"], IntegrationController.criar, "integration.criar")
+    _rota(app, "/api/v1/integrations/<id>", ["GET"], IntegrationController.buscar_por_id, "integration.buscar")
     _rota(app, "/api/v1/integrations/<id>", ["PUT"], IntegrationController.atualizar, "integration.atualizar")
     _rota(app, "/api/v1/integrations/<id>", ["DELETE"], IntegrationController.deletar, "integration.deletar")
 

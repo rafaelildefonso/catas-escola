@@ -159,7 +159,7 @@ class ChatRepository implements IChatRepository {
     final payload = <String, dynamic>{
       "message": text,
       "conversation_id": sessionId,
-      "model": model ?? "CATAS Free",
+      "model": model ?? "CATAS Basic",
       "web_search": webSearch,
       "active_integrations": activeIntegrations ?? [],
     };

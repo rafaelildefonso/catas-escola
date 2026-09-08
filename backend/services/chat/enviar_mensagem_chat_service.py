@@ -1,4 +1,5 @@
 ﻿import asyncio
+import copy
 import os
 
 from core.security import is_prompt_injection_safe
@@ -69,15 +70,6 @@ class EnviarMensagemChatService:
         is_onboarding_message = message.strip() in MENSAGENS_ONBOARDING or message.strip().startswith(
             "CATAS: quero criar minha primeira automação de demonstração"
         )
-
-        if not is_dev_user:
-            tier = profile.get("subscription_tier", "basic")
-            if tier == "basic":
-                if not session_id:
-                    if not is_onboarding_message:
-                        raise ErroPermissao("Apenas assinantes podem iniciar novas conversas com a IA livremente.")
-                elif not EnviarMensagemChatService._eh_sessao_onboarding(session_id, user_id):
-                    raise ErroPermissao("Apenas assinantes podem interagir no chat fora do modo de demonstração.")
 
         is_onboarding_session = False
         if not session_id:
@@ -299,10 +291,10 @@ class EnviarMensagemChatService:
                 status="running", run_type="direct",
                 input_summary=f"Onboarding {demo['client_name']}",
                 input_payload={"source": "demo_onboarding", "session_id": session_id, "message": message},
-                result_metadata={"plan": plan},
+                result_metadata={"plan": copy.deepcopy(plan)},
             )
 
-            IniciarAutomacaoAssincronaService.executar(demo_automation_id, plan, user_id)
+            IniciarAutomacaoAssincronaService.executar(demo_automation_id, copy.deepcopy(plan), user_id)
         except Exception:
             import traceback
             traceback.print_exc()
@@ -403,7 +395,7 @@ class EnviarMensagemChatService:
             status="running", run_type="direct",
             input_summary=(objetivo or message)[:500],
             input_payload={"source": "chatbot_meta", "session_id": session_id, "message": message},
-            result_metadata={"plan": plan_data},
+            result_metadata={"plan": copy.deepcopy(plan_data)},
         )
 
         try:
@@ -460,7 +452,7 @@ class EnviarMensagemChatService:
             except Exception:
                 automation_id_val = None
 
-            plan = ai_result.get("action_details") or {}
+            plan = copy.deepcopy(ai_result.get("action_details") or {})
             plan["automation_id"] = str(automation_id_val)
             plan["user_id"] = user_id
 
@@ -501,6 +493,9 @@ class EnviarMensagemChatService:
 
 
 def _perfil_dict(user_id: str) -> dict:
-    from models.profile import Profile
-    model = Profile.buscar_por_id(user_id)
-    return model.to_dict() if model else {}
+    try:
+        from models.profile import Profile
+        model = Profile.buscar_por_id(user_id)
+        return model.to_dict() if model else {}
+    except Exception:
+        return {}

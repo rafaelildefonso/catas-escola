@@ -8,4 +8,11 @@ class ListarSessoesChatService:
     def executar(user_id: str, limite: int = 50, deslocamento: int = 0) -> list:
         if not user_id:
             raise ValueError("user_id e obrigatorio")
-        return listar_sessoes_do_usuario(user_id, limite=limite, deslocamento=deslocamento)
+        sessoes = listar_sessoes_do_usuario(user_id, limite=limite, deslocamento=deslocamento)
+        # Normalizar is_onboarding para boolean (SQLite/Postgres pode retornar int 0/1)
+        for s in sessoes:
+            if "is_onboarding" in s:
+                v = s["is_onboarding"]
+                if isinstance(v, int):
+                    s["is_onboarding"] = bool(v)
+        return sessoes

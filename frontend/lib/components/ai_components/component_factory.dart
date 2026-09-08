@@ -188,17 +188,11 @@ class AIComponentFactory extends StatelessWidget {
                 readonly: readonly,
               );
             default:
-              return Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Componente desconhecido: $type',
-                  style: GoogleFonts.inter(color: Colors.red, fontSize: 12),
-                ),
-              );
+              // Log para debug mas não quebrar a UI
+              if (type != null && type.isNotEmpty) {
+                print('⚠️ [AIComponentFactory] Componente desconhecido: $type');
+              }
+              return const SizedBox.shrink();
           }
         }).toList(),
       ),

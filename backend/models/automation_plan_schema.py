@@ -1,8 +1,9 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, model_validator, ConfigDict
 from typing import List, Dict, Any, Optional, Literal, Union
 
 
 class AutomationStep(BaseModel):
+    model_config = ConfigDict(extra="allow")
     step_id: str = Field(..., description="ID único para este step")
     module_id: str = Field(..., description="ID do módulo a ser executado")
     params: Dict[str, Any] = Field(default_factory=dict, description="Parâmetros para a activity")
@@ -23,6 +24,7 @@ class TriggerConfig(BaseModel):
 
 
 class AutomationPlan(BaseModel):
+    model_config = ConfigDict(extra="allow")
     name: str = Field(..., description="Nome da automação")
     description: Optional[str] = Field(None, description="Objetivo da automação")
     steps: List[Union[FlowConditionStep, AutomationStep]] = Field(..., description="Lista ordenada de passos")

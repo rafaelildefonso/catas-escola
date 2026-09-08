@@ -1,4 +1,6 @@
 ﻿from flask import jsonify, request
+import logging
+import traceback
 
 from core.security import get_current_user
 from core.errors import sanitize_error
@@ -6,6 +8,9 @@ from core.errors import sanitize_error
 from services.chat.enviar_mensagem_chat_service import EnviarMensagemChatService
 from services.chat.continuar_mensagem_chat_service import ContinuarMensagemChatService
 from services.chat.excecoes_chat import ErroPermissao, ErroNaoEncontrado
+
+
+logger = logging.getLogger(__name__)
 
 
 class ChatbotController:
@@ -43,4 +48,5 @@ class ChatbotController:
         except ErroNaoEncontrado as e:
             return jsonify({"detail": str(e)}), 404
         except Exception as e:
+            logger.error("Erro em continuar_mensagem: %s", e, exc_info=True)
             return jsonify({"detail": f"Erro ao processar mensagem: {sanitize_error(e)}"}), 500

@@ -228,6 +228,8 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
 
             STEP 3 - SHOW PREVIEW + APPROVAL:
             - When all required info is present, show: 1) preview component, 2) action_approval component
+            - For email_draft: ALWAYS generate a "preview_email_draft" component with "to", "subject", and "body_preview" fields
+            - For calendar_create_event: ALWAYS generate a "preview_calendar_event" component with "title", "date", "time", "attendees"
             - Set status to "requires_action"
 
             STEP 4 - HANDLE APPROVAL:
@@ -323,6 +325,19 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
                                     step["params"]["subject"] = email_subject
                         print(f"[AIService] Body do email sincronizado do preview_email_draft")
                         break
+
+            # FALLBACK: Se não veio preview_email_draft mas temos entities com body_topic, preencher direto
+            if action_details.get("steps"):
+                for step in action_details["steps"]:
+                    if step.get("module_id") == "gmail.send_email":
+                        body_param = step["params"].get("body", "")
+                        if not body_param and entities.get("body_topic"):
+                            step["params"]["body"] = entities.get("body_topic") or ""
+                            print(f"[AIService] Body do email preenchido via fallback entities: {entities.get('body_topic')}")
+                        if not step["params"].get("to") and entities.get("recipient"):
+                            step["params"]["to"] = entities.get("recipient")
+                        if not step["params"].get("subject") and entities.get("subject"):
+                            step["params"]["subject"] = entities.get("subject")
 
             # PROTEÇÃO ANTI-LOOP: Verificar se última mensagem já tinha contact_select
             if components and len(formatted_history) > 0:

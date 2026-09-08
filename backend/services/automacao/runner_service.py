@@ -7,7 +7,7 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
-WORKER_URL = os.getenv("WORKER_URL", "http://catas_worker:8001")
+WORKER_URL = os.getenv("WORKER_URL", "http://localhost:8001")
 
 
 class AutomationRunnerService:

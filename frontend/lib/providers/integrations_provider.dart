@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/app_config.dart';
 import '../services/token_holder.dart';
 
@@ -62,10 +63,8 @@ class IntegrationsProvider extends ChangeNotifier {
       final response = await http.get(url, headers: _getHeaders());
 
       if (response.statusCode == 200) {
-        final data =
-            jsonDecode(utf8.decode(response.bodyBytes))['data'] as List;
+        final data = jsonDecode(utf8.decode(response.bodyBytes)) as List;
         _connectedProviders = data.map((e) => e['provider'] as String).toList();
-        _hasAttemptedFetch = true;
         if (!silent) _lastError = null;
       } else if (!silent) {
         _lastError = "Erro ao buscar integrações";
@@ -75,6 +74,7 @@ class IntegrationsProvider extends ChangeNotifier {
         _lastError = "Verifique sua conexão com a internet e tente novamente.";
       }
     } finally {
+      _hasAttemptedFetch = true;
       _isLoading = false;
       notifyListeners();
     }
@@ -84,9 +84,43 @@ class IntegrationsProvider extends ChangeNotifier {
     if (isConnected(provider)) {
       return await disconnectProvider(provider);
     } else {
-      _lastError = "Conexão com $provider ainda não disponível.";
-      notifyListeners();
+      return await connectProvider(provider);
+    }
+  }
+
+  Future<bool> connectProvider(String provider) async {
+    _busyProviders.add(provider);
+    _lastError = null;
+    notifyListeners();
+
+    try {
+      final url = Uri.parse(
+        "${_getBaseUrl()}/integrations/google/auth-url?provider=$provider",
+      );
+      final response = await http.get(url, headers: _getHeaders());
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final authUrl = data['auth_url'] as String?;
+        if (authUrl != null) {
+          final uri = Uri.parse(authUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+            return true;
+          }
+        }
+        _lastError = "Erro ao gerar link de autenticacao";
+        return false;
+      } else {
+        _lastError = "Erro ao conectar com o servidor";
+        return false;
+      }
+    } catch (e) {
+      _lastError = "Erro de conexao";
       return false;
+    } finally {
+      _busyProviders.remove(provider);
+      notifyListeners();
     }
   }
 
@@ -96,10 +130,10 @@ class IntegrationsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final url = Uri.parse("${_getBaseUrl()}/integrations/$provider");
+      final url = Uri.parse("${_getBaseUrl()}/integrations/provider/$provider");
       final response = await http.delete(url, headers: _getHeaders());
 
-      if (response.statusCode == 200) {
+      if (response.statusCode == 200 || response.statusCode == 204) {
           await fetchIntegrations(force: true, silent: true);
         return true;
       } else {

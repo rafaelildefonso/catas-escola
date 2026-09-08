@@ -56,6 +56,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   bool _onboardingAhaChecked = false;
   static const int _maxInputLength = 2000;
+  bool _wasAtBottom = true;
 
   final LayerLink _mentionLayerLink = LayerLink();
   OverlayEntry? _mentionOverlayEntry;
@@ -725,7 +726,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _sendMessage() {
+  void _sendMessage() async {
     final text = _controller.text.trim();
     final chatProvider = context.read<ChatProvider>();
     if (text.isEmpty && chatProvider.attachments.isEmpty) return;
@@ -742,7 +743,7 @@ class _ChatScreenState extends State<ChatScreen> {
     // Read native context (no-op on web — provider returns null)
     final nativeCtx = context.read<NativeContextProvider>();
 
-    chatProvider.sendMessage(
+    final response = await chatProvider.sendMessage(
       text,
       currentPageUrl: nativeCtx.currentPageUrl,
       currentPageTitle: nativeCtx.currentPageTitle,
@@ -750,6 +751,15 @@ class _ChatScreenState extends State<ChatScreen> {
     _controller.clear();
     // O sendMessage agora limpa o draft e anexos internamente de forma imediata
     _scrollToBottom();
+
+    // Navigate to session URL if a new session was created
+    final newSessionId = response['session_id'] as String?;
+    final currentLocation = GoRouterState.of(context).matchedLocation;
+    if (newSessionId != null && newSessionId.isNotEmpty && currentLocation == AppRoutes.chat) {
+      if (mounted) {
+        context.go(AppRoutes.chatSession(newSessionId));
+      }
+    }
   }
 
   late List<SuggestedPrompt> _shuffledPrompts;
@@ -805,13 +815,18 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.hasClients &&
-        _scrollController.position.pixels <= 100) {
-      final chatProvider = context.read<ChatProvider>();
-      if (!chatProvider.isLoading &&
-          !chatProvider.isLoadingMoreMessages &&
-          chatProvider.hasMoreMessages) {
-        chatProvider.loadMoreMessages();
+    if (_scrollController.hasClients) {
+      final atBottom = _scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 100;
+      _wasAtBottom = atBottom;
+
+      if (_scrollController.position.pixels <= 100) {
+        final chatProvider = context.read<ChatProvider>();
+        if (!chatProvider.isLoading &&
+            !chatProvider.isLoadingMoreMessages &&
+            chatProvider.hasMoreMessages) {
+          chatProvider.loadMoreMessages();
+        }
       }
     }
   }
@@ -884,7 +899,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     // No longer updating URL here to avoid loops, ChatScreen handles state sync from URL
 
-    if (messages.isNotEmpty) _scrollToBottom();
+    if (messages.isNotEmpty && _wasAtBottom) _scrollToBottom();
 
     final currentLength = _controller.text.length;
     final progress = currentLength / _maxInputLength;
