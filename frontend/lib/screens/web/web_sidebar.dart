@@ -28,15 +28,16 @@ class WebSidebar extends StatefulWidget {
 
 class _WebSidebarState extends State<WebSidebar> {
   bool _isCollapsed = false;
+  bool _collapseInitialized = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Collapse sidebar on small screens
-    final screenWidth = MediaQuery.of(context).size.width;
-    final shouldCollapse = screenWidth < 1200;
-    if (_isCollapsed != shouldCollapse) {
-      setState(() => _isCollapsed = shouldCollapse);
+    // Set initial collapse state based on screen size (only on first build)
+    if (!_collapseInitialized) {
+      _collapseInitialized = true;
+      final screenWidth = MediaQuery.of(context).size.width;
+      _isCollapsed = screenWidth < 1200;
     }
   }
 

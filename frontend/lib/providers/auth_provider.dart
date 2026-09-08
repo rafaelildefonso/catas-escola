@@ -108,10 +108,10 @@ class AuthProvider extends ChangeNotifier {
 
     _tokenCache = await _secureStorage.read(key: 'jwt_token');
     if (_tokenCache != null) {
+      TokenHolder().token = _tokenCache!;
       await _loadUserFromToken(_tokenCache!);
     }
 
-    await Future.delayed(const Duration(seconds: 3));
     _isInitializing = false;
 
     await _checkServerAndAuth();
