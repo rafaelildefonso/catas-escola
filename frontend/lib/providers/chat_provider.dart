@@ -651,12 +651,20 @@ class ChatProvider extends ChangeNotifier {
       if (raw.length < _sessionsLimit) {
         _hasMoreSessions = false;
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       _lastError = e.toString();
+      debugPrint('❌ loadSessions error: $e\n$stackTrace');
       if (_lastError!.contains("401") || _lastError!.contains("403")) {
         // Ignora erro silenciando para o AuthProvider lidar
+        // NÃO marca como tentado para permitir retry quando auth estiver pronto
+      } else {
+        _hasAttemptedLoadSessions = true;
       }
     } finally {
+      final error = _lastError;
+      if (error == null || (!error.contains("401") && !error.contains("403"))) {
+        _hasAttemptedLoadSessions = true;
+      }
       _isLoadingSessions = false;
       notifyListeners();
     }
@@ -683,8 +691,9 @@ class ChatProvider extends ChangeNotifier {
 
       final existingIds = _sessions.map((e) => e.id).toSet();
       _sessions.addAll(newSessions.where((s) => !existingIds.contains(s.id)));
-    } catch (e) {
+    } catch (e, stackTrace) {
       _lastError = e.toString();
+      debugPrint('❌ loadMoreSessions error: $e\n$stackTrace');
     } finally {
       _isLoadingMoreSessions = false;
       notifyListeners();
@@ -899,12 +908,12 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> sendMessage(
+  Future<Map<String, dynamic>> sendMessage(
     String text, {
     String? currentPageUrl,
     String? currentPageTitle,
   }) async {
-    if (text.trim().isEmpty && _attachments.isEmpty) return;
+    if (text.trim().isEmpty && _attachments.isEmpty) return {};
 
     final userMessage = Message(
       text: text.trim().isEmpty ? "[Arquivo(s) enviado(s)]" : text,
@@ -959,7 +968,7 @@ class ChatProvider extends ChangeNotifier {
       );
 
       // Guard if user stopped during request
-      if (_isStopped) return;
+      if (_isStopped) return {};
 
       final newSessionId = response['session_id'] as String?;
       if (newSessionId != null && newSessionId.isNotEmpty) {
@@ -1044,10 +1053,11 @@ class ChatProvider extends ChangeNotifier {
       if (_currentSessionId != null) {
         await loadSessions();
       }
+      return response;
     } catch (e) {
       if (e is DioException && CancelToken.isCancel(e)) {
         debugPrint("ChatProvider: Message cancelled by user.");
-        return;
+        return {};
       }
 
       _thinkingStage = ThinkingStage.idle;
@@ -1079,11 +1089,12 @@ class ChatProvider extends ChangeNotifier {
       _activeCancelToken = null;
       notifyListeners();
     }
+    return {};
   }
 
   /// Envia uma resposta de componente interativo (ex: seleção de contato, aprovação)
   /// como uma nova mensagem no chat, ou continua a mensagem atual se suportado.
-  Future<void> sendComponentResponse(
+  Future<Map<String, dynamic>> sendComponentResponse(
     String componentType,
     Map<String, dynamic> responseData,
   ) async {
@@ -1092,8 +1103,7 @@ class ChatProvider extends ChangeNotifier {
         lastMessage != null && lastMessage.continuationId != null;
 
     if (canContinue) {
-      await _continueMessageFlow(lastMessage, componentType, responseData);
-      return;
+      return await _continueMessageFlow(lastMessage, componentType, responseData);
     }
 
     // --- Comportamento Legado (para mensagens antigas sem fluxo de continuação) ---
@@ -1163,7 +1173,7 @@ class ChatProvider extends ChangeNotifier {
         cancelToken: _activeCancelToken,
       );
 
-      if (_isStopped) return;
+      if (_isStopped) return {};
 
       final assistantMessage = Message(
         text: response['text'] ?? "Entendido.",
@@ -1184,8 +1194,9 @@ class ChatProvider extends ChangeNotifier {
       _updateAuthQuota(response);
 
       notifyListeners();
+      return response;
     } catch (e) {
-      if (e is DioException && CancelToken.isCancel(e)) return;
+      if (e is DioException && CancelToken.isCancel(e)) return {};
       _lastError = e.toString();
       _messages.add(
         Message(
@@ -1199,10 +1210,11 @@ class ChatProvider extends ChangeNotifier {
       _thinkingStage = ThinkingStage.idle;
       notifyListeners();
     }
+    return {};
   }
 
   /// Fluxo de Resposta Contínua (Opção A)
-  Future<void> _continueMessageFlow(
+  Future<Map<String, dynamic>> _continueMessageFlow(
     Message originalMessage,
     String componentType,
     Map<String, dynamic> responseData,
@@ -1225,7 +1237,7 @@ class ChatProvider extends ChangeNotifier {
         cancelToken: _activeCancelToken,
       );
 
-      if (_isStopped) return;
+      if (_isStopped) return {};
 
       final chunk = MessageChunk(
         text: response['text'] ?? "",
@@ -1255,8 +1267,9 @@ class ChatProvider extends ChangeNotifier {
       }
 
       notifyListeners();
+      return response;
     } catch (e) {
-      if (e is DioException && CancelToken.isCancel(e)) return;
+      if (e is DioException && CancelToken.isCancel(e)) return {};
       _lastError = e.toString();
       // Em caso de erro na continuação, podemos adicionar uma nota ou alertar o usuário
       debugPrint("❌ Erro no _continueMessageFlow: $e");
@@ -1266,5 +1279,6 @@ class ChatProvider extends ChangeNotifier {
       _activeCancelToken = null;
       notifyListeners();
     }
+    return {};
   }
 }
