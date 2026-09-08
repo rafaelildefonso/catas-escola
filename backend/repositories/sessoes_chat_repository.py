@@ -54,9 +54,12 @@ def deletar_sessao(session_id: str, user_id: str) -> bool:
     return result.rowcount > 0
 
 
+import json
+
+
 def listar_mensagens_da_sessao(session_id: str, limite: int = 100, deslocamento: int = 0) -> list:
     """Mensagens da sessao em ordem cronologica com paginacao."""
-    return executar_linha(
+    rows = executar_linha(
         """SELECT id, session_id, role, content, metadata, created_at
            FROM messages
            WHERE session_id = :session_id
@@ -66,3 +69,13 @@ def listar_mensagens_da_sessao(session_id: str, limite: int = 100, deslocamento:
         limite=limite,
         deslocamento=deslocamento,
     )
+    for r in rows:
+        meta = r.get("metadata")
+        if isinstance(meta, str):
+            try:
+                r["metadata"] = json.loads(meta)
+            except Exception:
+                r["metadata"] = {}
+        elif meta is None:
+            r["metadata"] = {}
+    return rows

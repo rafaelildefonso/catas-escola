@@ -1,4 +1,6 @@
 ﻿import asyncio
+import copy
+import logging
 
 from services.ia.ai_service import AIService
 
@@ -14,6 +16,8 @@ from services.chat.salvar_mensagem_chat_service import SalvarMensagemChatService
 from services.chat.atualizar_mensagem_chat_service import AtualizarMensagemChatService
 from services.automacao.iniciar_automacao_assincrona_service import IniciarAutomacaoAssincronaService
 from services.automacao.registrar_automation_run_service import RegistrarAutomationRunService
+
+logger = logging.getLogger(__name__)
 
 ai_service = AIService()
 
@@ -69,10 +73,12 @@ class ContinuarMensagemChatService:
             user_integrations=user_integrations,
         )
 
-        original_msg = next((m for m in reversed(history) if m["id"] == continuation_id), None)
+        original_msg = next((m for m in reversed(history) if m.get("id") == continuation_id), None)
         if not original_msg:
+            logger.error("Mensagem original não encontrada. continuation_id=%s, history_ids=%s", continuation_id, [m.get("id") for m in history])
             raise ErroNaoEncontrado("Mensagem original não encontrada")
 
+        logger.debug("original_msg keys: %s, content present: %s", list(original_msg.keys()), "content" in original_msg)
         current_chunks = original_msg.get("metadata", {}).get("chunks_count", 1)
         if current_chunks >= LIMITE_CHUNKS_CONTINUACAO:
             ai_response["response_text"] = "\n\n(Limite de interação atingido para esta automação.)"
@@ -80,6 +86,9 @@ class ContinuarMensagemChatService:
             ai_response["components"] = []
 
         separator = "\n\n---\n\n"
+        if "content" not in original_msg:
+            logger.error("original_msg sem 'content' key. Keys: %s", list(original_msg.keys()))
+            original_msg["content"] = ""
         updated_content = original_msg["content"] + separator + ai_response["response_text"]
 
         new_metadata = {
@@ -90,6 +99,7 @@ class ContinuarMensagemChatService:
             "action_details": ai_response.get("action_details"),
         }
 
+        logger.debug("Atualizando mensagem continuation_id=%s, ai_response keys=%s", continuation_id, list(ai_response.keys()))
         AtualizarMensagemChatService.executar(continuation_id, content=updated_content, metadata=new_metadata)
 
         automation_id = ContinuarMensagemChatService._disparar_aprovacao(
@@ -150,7 +160,8 @@ class ContinuarMensagemChatService:
             if original_msg_for_plan:
                 plan_from_history = original_msg_for_plan.get("metadata", {}).get("action_details")
 
-            if plan_from_history:
+            logger.debug("plan_from_history: %s (type=%s)", plan_from_history, type(plan_from_history).__name__)
+            if plan_from_history is not None:
                 return {
                     "response_text": "Ação confirmada! Executando agora...",
                     "action_triggered": True,
@@ -190,7 +201,7 @@ class ContinuarMensagemChatService:
             log.salvar()
             real_automation_id = str(log.id)
 
-            plan = ai_response.get("action_details") or {}
+            plan = copy.deepcopy(ai_response.get("action_details") or {})
             plan["automation_id"] = real_automation_id
             plan["user_id"] = user_id
             plan["input_payload"] = {
@@ -221,6 +232,9 @@ class ContinuarMensagemChatService:
 
 
 def _perfil_dict(user_id: str) -> dict:
-    from models.profile import Profile
-    model = Profile.buscar_por_id(user_id)
-    return model.to_dict() if model else {}
+    try:
+        from models.profile import Profile
+        model = Profile.buscar_por_id(user_id)
+        return model.to_dict() if model else {}
+    except Exception:
+        return {}
