@@ -21,7 +21,7 @@ class PayloadBuilder:
                 "params": {
                     "to": entities.get("recipient"),
                     "subject": entities.get("subject", "Sem Assunto"),
-                    "body": entities.get("body_topic", "")
+                    "body": entities.get("body_topic") or ""
                 }
             })
             

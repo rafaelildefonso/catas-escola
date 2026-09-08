@@ -126,7 +126,17 @@ Return ONLY JSON: {"date": "...", "time": "...", "title": "...", "description": 
             Extract the following fields. If a field is not mentioned, return null.
             - subject: Subject line of the email.
             - recipient: The name or email address of the person receiving the email.
-            - body_topic: A short summary of what the email should say.
+            - body_topic: A short summary of what the email should say (e.g., "internship offer for IT position", "meeting request for project kickoff", "follow-up on proposal").
+            
+            EXAMPLES:
+            User: "envia um email para joao@email.com com assunto Reunião sobre o projeto"
+            → {"subject": "Reunião sobre o projeto", "recipient": "joao@email.com", "body_topic": "meeting about the project"}
+            
+            User: "cria e envia uma gmail sobre uma oferta de estagio de ti para rafaelfurtado313@gmail.com com o assunto Oferta de estagio"
+            → {"subject": "Oferta de estagio", "recipient": "rafaelfurtado313@gmail.com", "body_topic": "internship offer for IT position"}
+            
+            User: "mande um email pro Rafael falando sobre a oferta de estágio"
+            → {"subject": "Oferta de estagio", "recipient": "Rafael", "body_topic": "internship offer"}
             
             Return JSON format: {"subject": "...", "recipient": "...", "body_topic": "..."}
             """
@@ -165,6 +175,15 @@ Return ONLY JSON: {"date": "...", "time": "...", "title": "...", "description": 
                     # Log do resultado final
                     print(f"📋 [EntityExtractor] Calendar entities: {result}")
                 
+                # Filtrar campos não esperados (ex: _system_usage do AIBase)
+                allowed_fields = {
+                    "calendar_create_event": ["date", "time", "title", "description", "attendees"],
+                    "email_draft": ["subject", "recipient", "body_topic"],
+                    "task_create": ["task_name", "due_date", "priority", "value"]
+                }
+                if intent in allowed_fields:
+                    filtered = {k: v for k, v in result.items() if k in allowed_fields[intent]}
+                    return filtered
                 return result
                 
             except Exception as e:
