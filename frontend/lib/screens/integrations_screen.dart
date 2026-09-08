@@ -132,6 +132,17 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       length: IntegrationCategory.values.length,
       vsync: this,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _handleOAuthCallback();
+    });
+  }
+
+  void _handleOAuthCallback() {
+    final uri = Uri.base;
+    final connected = uri.queryParameters['connected'];
+    if (connected != null && connected.isNotEmpty) {
+      context.read<IntegrationsProvider>().fetchIntegrations(force: true);
+    }
   }
 
   @override
