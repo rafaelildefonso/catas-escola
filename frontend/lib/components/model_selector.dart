@@ -139,7 +139,7 @@ class ModelSelectorWidget extends StatelessWidget {
 bool isModelAllowed(String model, String userTier) {
   if (userTier == 'max') return true;
   if (userTier == 'pro') return model != "CATAS MAX";
-  return model == "CATAS Free";
+  return model == "CATAS Basic";
 }
 
 String getRequiredTier(String model) {
