@@ -5,6 +5,7 @@ e atualiza o resultado no banco de dados.
 """
 import asyncio
 import logging
+import threading
 import traceback
 from typing import Optional
 
@@ -12,8 +13,6 @@ from flask import Flask, jsonify, request
 
 worker_app = Flask(__name__)
 logger = logging.getLogger("worker.server")
-
-_background_tasks: set = set()
 
 
 async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str]):
@@ -58,6 +57,14 @@ def health():
     return jsonify({"status": "ok"})
 
 
+def _run_in_thread(automation_id: str, plan: dict, user_id: Optional[str]):
+    loop = asyncio.new_event_loop()
+    try:
+        loop.run_until_complete(_run_execution(automation_id, plan, user_id))
+    finally:
+        loop.close()
+
+
 @worker_app.route("/execute", methods=["POST"])
 def execute():
     data = request.get_json()
@@ -65,11 +72,12 @@ def execute():
     plan = data["plan"]
     user_id = data.get("user_id")
 
-    task = asyncio.create_task(_run_execution(
-        automation_id, plan, user_id,
-    ))
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
+    t = threading.Thread(
+        target=_run_in_thread,
+        args=(automation_id, plan, user_id),
+        daemon=True,
+    )
+    t.start()
 
     logger.info(
         "📤 [Worker] Requisição aceita para automação %s. Executando em background.",

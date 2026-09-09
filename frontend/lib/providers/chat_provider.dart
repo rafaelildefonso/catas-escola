@@ -141,6 +141,8 @@ class ChatProvider extends ChangeNotifier {
 
   // Execution Feedback (Realtime - Step 13)
   Timer? _automationPollingTimer;
+  DateTime? _automationPollingStartedAt;
+  static const Duration _automationPollingTimeout = Duration(minutes: 2);
   List<Map<String, dynamic>> _automationSteps = [];
   List<Map<String, dynamic>> get automationSteps => _automationSteps;
 
@@ -391,8 +393,17 @@ class ChatProvider extends ChangeNotifier {
     }
 
     debugPrint("📡 Polling automation steps: $automationId");
+    _automationPollingStartedAt = DateTime.now();
 
     _automationPollingTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (_automationPollingStartedAt != null &&
+          DateTime.now().difference(_automationPollingStartedAt!) > _automationPollingTimeout) {
+        debugPrint("⏱️ Polling timeout — cancelling after ${_automationPollingTimeout.inMinutes}min");
+        _automationPollingTimer?.cancel();
+        _automationPollingTimer = null;
+        _automationPollingStartedAt = null;
+        return;
+      }
       try {
         final response = await http.get(
           Uri.parse('${AppConfig.apiBaseUrl}/automation-step-logs?automation_id=$automationId'),
@@ -422,6 +433,7 @@ class ChatProvider extends ChangeNotifier {
                 stepMap['module_id'] == 'completion_notification') {
               _automationPollingTimer?.cancel();
               _automationPollingTimer = null;
+              _automationPollingStartedAt = null;
               Future.delayed(const Duration(seconds: 2), () async {
                 try {
                   final quotaResp = await http.get(
@@ -446,6 +458,38 @@ class ChatProvider extends ChangeNotifier {
           }
 
           notifyListeners();
+
+          if (_automationSteps.isNotEmpty) {
+            final hasActiveSteps = _automationSteps.any(
+              (s) => s['status'] == 'running' || s['status'] == 'pending',
+            );
+            if (!hasActiveSteps) {
+              debugPrint("✅ All automation steps completed — stopping polling");
+              _automationPollingTimer?.cancel();
+              _automationPollingTimer = null;
+              _automationPollingStartedAt = null;
+              Future.delayed(const Duration(seconds: 2), () async {
+                try {
+                  final quotaResp = await http.get(
+                    Uri.parse('${AppConfig.apiBaseUrl}/auth/me'),
+                    headers: {"Authorization": "Bearer ${TokenHolder().token ?? ""}"},
+                  );
+                  if (quotaResp.statusCode == 200) {
+                    final quotaData = jsonDecode(quotaResp.body) as Map<String, dynamic>;
+                    final profile = quotaData['profile'] as Map<String, dynamic>?;
+                    if (profile != null) {
+                      debugPrint(
+                        "📊 Créditos atualizados: ${profile['quota_used']}/${profile['monthly_quota_limit']}",
+                      );
+                      _updateAuthQuota(profile);
+                    }
+                  }
+                } catch (e) {
+                  debugPrint("⚠️ Erro ao atualizar créditos: $e");
+                }
+              });
+            }
+          }
         }
       } catch (e) {
         debugPrint("⚠️ Erro no polling de automação: $e");
@@ -539,10 +583,12 @@ class ChatProvider extends ChangeNotifier {
     if (_isDemoMode || _automationPollingTimer == null) {
       _automationPollingTimer?.cancel();
       _automationPollingTimer = null;
+      _automationPollingStartedAt = null;
       return;
     }
     _automationPollingTimer?.cancel();
     _automationPollingTimer = null;
+    _automationPollingStartedAt = null;
   }
 
   /// Sincroniza a cota do usuário no AuthProvider (Quota Sync - Step 01)

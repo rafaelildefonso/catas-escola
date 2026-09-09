@@ -2,5 +2,5 @@
 
 class ListarAutomationStepLogsService:
     @staticmethod
-    def executar():
-        return AutomationStepLog.listar_todos()
+    def executar(automation_id=None, run_id=None):
+        return AutomationStepLog.listar_todos(automation_id=automation_id, run_id=run_id)

@@ -408,7 +408,7 @@
 > **Última Atualização:** 2026-04-28  
 > **Próxima Revisão:** Após conclusão das tarefas críticas F5
 
-## 🐍 Server (FastAPI / Backend de Escala)
+## 🐍 Server (Flask / Backend de Escala)
 
 - [x] <~30m> Configurar ambiente FastAPI + Pydantic.
 - [x] <~60m> Implementar rotas de Chat: `/api/v1/chat/message`, `/sessions`, `/history`.
