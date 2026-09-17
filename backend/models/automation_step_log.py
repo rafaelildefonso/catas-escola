@@ -41,8 +41,13 @@ class AutomationStepLog(db.Model):
         db.session.commit()
 
     @staticmethod
-    def listar_todos():
-        return AutomationStepLog.query.all()
+    def listar_todos(automation_id=None, run_id=None):
+        query = AutomationStepLog.query
+        if automation_id:
+            query = query.filter_by(automation_id=automation_id)
+        if run_id:
+            query = query.filter_by(run_id=run_id)
+        return query.all()
 
     @staticmethod
     def buscar_por_id(id):

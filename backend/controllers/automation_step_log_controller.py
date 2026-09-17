@@ -19,7 +19,10 @@ class AutomationStepLogController:
 
     @staticmethod
     def listar():
-        models = ListarAutomationStepLogsService.executar()
+        from flask import request
+        automation_id = request.args.get('automation_id')
+        run_id = request.args.get('run_id')
+        models = ListarAutomationStepLogsService.executar(automation_id=automation_id, run_id=run_id)
         return jsonify([m.to_dict() for m in models]), 200
 
     @staticmethod

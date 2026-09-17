@@ -11,6 +11,7 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
     """Estatísticas agregadas do dashboard do usuário.
 
     PostgreSQL: delega para a procedure public.fn_dashboard_estatisticas.
+    MySQL:      delega para a função fn_dashboard_estatisticas.
     SQLite:     consulta inline equivalente (dev/teste).
     """
     if nome_dialeto() == "postgresql":
@@ -21,6 +22,17 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
         if isinstance(value, str):
             value = json.loads(value)
         return value or {}
+
+    if nome_dialeto() == "mysql":
+        value = db.session.execute(
+            text("SELECT fn_dashboard_estatisticas(:user_id, :dias)"),
+            {"user_id": user_id, "dias": dias},
+        ).scalar()
+        if isinstance(value, (dict, list)):
+            return value or {}
+        if isinstance(value, str):
+            return json.loads(value) or {}
+        return {}
 
     corte = (datetime.now(timezone.utc) - timedelta(days=dias)).strftime("%Y-%m-%d %H:%M:%S")
     params = {"user_id": user_id, "corte": corte}
@@ -38,9 +50,7 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
         "taxa",
     )
     duracao = _agregado(
-        """SELECT COALESCE(ROUND(AVG((julianday(finished_at) - julianday(started_at)) * 86400.0), 1), 0) AS seg
-           FROM automation_runs
-           WHERE user_id = :user_id AND created_at >= :corte AND finished_at IS NOT NULL""",
+        _sql_duracao_media(),
         params,
         "seg",
     )
@@ -88,3 +98,19 @@ def _agregado(sql_inline: str, params: dict, coluna: str):
     if not rows:
         return 0
     return rows[0].get(coluna, 0)
+
+
+def _sql_duracao_media() -> str:
+    """Expressão de duração média por dialeto (MySQL usa TIMESTAMPDIFF)."""
+    if nome_dialeto() == "mysql":
+        return (
+            "SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE "
+            "ROUND(AVG(TIMESTAMPDIFF(SECOND, started_at, finished_at)), 0) END AS seg "
+            "FROM automation_runs "
+            "WHERE user_id = :user_id AND created_at >= :corte AND finished_at IS NOT NULL"
+        )
+    return (
+        "SELECT COALESCE(ROUND(AVG((julianday(finished_at) - julianday(started_at)) * 86400.0), 1), 0) AS seg "
+        "FROM automation_runs "
+        "WHERE user_id = :user_id AND created_at >= :corte AND finished_at IS NOT NULL"
+    )

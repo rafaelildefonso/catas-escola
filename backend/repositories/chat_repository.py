@@ -11,6 +11,7 @@ def relatorio_chat(user_id: str, dias: int = 30) -> dict:
     """Resumo de conversas/mensagens/feedback (JOIN chat_sessions ↔ messages).
 
     PostgreSQL: delega para a função public.fn_relatorio_chat.
+    MySQL:      delega para a função fn_relatorio_chat.
     SQLite:     consulta inline equivalente (dev/teste).
     """
     if nome_dialeto() == "postgresql":
@@ -21,6 +22,17 @@ def relatorio_chat(user_id: str, dias: int = 30) -> dict:
         if isinstance(value, str):
             value = json.loads(value)
         return value or {}
+
+    if nome_dialeto() == "mysql":
+        value = db.session.execute(
+            text("SELECT fn_relatorio_chat(:user_id, :dias)"),
+            {"user_id": user_id, "dias": dias},
+        ).scalar()
+        if isinstance(value, (dict, list)):
+            return value or {}
+        if isinstance(value, str):
+            return json.loads(value) or {}
+        return {}
 
     corte = (datetime.now(timezone.utc) - timedelta(days=dias)).strftime("%Y-%m-%d %H:%M:%S")
     base = """FROM messages m JOIN chat_sessions cs ON cs.id = m.session_id
@@ -86,7 +98,7 @@ def buscar_mensagens(user_id: str, termo: str, limite: int = 50, deslocamento: i
     if not termo_limpo:
         return {"items": [], "total": 0}
 
-    if nome_dialeto() == "postgresql":
+    if nome_dialeto() in ("postgresql", "mysql"):
         linhas = executar_procedure(
             "fn_buscar_mensagens",
             user_id=user_id,

@@ -394,3 +394,4 @@
 
 > **Última Atualização:** Setembro 2026  
 > **Próxima Revisão:** Após conclusão das tarefas críticas F5
+

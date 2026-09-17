@@ -1,27 +1,18 @@
 """
 Worker HTTP server.
-Recebe requisi����es de execu����o do catas_server, roda o AutomationRunner
+Recebe requisições de execução do catas_server, roda o AutomationRunner
 e atualiza o resultado no banco de dados.
 """
 import asyncio
 import logging
+import threading
 import traceback
 from typing import Optional
 
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from flask import Flask, jsonify, request
 
-worker_app = FastAPI(title="CATAS Worker", version="0.1.0")
+worker_app = Flask(__name__)
 logger = logging.getLogger("worker.server")
-
-_background_tasks: set = set()
-
-
-class ExecuteRequest(BaseModel):
-    automation_id: str
-    plan: dict
-    user_id: Optional[str] = None
 
 
 async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str]):
@@ -61,24 +52,39 @@ async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str])
             logger.error("❌ [Worker] Falha ao atualizar status no DB: %s", db_err)
 
 
-@worker_app.get("/health")
-async def health():
-    return {"status": "ok"}
+@worker_app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"})
 
 
-@worker_app.post("/execute")
-async def execute(req: ExecuteRequest):
-    task = asyncio.create_task(_run_execution(
-        req.automation_id, req.plan, req.user_id,
-    ))
-    _background_tasks.add(task)
-    task.add_done_callback(_background_tasks.discard)
+def _run_in_thread(automation_id: str, plan: dict, user_id: Optional[str]):
+    loop = asyncio.new_event_loop()
+    try:
+        loop.run_until_complete(_run_execution(automation_id, plan, user_id))
+    finally:
+        loop.close()
+
+
+@worker_app.route("/execute", methods=["POST"])
+def execute():
+    data = request.get_json()
+    automation_id = data["automation_id"]
+    plan = data["plan"]
+    user_id = data.get("user_id")
+
+    t = threading.Thread(
+        target=_run_in_thread,
+        args=(automation_id, plan, user_id),
+        daemon=True,
+    )
+    t.start()
 
     logger.info(
         "📤 [Worker] Requisição aceita para automação %s. Executando em background.",
-        req.automation_id,
+        automation_id,
     )
-    return JSONResponse(
-        status_code=202,
-        content={"status": "accepted", "automation_id": req.automation_id},
-    )
+    return jsonify({"status": "accepted", "automation_id": automation_id}), 202
+
+
+if __name__ == "__main__":
+    worker_app.run(host="0.0.0.0", port=8001, debug=False)

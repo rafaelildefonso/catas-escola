@@ -1,31 +1,27 @@
 -- =========================================================
--- Migration 016: Add reason column to message_feedback
--- Description: Adiciona o campo 'reason' para capturar o motivo
---              do feedback (like/dislike) com opções específicas.
+-- Migration 016: Add reason column to message_feedback (MySQL)
+-- Adiciona o campo 'reason' para capturar o motivo
+-- do feedback (like/dislike) com opções específicas.
 -- =========================================================
 
 -- Adicionar coluna reason (texto curto para motivo do feedback)
-ALTER TABLE message_feedback
-ADD COLUMN IF NOT EXISTS reason TEXT;
+SET @col_reason := (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'message_feedback' AND column_name = 'reason');
+SET @sql_reason := IF(@col_reason = 0,
+    'ALTER TABLE message_feedback ADD COLUMN reason VARCHAR(255) NULL', 'SELECT 1');
+PREPARE stmt_reason FROM @sql_reason;
+EXECUTE stmt_reason;
+DEALLOCATE PREPARE stmt_reason;
 
--- Criar índice para queries por reason (analytics)
-CREATE INDEX IF NOT EXISTS idx_feedback_reason ON message_feedback (reason);
+-- Índice para queries por reason (analytics)
+CREATE INDEX idx_feedback_reason ON message_feedback (reason);
 
--- Comentário para documentação
-COMMENT ON COLUMN message_feedback.reason IS 'Motivo do feedback (ex: clearAnswer, automationFailed, etc.)';
-
--- Atualizar trigger para atualizar updated_at automaticamente
-CREATE OR REPLACE FUNCTION public.update_feedback_updated_at()
-RETURNS trigger
-LANGUAGE plpgsql
-AS $$
-BEGIN
-    NEW.updated_at = NOW();
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS update_message_feedback_modtime ON message_feedback;
-CREATE TRIGGER update_message_feedback_modtime
-BEFORE UPDATE ON message_feedback
-FOR EACH ROW EXECUTE FUNCTION public.update_feedback_updated_at();
+-- Atualizar trigger para atualizar updated_at automaticamente (se não existir)
+SET @trg_exists := (SELECT COUNT(*) FROM information_schema.triggers
+    WHERE trigger_schema = DATABASE() AND trigger_name = 'update_message_feedback_updated_at');
+SET @sql_trg := IF(@trg_exists = 0,
+    'CREATE TRIGGER update_message_feedback_updated_at BEFORE UPDATE ON message_feedback FOR EACH ROW SET NEW.updated_at = NOW()',
+    'SELECT 1');
+PREPARE stmt_trg FROM @sql_trg;
+EXECUTE stmt_trg;
+DEALLOCATE PREPARE stmt_trg;

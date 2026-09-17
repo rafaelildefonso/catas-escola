@@ -7,8 +7,6 @@ import logging
 import os
 import sys
 
-import uvicorn
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
@@ -45,7 +43,7 @@ def main():
     from worker.server import worker_app
 
     logger.info(f"Worker CATAS inicializado. Servidor HTTP na porta {WORKER_PORT}.")
-    uvicorn.run(worker_app, host="0.0.0.0", port=WORKER_PORT, log_level="info")
+    worker_app.run(host="0.0.0.0", port=WORKER_PORT, debug=False)
 
 
 if __name__ == "__main__":

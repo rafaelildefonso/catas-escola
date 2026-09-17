@@ -1,328 +1,298 @@
 -- =========================================================
--- CATAS - MIGRATION 018: Procedures de Relatórios e Busca
+-- CATAS - MIGRATION 018: Procedures de Relatórios e Busca (MySQL)
 -- =========================================================
 -- Funcionalidades além do CRUD básico (WHERE, ORDER BY,
 -- JOIN, GROUP BY, agregações, busca textual e paginação).
--- Repositorio (backend/app/repositories) chama estas
--- procedures quando o banco for PostgreSQL (Supabase).
--- Rode este script no Editor SQL do seu projeto Supabase.
+-- O repositório (backend/repositories) chama estas funções
+-- quando o banco for MySQL.
+-- Rode este script no MySQL Workbench.
 
 -- ---------------------------------------------------------------------------
 -- 1) fn_dashboard_estatisticas
---    Estatísticas agregadas para o Dashboard:
---    - total de execuções de automação no período
---    - taxa de sucesso e duração média
---    - execuções por status e por dia
---    - top integrações conectadas
---    - total de sessões e mensagens de chat
+--    Estatísticas agregadas para o Dashboard (retorna JSON).
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.fn_dashboard_estatisticas(
-    p_user_id uuid,
-    p_dias integer DEFAULT 7
+DELIMITER $$
+
+CREATE FUNCTION fn_dashboard_estatisticas(
+    p_user_id VARCHAR(36),
+    p_dias INT
 )
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    v_corte timestamptz := now() - make_interval(days => p_dias);
-    v_resultado jsonb;
+RETURNS JSON
+READS SQL DATA
+DETERMINISTIC
 BEGIN
-    SELECT jsonb_build_object(
-        'total_execucoes', (
-            SELECT COUNT(*)::integer
-            FROM public.automation_runs ar
-            WHERE ar.user_id = p_user_id AND ar.created_at >= v_corte
-        ),
-        'taxa_sucesso', (
-            SELECT COALESCE(
-                ROUND(
-                    100.0 * COUNT(*) FILTER (WHERE ar.status = 'completed')
-                    / NULLIF(COUNT(*), 0)
-                ),
-                0
-            )::integer
-            FROM public.automation_runs ar
-            WHERE ar.user_id = p_user_id AND ar.created_at >= v_corte
-        ),
-        'duracao_media_segundos', (
-            SELECT ROUND(AVG(EXTRACT(EPOCH FROM (elapsed.finished_at - elapsed.started_at)))::numeric, 1)
-            FROM public.automation_runs elapsed
-            WHERE elapsed.user_id = p_user_id
-              AND elapsed.created_at >= v_corte
-              AND elapsed.finished_at IS NOT NULL
-        ),
-        'execucoes_por_status', (
-            SELECT COALESCE(
-                jsonb_object_agg(status, qtd),
-                '{}'::jsonb
-            )
-            FROM (
-                SELECT status, COUNT(*)::integer AS qtd
-                FROM public.automation_runs ar
-                WHERE ar.user_id = p_user_id AND ar.created_at >= v_corte
-                GROUP BY status
-            ) st
-        ),
-        'execucoes_por_dia', (
-            SELECT COALESCE(
-                jsonb_agg(
-                    jsonb_build_object(
-                        'dia', to_char(d.dia, 'YYYY-MM-DD'),
-                        'total', d.total
-                    )
-                    ORDER BY d.dia
-                ),
-                '[]'::jsonb
-            )
-            FROM (
-                SELECT date_trunc('day', ar.created_at) AS dia,
-                       COUNT(*)::integer AS total
-                FROM public.automation_runs ar
-                WHERE ar.user_id = p_user_id AND ar.created_at >= v_corte
-                GROUP BY date_trunc('day', ar.created_at)
-            ) d
-        ),
-        'top_integracoes', (
-            SELECT COALESCE(
-                jsonb_agg(
-                    jsonb_build_object('provider', i.provider, 'total', i.qtd)
-                    ORDER BY i.qtd DESC
-                ),
-                '[]'::jsonb
-            )
-            FROM (
-                SELECT provider, COUNT(*)::integer AS qtd
-                FROM public.integrations ig
-                WHERE ig.user_id = p_user_id
-                GROUP BY provider
-                ORDER BY qtd DESC
-                LIMIT 5
-            ) i
-        ),
-        'total_sessoes_chat', (
-            SELECT COUNT(*)::integer
-            FROM public.chat_sessions cs
-            WHERE cs.user_id = p_user_id
-        ),
-        'total_mensagens_chat', (
-            SELECT COUNT(*)::integer
-            FROM public.messages m
-            JOIN public.chat_sessions cs ON cs.id = m.session_id
-            WHERE cs.user_id = p_user_id
-        )
-    ) INTO v_resultado;
+    DECLARE v_corte DATETIME;
+    DECLARE v_total_execucoes INT;
+    DECLARE v_taxa INT;
+    DECLARE v_duracao DOUBLE;
+    DECLARE v_total_sessoes INT;
+    DECLARE v_total_mensagens INT;
+    DECLARE v_por_status JSON;
+    DECLARE v_por_dia JSON;
+    DECLARE v_top_integracoes JSON;
 
-    RETURN v_resultado;
-END;
-$$;
+    IF p_dias IS NULL THEN
+        SET p_dias = 7;
+    END IF;
+    SET v_corte = DATE_SUB(NOW(), INTERVAL p_dias DAY);
 
-COMMENT ON FUNCTION public.fn_dashboard_estatisticas(uuid, integer) IS
-'Estatísticas agregadas do dashboard em um único JSONB.';
+    SELECT COUNT(*) INTO v_total_execucoes
+    FROM automation_runs ar
+    WHERE ar.user_id = p_user_id AND ar.created_at >= v_corte;
+
+    SELECT COALESCE(
+        ROUND(100.0 * SUM(CASE WHEN ar.status = 'completed' THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0)),
+        0
+    ) INTO v_taxa
+    FROM automation_runs ar
+    WHERE ar.user_id = p_user_id AND ar.created_at >= v_corte;
+
+    SELECT AVG(TIMESTAMPDIFF(SECOND, ar.started_at, ar.finished_at))
+    INTO v_duracao
+    FROM automation_runs ar
+    WHERE ar.user_id = p_user_id
+      AND ar.created_at >= v_corte
+      AND ar.finished_at IS NOT NULL;
+
+    SELECT COALESCE(
+        JSON_OBJECTAGG(status, qtd),
+        JSON_OBJECT()
+    ) INTO v_por_status
+    FROM (
+        SELECT ar.status AS status, COUNT(*) AS qtd
+        FROM automation_runs ar
+        WHERE ar.user_id = p_user_id AND ar.created_at >= v_corte
+        GROUP BY ar.status
+    ) st;
+
+    SELECT COALESCE(
+        JSON_ARRAYAGG(
+            JSON_OBJECT('dia', DATE_FORMAT(d.dia, '%Y-%m-%d'), 'total', d.total)
+        ),
+        JSON_ARRAY()
+    ) INTO v_por_dia
+    FROM (
+        SELECT DATE(ar.created_at) AS dia, COUNT(*) AS total
+        FROM automation_runs ar
+        WHERE ar.user_id = p_user_id AND ar.created_at >= v_corte
+        GROUP BY DATE(ar.created_at)
+        ORDER BY dia
+    ) d;
+
+    SELECT COALESCE(
+        JSON_ARRAYAGG(
+            JSON_OBJECT('provider', i.provider, 'total', i.qtd)
+        ),
+        JSON_ARRAY()
+    ) INTO v_top_integracoes
+    FROM (
+        SELECT ig.provider AS provider, COUNT(*) AS qtd
+        FROM integrations ig
+        WHERE ig.user_id = p_user_id
+        GROUP BY ig.provider
+        ORDER BY qtd DESC
+        LIMIT 5
+    ) i;
+
+    SELECT COUNT(*) INTO v_total_sessoes
+    FROM chat_sessions cs
+    WHERE cs.user_id = p_user_id;
+
+    SELECT COUNT(*) INTO v_total_mensagens
+    FROM messages m
+    JOIN chat_sessions cs ON cs.id = m.session_id
+    WHERE cs.user_id = p_user_id;
+
+    RETURN JSON_OBJECT(
+        'total_execucoes', v_total_execucoes,
+        'taxa_sucesso', v_taxa,
+        'duracao_media_segundos', v_duracao,
+        'execucoes_por_status', v_por_status,
+        'execucoes_por_dia', v_por_dia,
+        'top_integracoes', v_top_integracoes,
+        'total_sessoes_chat', v_total_sessoes,
+        'total_mensagens_chat', v_total_mensagens
+    );
+END$$
 
 -- ---------------------------------------------------------------------------
 -- 2) fn_relatorio_automacoes
 --    Relatório paginado de execuções de automação com JOIN na definição
 --    (automations), filtros por status/período/busca, ordenação dinâmica
 --    e contagem total via window function (COUNT(*) OVER()).
+--    PROCEDURE (MySQL) — retorna o result set via CALL.
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.fn_relatorio_automacoes(
-    p_user_id uuid,
-    p_status text DEFAULT NULL,
-    p_data_inicio timestamptz DEFAULT NULL,
-    p_data_fim timestamptz DEFAULT NULL,
-    p_busca text DEFAULT NULL,
-    p_ordem text DEFAULT 'created_at',
-    p_limite integer DEFAULT 50,
-    p_deslocamento integer DEFAULT 0
+CREATE PROCEDURE fn_relatorio_automacoes(
+    IN p_user_id VARCHAR(36),
+    IN p_status VARCHAR(255),
+    IN p_data_inicio DATETIME,
+    IN p_data_fim DATETIME,
+    IN p_busca VARCHAR(255),
+    IN p_ordem VARCHAR(20),
+    IN p_limite INT,
+    IN p_deslocamento INT
 )
-RETURNS TABLE (
-    id uuid,
-    user_id uuid,
-    automation_id uuid,
-    automation_name text,
-    status text,
-    run_type text,
-    input_summary text,
-    created_at timestamptz,
-    started_at timestamptz,
-    finished_at timestamptz,
-    total bigint
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    v_ordem text;
 BEGIN
-    -- Whitelist para evitar injeção por parametrização de coluna
-    v_ordem := CASE
+    DECLARE v_ordem VARCHAR(20);
+
+    -- Whitelist para evitar injeção na ordenação
+    SET v_ordem = CASE
         WHEN p_ordem IN ('created_at', 'updated_at', 'started_at', 'status', 'run_type')
         THEN p_ordem
         ELSE 'created_at'
     END;
 
-    RETURN QUERY EXECUTE format(
-        $sql$
-        SELECT ar.id, ar.user_id, ar.automation_id, a.name,
-               ar.status, ar.run_type, ar.input_summary,
-               ar.created_at, ar.started_at, ar.finished_at,
-               COUNT(*) OVER()::bigint AS total
-        FROM public.automation_runs ar
-        LEFT JOIN public.automations a ON a.id = ar.automation_id
-        WHERE ar.user_id = $1
-          AND ($2::text IS NULL OR ar.status = $2)
-          AND ($3::timestamptz IS NULL OR ar.created_at >= $3)
-          AND ($4::timestamptz IS NULL OR ar.created_at <= $4)
-          AND ($5::text IS NULL
-               OR ar.input_summary ILIKE '%%' || $5 || '%%'
-               OR a.name ILIKE '%%' || $5 || '%%'
-               OR a.description ILIKE '%%' || $5 || '%%')
-        ORDER BY ar.%I ASC, ar.created_at DESC
-        LIMIT $6 OFFSET $7
-        $sql,
-        v_ordem
-    )
-    USING p_user_id, p_status, p_data_inicio, p_data_fim, p_busca, p_limite, p_deslocamento;
-END;
-$$;
+    SET @sql_rel = CONCAT(
+        'SELECT ar.id, ar.user_id, ar.automation_id, a.name AS automation_name,
+                ar.status, ar.run_type, ar.input_summary,
+                ar.created_at, ar.started_at, ar.finished_at,
+                COUNT(*) OVER() AS total
+        FROM automation_runs ar
+        LEFT JOIN automations a ON a.id = ar.automation_id
+        WHERE ar.user_id = ''',
+        p_user_id, '''
+          AND (? IS NULL OR ar.status = ?)
+          AND (? IS NULL OR ar.created_at >= ?)
+          AND (? IS NULL OR ar.created_at <= ?)
+          AND (? IS NULL OR ar.input_summary LIKE ? OR a.name LIKE ? OR a.description LIKE ?)
+        ORDER BY ar.', v_ordem, ' ASC, ar.created_at DESC
+        LIMIT ', CAST(p_limite AS CHAR), ' OFFSET ', CAST(p_deslocamento AS CHAR)
+    );
 
-COMMENT ON FUNCTION public.fn_relatorio_automacoes(uuid, text, timestamptz, timestamptz, text, text, integer, integer) IS
-    'Relatório paginado de execuções de automação com JOIN, filtros e ordenação.';
+    SET @p_status = p_status;
+    SET @p_ini = p_data_inicio;
+    SET @p_fim = p_data_fim;
+    SET @busca = CASE WHEN p_busca IS NULL THEN NULL ELSE CONCAT('%', p_busca, '%') END;
+
+    PREPARE stmt_rel FROM @sql_rel;
+    EXECUTE stmt_rel
+        USING @p_status, @p_status, @p_ini, @p_ini, @p_fim, @p_fim,
+              @busca, @busca, @busca, @busca;
+    DEALLOCATE PREPARE stmt_rel;
+END$$
 
 -- ---------------------------------------------------------------------------
 -- 3) fn_relatorio_chat
---    Relatório de conversas: totais, mensagens por role e por dia e
---    feedback (likes/dislikes), com JOIN entre chat_sessions e messages.
+--    Resumo de conversas/mensagens/feedback (retorna JSON).
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.fn_relatorio_chat(
-    p_user_id uuid,
-    p_dias integer DEFAULT 30
+CREATE FUNCTION fn_relatorio_chat(
+    p_user_id VARCHAR(36),
+    p_dias INT
 )
-RETURNS jsonb
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-    v_corte timestamptz := now() - make_interval(days => p_dias);
-    v_mensagens_por_dia jsonb;
-    v_feedback jsonb;
-    v_resultado jsonb;
+RETURNS JSON
+READS SQL DATA
+DETERMINISTIC
 BEGIN
+    DECLARE v_corte DATETIME;
+    DECLARE v_total_sessoes INT;
+    DECLARE v_total_mensagens INT;
+    DECLARE v_sessoes_ativas INT;
+    DECLARE v_por_role JSON;
+    DECLARE v_por_dia JSON;
+    DECLARE v_feedback JSON;
+    DECLARE v_likes INT;
+    DECLARE v_dislikes INT;
+
+    IF p_dias IS NULL THEN
+        SET p_dias = 30;
+    END IF;
+    SET v_corte = DATE_SUB(NOW(), INTERVAL p_dias DAY);
+
+    SELECT COUNT(*) INTO v_total_sessoes
+    FROM chat_sessions
+    WHERE user_id = p_user_id;
+
+    SELECT COUNT(*) INTO v_total_mensagens
+    FROM messages m
+    JOIN chat_sessions cs ON cs.id = m.session_id
+    WHERE cs.user_id = p_user_id AND m.created_at >= v_corte;
+
+    SELECT COUNT(DISTINCT cs.id) INTO v_sessoes_ativas
+    FROM messages m
+    JOIN chat_sessions cs ON cs.id = m.session_id
+    WHERE cs.user_id = p_user_id AND m.created_at >= v_corte;
+
     SELECT COALESCE(
-        jsonb_agg(
-            jsonb_build_object(
-                'dia', to_char(d.dia, 'YYYY-MM-DD'),
-                'sessoes', d.sessoes,
+        JSON_OBJECTAGG(m.role, qtd),
+        JSON_OBJECT()
+    ) INTO v_por_role
+    FROM (
+        SELECT m.role AS role, COUNT(*) AS qtd
+        FROM messages m
+        JOIN chat_sessions cs ON cs.id = m.session_id
+        WHERE cs.user_id = p_user_id AND m.created_at >= v_corte
+        GROUP BY m.role
+    ) m;
+
+    SELECT COALESCE(
+        JSON_ARRAYAGG(
+            JSON_OBJECT(
+                'dia', DATE_FORMAT(d.dia, '%Y-%m-%d'),
                 'usuarios', d.usuarios,
                 'assistentes', d.assistentes
             )
-            ORDER BY d.dia
         ),
-        '[]'::jsonb
-    ) INTO v_mensagens_por_dia
+        JSON_ARRAY()
+    ) INTO v_por_dia
     FROM (
-        SELECT date_trunc('day', m.created_at) AS dia,
-               COUNT(*) FILTER (WHERE m.role = 'user')   AS sessoes,
-               COUNT(*) FILTER (WHERE m.role = 'assistant') AS assistentes,
-               COUNT(*) FILTER (WHERE m.role = 'system')   AS sessoes,
-               COUNT(*) AS total_mensagens
-        FROM public.messages m
-        JOIN public.chat_sessions cs ON cs.id = m.session_id
+        SELECT DATE(m.created_at) AS dia,
+               SUM(CASE WHEN m.role = 'user' THEN 1 ELSE 0 END) AS usuarios,
+               SUM(CASE WHEN m.role = 'assistant' THEN 1 ELSE 0 END) AS assistentes
+        FROM messages m
+        JOIN chat_sessions cs ON cs.id = m.session_id
         WHERE cs.user_id = p_user_id AND m.created_at >= v_corte
-        GROUP BY date_trunc('day', m.created_at)
+        GROUP BY DATE(m.created_at)
+        ORDER BY dia
     ) d;
 
-    SELECT jsonb_build_object(
-        'likes',   COUNT(*) FILTER (WHERE fb.is_liked),
-        'dislikes', COUNT(*) FILTER (WHERE NOT fb.is_liked)
-    ) INTO v_feedback
-    FROM public.message_feedback fb
+    SELECT COALESCE(SUM(CASE WHEN fb.is_liked = 1 THEN 1 ELSE 0 END), 0),
+           COALESCE(SUM(CASE WHEN fb.is_liked = 0 THEN 1 ELSE 0 END), 0)
+    INTO v_likes, v_dislikes
+    FROM message_feedback fb
     WHERE fb.user_id = p_user_id AND fb.created_at >= v_corte;
 
-    SELECT jsonb_build_object(
-        'total_sessoes', (
-            SELECT COUNT(*)::integer
-            FROM public.chat_sessions cs
-            WHERE cs.user_id = p_user_id
-        ),
-        'total_mensagens', (
-            SELECT COUNT(*)::integer
-            FROM public.messages m
-            JOIN public.chat_sessions cs ON cs.id = m.session_id
-            WHERE cs.user_id = p_user_id AND m.created_at >= v_corte
-        ),
-        'sessoes_ativas', (
-            SELECT COUNT(DISTINCT cs.id)::integer
-            FROM public.messages m
-            JOIN public.chat_sessions cs ON cs.id = m.session_id
-            WHERE cs.user_id = p_user_id AND m.created_at >= v_corte
-        ),
-        'mensagens_por_role', (
-            SELECT COALESCE(
-                jsonb_object_agg(m.role, qtd),
-                '{}'::jsonb
-            )
-            FROM (
-                SELECT m.role, COUNT(*)::integer AS qtd
-                FROM public.messages m
-                JOIN public.chat_sessions cs ON cs.id = m.session_id
-                WHERE cs.user_id = p_user_id
-                  AND m.created_at >= v_corte
-                GROUP BY m.role
-            ) m
-        ),
-        'mensagens_por_dia', v_mensagens_por_dia,
+    SET v_feedback = JSON_OBJECT('likes', v_likes, 'dislikes', v_dislikes);
+
+    RETURN JSON_OBJECT(
+        'total_sessoes', v_total_sessoes,
+        'total_mensagens', v_total_mensagens,
+        'sessoes_ativas', v_sessoes_ativas,
+        'mensagens_por_role', v_por_role,
+        'mensagens_por_dia', v_por_dia,
         'feedback', v_feedback
-    ) INTO v_resultado;
-
-    RETURN v_resultado;
-END;
-$$;
-
-COMMENT ON FUNCTION public.fn_relatorio_chat(uuid, integer) IS
-    'Resumo de conversas, mensagens e feedback do chat no período.';
+    );
+END$$
 
 -- ---------------------------------------------------------------------------
 -- 4) fn_buscar_mensagens
---    Busca textual (ILIKE) no conteúdo das mensagens e no título da sessão,
+--    Busca textual (LIKE) no conteúdo das mensagens e no título da sessão,
 --    com JOIN em chat_sessions e paginação (COUNT(*) OVER()).
+--    PROCEDURE (MySQL) — retorna o result set via CALL.
 -- ---------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION public.fn_buscar_mensagens(
-    p_user_id uuid,
-    p_termo text,
-    p_limite integer DEFAULT 50,
-    p_deslocamento integer DEFAULT 0
+CREATE PROCEDURE fn_buscar_mensagens(
+    IN p_user_id VARCHAR(36),
+    IN p_termo VARCHAR(255),
+    IN p_limite INT,
+    IN p_deslocamento INT
 )
-RETURNS TABLE (
-    id uuid,
-    session_id uuid,
-    session_title text,
-    role text,
-    content text,
-    created_at timestamptz,
-    total bigint
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
 BEGIN
-    RETURN QUERY
-    SELECT m.id, m.session_id, cs.title, m.role, m.content, m.created_at,
-           COUNT(*) OVER()::bigint AS total
-    FROM public.messages m
-    JOIN public.chat_sessions cs ON cs.id = m.session_id
+    IF p_limite IS NULL THEN
+        SET p_limite = 50;
+    END IF;
+    IF p_deslocamento IS NULL THEN
+        SET p_deslocamento = 0;
+    END IF;
+
+    SET @termo = CONCAT('%', p_termo, '%');
+
+    SELECT m.id, m.session_id, cs.title AS session_title, m.role, m.content, m.created_at,
+           COUNT(*) OVER() AS total
+    FROM messages m
+    JOIN chat_sessions cs ON cs.id = m.session_id
     WHERE cs.user_id = p_user_id
-      AND (m.content ILIKE '%%' || p_termo || '%%'
-           OR cs.title ILIKE '%%' || p_termo || '%%')
+      AND (m.content LIKE @termo OR cs.title LIKE @termo)
     ORDER BY m.created_at DESC
     LIMIT p_limite OFFSET p_deslocamento;
-END;
-$$;
+END$$
 
-COMMENT ON FUNCTION public.fn_buscar_mensagens(uuid, text, integer, integer) IS
-    'Busca textual em mensagens do usuário com JOIN de sessão.';
+DELIMITER ;

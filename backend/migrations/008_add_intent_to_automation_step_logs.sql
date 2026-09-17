@@ -1,8 +1,12 @@
--- Add intent field to automation_step_logs table
--- This allows the frontend to display what the backend is actually executing
+-- =========================================================
+-- Migration 008: intent field on automation_step_logs (MySQL)
+-- Permite ao frontend exibir o que o backend está executando
+-- =========================================================
 
-ALTER TABLE automation_step_logs 
-ADD COLUMN IF NOT EXISTS intent TEXT;
-
--- Add comment for documentation
-COMMENT ON COLUMN automation_step_logs.intent IS 'Intent/objective of the automation (e.g., gemini_action, calendar_create_event, etc.)';
+SET @col_intent := (SELECT COUNT(*) FROM information_schema.columns
+    WHERE table_schema = DATABASE() AND table_name = 'automation_step_logs' AND column_name = 'intent');
+SET @sql_intent := IF(@col_intent = 0,
+    'ALTER TABLE automation_step_logs ADD COLUMN intent VARCHAR(255) NULL', 'SELECT 1');
+PREPARE stmt_intent FROM @sql_intent;
+EXECUTE stmt_intent;
+DEALLOCATE PREPARE stmt_intent;
