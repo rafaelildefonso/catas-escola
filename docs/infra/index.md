@@ -12,7 +12,7 @@ O CATAS depende de **servicos externos** que precisam ser configurados:
 ```
   Servicos Essenciais
   1. Supabase           Banco de dados + Auth
-  2. Firebase           Push notifications
+  2. Firebase           Push notifications + Auth
   Servicos Opcionais (para producao)
   3. Stripe             Pagamentos e planos
   4. Google Cloud       OAuth para Google apps
@@ -60,12 +60,13 @@ O CATAS depende de **servicos externos** que precisam ser configurados:
 
 **Arquivos:**
 - `backend/migrations/*.sql` - Schema
+- `backend/models/*.py` - Models SQLAlchemy
 - `backend/repositories/*.py` - Acesso via SQLAlchemy
 - `backend/core/security.py` - Validacao de JWT
 
-### 2. Firebase (Notificacoes)
+### 2. Firebase (Notificacoes + Auth)
 
-**O que e:** FCM (Firebase Cloud Messaging) para push
+**O que e:** Firebase Auth + FCM (Firebase Cloud Messaging) para push
 
 **Setup:**
 - [Criar projeto](./firebase/setup.md)
@@ -73,7 +74,7 @@ O CATAS depende de **servicos externos** que precisam ser configurados:
 - [Integrar com Flutter](./firebase/flutter.md)
 
 **Arquivos:**
-- `app_flutter/lib/firebase/` - Config
+- `frontend/lib/` - Config Firebase
 - `backend/services/notification_service.py` - Backend
 
 ### 3. Stripe (Pagamentos)
@@ -86,12 +87,12 @@ O CATAS depende de **servicos externos** que precisam ser configurados:
 - [Planos e precos](./stripe/plans.md)
 
 **Arquivos:**
-- `backend/controllers/payments.py` - Endpoints
-- `backend/services/credit_service.py` - Creditos
+- `backend/controllers/` - Endpoints de pagamento
+- `backend/services/` - Servicos de creditos
 
 ### 4. Google OAuth (Integracoes)
 
-**O que e:** Acesso a Google Calendar, Gmail, Sheets, Drive, Docs
+**O que e:** Acesso a Google Calendar, Gmail, Sheets, Drive
 
 **Setup:**
 - [Criar projeto Cloud](./google/setup.md)
@@ -99,8 +100,8 @@ O CATAS depende de **servicos externos** que precisam ser configurados:
 - [Habilitar APIs](./google/apis.md)
 
 **Arquivos:**
-- `backend/repositories/integrations.py` - Tokens
-- `backend/worker/modules/google_calendar.py` - Uso
+- `backend/models/integration.py` - Tokens
+- `backend/worker/modules/google_calendar_modules.py` - Uso
 
 ---
 
@@ -151,6 +152,32 @@ STRIPE_SECRET_KEY=sk_live_...
 
 ---
 
+## Docker
+
+### Docker Compose
+
+O projeto inclui Docker Compose para containerizacao:
+
+```yaml
+services:
+  catas_server:    # API Flask (port 8000)
+  catas_worker:    # FastAPI Worker (port 8001)
+```
+
+### Como usar
+
+```bash
+cd backend
+docker-compose up -d
+```
+
+### Dockerfiles
+
+- `Dockerfile` - API Flask (Python 3.11-slim, gunicorn, 4 workers)
+- `Dockerfile.worker` - FastAPI Worker (Python 3.11-slim)
+
+---
+
 ## Troubleshooting Infra
 
 ### Supabase
@@ -165,6 +192,10 @@ STRIPE_SECRET_KEY=sk_live_...
 ### Stripe
 - **"Webhook signature invalid"**  STRIPE_WEBHOOK_SECRET correto?
 - **"Customer not found"**  Sync entre Stripe e banco
+
+### Docker
+- **"Port already in use"**  Verificar se portas 8000/8001 estao livres
+- **"Container not starting"**  Verificar logs com `docker-compose logs`
 
 ---
 

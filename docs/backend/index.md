@@ -1,7 +1,7 @@
 # Backend Developer Guide
 
 > **Voce esta em:** `backend/`  
-> **Stack:** Python 3.10+, Flask, SQLAlchemy, FastAPI (Worker)
+> **Stack:** Python 3.11+, Flask, SQLAlchemy, FastAPI (Worker)
 
 ---
 
@@ -10,7 +10,7 @@
 O backend do CATAS e dividido em **duas partes** que trabalham juntas:
 
 ```
-  1. API (Flask) - backend/app.py
+  1. API (Flask) - backend/application.py
       Recebe requests, orquestra IA, gerencia usuarios
   2. Worker (FastAPI) - backend/worker/
       Executa automacoes com resiliencia
@@ -40,66 +40,21 @@ User: "Marcar reuniao amanha as 14h"
 
 ```
 backend/
-  app.py                           #  API Flask
-  core/
-    config.py                      # Configuracoes
-    security.py                    # Auth (Supabase JWT)
-    errors.py                      # Error handling
-  controllers/                     # Blueprints Flask
-    user.py                        # Perfil, quotas
-    chat.py                        # Sessoes de chat
-    chatbot.py                     # POST /api/v1/chat/message
-    automations.py                 # Automacoes CRUD
-    integrations.py                # Google OAuth
-    payments.py                    # Stripe
-    feedback.py                    # Feedback do usuario
-    webhooks.py                    # Webhooks Stripe
-    webhook_receiver.py            # Webhooks externos
-    prompt_improve.py              # Melhoria de prompt
-  models/
-    db_models.py                   # Modelos SQLAlchemy (17 tabelas)
-  services/
-    database.py                    # SQLAlchemy engine, SessionLocal
-    ai_service.py                  # Orquestrador principal
-    ai_base.py                    # Base para providers
-    ai_providers/                  # Gemini, Groq, OpenAI
-      gemini_provider.py
-      groq_provider.py
-    intent_classifier.py           # Classifica intencao
-    entity_extractor.py            # Extrai dados
-    payload_builder.py             # Monta payload
-    ui_components_library.py       # Componentes UI
-    credit_service.py              # Gestao de creditos (atomic)
-    ia_memory.py                   # Busca semantica (pgvector)
-    notification_service.py        # Push notifications (FCM)
-  repositories/                    # Acesso a dados (SQLAlchemy)
-    profiles.py                    # Perfis, quotas
-    chat.py                        # Mensagens, sessoes
-    automations.py                 # Runs, logs
-    automation_logs.py
-    automation_generation_logs.py
-    integrations.py                # OAuth tokens
-    feedback.py
-    ai_suggestions.py
-    page_contexts.py
-  worker/                          #  Worker FastAPI
-    server.py                      # Servidor FastAPI
-    runner.py                      # Motor de execucao
-    modules/                       # Modulos executaveis
-      http_request.py              # Requisicoes HTTP
-      google_calendar.py           # Google Calendar
-      gmail.py                     # Gmail
-      google_sheets.py             # Google Sheets
-      google_drive.py              # Google Drive
-      google_docs.py               # Google Docs
-      ai_transform.py              # Transformacao com IA
-      flow_control.py              # Controle de fluxo
-  migrations/                      #  SQL Migrations
-    *.sql
-  tests/                           #  Testes
-    test_*.py
-  requirements.txt
-  .env
+├── application.py         # create_app(), init_firebase()
+├── routes.py              # Rotas centralizadas (~112 endpoints)
+├── extensions.py          # db = SQLAlchemy()
+├── run.py                 # Entry point da API
+├── models/                # 18 models SQLAlchemy
+├── controllers/           # 24 controllers
+├── services/              # 24 pastas, ~120 arquivos
+├── repositories/          # 8 repositories
+├── core/                  # Config, security, OAuth
+├── worker/                # FastAPI worker
+├── tests/                 # 11 arquivos de teste
+├── migrations/            # 20+ migrations SQL
+├── docker-compose.yml     # Docker config
+├── Dockerfile             # API container
+└── Dockerfile.worker      # Worker container
 ```
 
 ---
@@ -121,10 +76,10 @@ Escolha por objetivo:
 
 ## Conceitos Chave
 
-### 1. Pipeline de IA (Maestro)
+### 1. Pipeline de IA (Multi-Agente)
 
 ```python
-# backend/services/ai_service.py
+# backend/services/ia/ai_service.py
 
 def analyze_message(text, history, user_id):
     # 1. Classificar intencao
@@ -166,7 +121,7 @@ class AutomationRunner:
 
 **Modulo** = Execucao (como fazer)
 ```python
-# worker/modules/google_calendar.py
+# worker/modules/google_calendar_modules.py
 def execute(params):
     service = get_google_service(params["oauth_token"])
     event = service.events().insert(calendarId='primary', body=body).execute()
@@ -187,12 +142,11 @@ User manda msg  IA processa  Calcular tokens  Debitar creditos  Executar acao
 
 ```python
 # repositories/profiles.py
-from services.database import get_sync_db
+from extensions import db
 
 def get_user_profile(user_id: str) -> dict | None:
-    with get_sync_db() as db:
-        profile = db.query(Profile).filter(Profile.id == user_id).first()
-        return profile.to_dict() if profile else None
+    profile = Profile.query.filter(Profile.id == user_id).first()
+    return profile.to_dict() if profile else None
 ```
 
 ---
@@ -231,9 +185,7 @@ WORKER_URL=http://localhost:8001
 
 ### API
 - [Pipeline de IA](./ia-pipeline.md) - Deep dive
-- [Intent Classifier](./services/intent-classifier.md)
-- [Entity Extractor](./services/entity-extractor.md)
-- [Payload Builder](./services/payload-builder.md)
+- [API Reference](./api-referencia.md) - Todos os endpoints
 - [Autenticacao](./api/auth.md)
 - [Creditos e Cobranca](./api/credits.md)
 - [Repositories](./repositories.md) - Padroes de acesso

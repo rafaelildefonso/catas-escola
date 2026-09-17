@@ -111,9 +111,9 @@ ENVIRONMENT=development
 
 ---
 
-## App Flutter (app_flutter/)
+## App Flutter (frontend/)
 
-Crie um arquivo `.env` na raiz de `app_flutter/`:
+Crie um arquivo `.env` na raiz de `frontend/`:
 
 | Variavel | Obrigatoria | Descricao |
 |---|---|---|
@@ -147,3 +147,27 @@ IOS_CLIENT_ID=xxx.apps.googleusercontent.com
 - **Android Emulator**: Use `10.0.2.2` em vez de `127.0.0.1` para acessar o localhost do host.
 - **iOS Simulator**: Use `127.0.0.1` ou `localhost`.
 - **Web**: Use `http://localhost:8000` ou a URL do backend em producao.
+
+---
+
+## Variaveis por Ambiente
+
+### Desenvolvimento (.env)
+
+```env
+ENVIRONMENT=development
+SUPABASE_URL=https://dev-project.supabase.co
+DATABASE_URL=postgresql://...
+WORKER_URL=http://localhost:8001
+STRIPE_SECRET_KEY=sk_test_...
+```
+
+### Producao (.env)
+
+```env
+ENVIRONMENT=production
+SUPABASE_URL=https://prod-project.supabase.co
+DATABASE_URL=postgresql://...
+WORKER_URL=http://worker:8001
+STRIPE_SECRET_KEY=sk_live_...
+```

@@ -1,24 +1,24 @@
 # Flutter Developer Guide
 
-> 👨‍💻 **Você está em:** `app_flutter/`  
-> 📱 **Stack:** Flutter 3.19+, Dart 3.3+, Provider
+> **Voce esta em:** `frontend/`  
+> **Stack:** Flutter 3.10.8+, Dart 3.3+, Provider
 
 ---
 
-## 🎯 O que você precisa saber
+## O que voce precisa saber
 
-O CATAS é um **app de chat com automação**. O usuário digita em linguagem natural ("marcar reunião amanhã às 14h"), e o sistema:
+O CATAS e um **app de chat com automacao**. O usuario digita em linguagem natural ("marcar reuniao amanha as 14h"), e o sistema:
 
-1. Entende a intenção (criar evento)
+1. Entende a intencao (criar evento)
 2. Extrai dados (data, hora, participantes)
 3. Mostra um preview interativo
-4. Executa a ação (cria no Google Calendar)
+4. Executa a acao (cria no Google Calendar)
 
-**Tudo em tempo real**, com streaming de status da automação.
+**Tudo em tempo real**, com streaming de status da automacao.
 
 ---
 
-## 🗺️ Mapa Mental da Arquitetura
+## Mapa Mental da Arquitetura
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -31,8 +31,8 @@ O CATAS é um **app de chat com automação**. O usuário digita em linguagem na
 │       └── preview_calendar_event.dart                 │
 ├─────────────────────────────────────────────────────────┤
 │  State Layer (Providers)                                │
-│  ├── ChatProvider          ← Lógica do chat           │
-│  ├── AuthProvider          ← Login, perfil, créditos  │
+│  ├── ChatProvider          ← Logica do chat           │
+│  ├── AuthProvider          ← Login, perfil, creditos  │
 │  └── ThemeProvider         ← Tema claro/escuro          │
 ├─────────────────────────────────────────────────────────┤
 │  Data Layer (Repositories)                              │
@@ -43,74 +43,63 @@ O CATAS é um **app de chat com automação**. O usuário digita em linguagem na
 
 ---
 
-## 📂 Estrutura de Pastas
+## Estrutura de Pastas
 
 ```
-app_flutter/lib/
-├── components/                    # 🧩 Widgets reutilizáveis
-│   ├── ai_components/              # Componentes da IA
-│   │   ├── action_approval.dart   # Botão aprovar/rejeitar
-│   │   ├── contact_select.dart    # Seletor de contatos
-│   │   ├── multiple_choice.dart   # Opções múltiplas
-│   │   └── preview_*.dart         # Previews de ação
-│   ├── chat_bubble.dart           # Balão de mensagem
-│   ├── markdown_viewer.dart       # Render Markdown
-│   └── typing_indicator.dart      # "IA está digitando"
-│
-├── core/                          # ⚙️ Configurações
-│   ├── router.dart                # Rotas (GoRouter)
-│   ├── theme.dart                 # Cores, tipografia
-│   └── app_config.dart            # Variáveis de ambiente
-│
-├── data/                          # 📡 Acesso a dados
-│   ├── chat_repository.dart       # API de chat
-│   ├── chat_repository_interface.dart
-│   └── demo_repository.dart       # Modo offline
-│
-├── l10n/                          # 🌍 Internacionalização
-│   └── app_localizations_*.dart   # PT, EN, ES
-│
-├── models/                        # 📦 Classes de dados
-│   ├── message.dart               # Mensagem do chat
-│   ├── chat_session.dart          # Sessão
-│   └── user_profile.dart          # Perfil + créditos
-│
-├── providers/                     # 🔄 State Management
-│   ├── auth_provider.dart         # Autenticação
-│   ├── chat_provider.dart         # Chat + automações
-│   ├── theme_provider.dart        # Tema
-│   └── navigation_provider.dart   # Navegação
-│
-├── screens/                       # 📱 Telas
-│   ├── web/                       # Layout desktop
-│   ├── mobile/                    # Layout mobile
-│   └── chat_screen.dart           # Tela principal
-│
-└── main.dart                      # 🚀 Entrypoint
+frontend/lib/
+├── main.dart              # Entry point
+├── components/            # 44 widgets reutilizaveis
+│   ├── ai_components/     # 22 componentes IA
+│   ├── dashboard/         # Metric cards, charts
+│   └── ... (widgets gerais)
+├── core/                  # Config, router, theme
+│   ├── router.dart        # Rotas (GoRouter)
+│   ├── theme.dart         # Cores, tipografia
+│   └── app_config.dart    # Variaveis de ambiente
+├── data/                  # Repositories e services
+│   ├── chat_repository.dart
+│   ├── automations_repository.dart
+│   └── relatorio_repository.dart
+├── l10n/                  # Internacionalizacao (PT/EN)
+├── models/                # 6 modelos Dart
+│   ├── chat_message.dart
+│   ├── chat_session.dart
+│   └── user_profile.dart
+├── providers/             # 15 providers (state management)
+│   ├── auth_provider.dart
+│   ├── chat_provider.dart
+│   ├── automations_provider.dart
+│   └── theme_provider.dart
+├── screens/               # 26 telas
+│   ├── chat_screen.dart
+│   ├── automations_screen.dart
+│   ├── integrations_screen.dart
+│   └── settings_screen.dart
+└── services/              # Token holder
 ```
 
 ---
 
-## 🚀 Primeiras Tarefas
+## Primeiras Tarefas
 
 Escolha por objetivo:
 
 | Eu quero... | Guia |
 |-------------|------|
-| 🆕 Entender como funciona o chat | [Fluxo do Chat](./chat-flow.md) |
-| ➕ Adicionar novo componente de UI | [AI Components](./ai-components.md) |
-| 🎨 Modificar tema/cores | [Theming](./theming.md) |
-| 🔄 Adicionar novo provider | [Providers](./providers.md) |
-| 📱 Criar nova tela | [Screens](./screens.md) |
-| 🧪 Escrever testes | [Testing](./testing.md) |
+| Entender como funciona o chat | [Fluxo do Chat](./chat-flow.md) |
+| Adicionar novo componente de UI | [AI Components](./ai-components.md) |
+| Modificar tema/cores | [Theming](./theming.md) |
+| Adicionar novo provider | [Providers](./providers.md) |
+| Criar nova tela | [Screens](./screens.md) |
+| Escrever testes | [Testing](./testing.md) |
 
 ---
 
-## 💡 Conceitos Chave
+## Conceitos Chave
 
 ### 1. Componentes de IA
 
-A IA retorna componentes dinâmicos no JSON:
+A IA retorna componentes dinamicos no JSON:
 
 ```json
 {
@@ -121,7 +110,7 @@ A IA retorna componentes dinâmicos no JSON:
     },
     {
       "type": "action_approval",
-      "label": "Agendar reunião?"
+      "label": "Agendar reuniao?"
     }
   ]
 }
@@ -129,11 +118,11 @@ A IA retorna componentes dinâmicos no JSON:
 
 O Flutter renderiza automaticamente baseado no `type`.
 
-**Localização:** `components/ai_components/`
+**Localizacao:** `components/ai_components/`
 
 ### 2. Realtime Status
 
-Automações enviam status em tempo real via Supabase Realtime:
+Automacoes enviam status em tempo real via Supabase Realtime:
 
 ```dart
 // ChatProvider
@@ -143,7 +132,7 @@ _supabase
   .subscribe();
 ```
 
-Isso mostra "Criando evento...", "Concluído", etc.
+Isso mostra "Criando evento...", "Concluido", etc.
 
 ### 3. Fluxo de Mensagem
 
@@ -161,13 +150,13 @@ User Input → ChatProvider.sendMessage()
 
 ---
 
-## 🔧 Configurações Importantes
+## Configuracoes Importantes
 
-### Variáveis de Ambiente (.env)
+### Variaveis de Ambiente (.env)
 
 ```env
 SUPABASE_URL=                    # URL do projeto Supabase
-SUPABASE_ANON_KEY=               # Chave pública (safe para client)
+SUPABASE_ANON_KEY=               # Chave publica (safe para client)
 API_BASE_URL=                    # http://localhost:8000
 WEB_CLIENT_ID=                   # Google OAuth Web
 ANDROID_CLIENT_ID=               # Google OAuth Android
@@ -180,24 +169,24 @@ IOS_CLIENT_ID=                   # Google OAuth iOS
 |------------|-----------------|
 | **Android** | `android/app/src/main/AndroidManifest.xml` - Adicionar scheme para deep links |
 | **iOS** | `ios/Runner/Info.plist` - URL schemes |
-| **Web** | `web/index.html` - Configuração de base href |
+| **Web** | `web/index.html` - Configuracao de base href |
 | **Windows** | `windows/runner/main.cpp` - Janela nativa |
 
 ---
 
-## 📚 Tópicos Detalhados
+## Topicos Detalhados
 
 ### Fundamentos
 - [Estrutura do Projeto](./estrutura.md) - Deep dive nas pastas
 - [State Management](./providers.md) - Como usar Provider
-- [Navegação](./navigation.md) - GoRouter e deep links
-- [Dependências](./dependencies.md) - Packages principais
+- [Navegacao](./navigation.md) - GoRouter e deep links
+- [Dependencias](./dependencies.md) - Packages principais
 
 ### UI/UX
 - [Componentes de IA](./ai-components.md) - Biblioteca de componentes
 - [Theming](./theming.md) - Cores, fontes, modo escuro
 - [Responsividade](./responsive.md) - Web vs Mobile
-- [Animações](./animations.md) - Transições e micro-interações
+- [Animacoes](./animations.md) - Transicoes e micro-interacoes
 
 ### Dados
 - [Modelos](./models.md) - Classes de dados
@@ -205,32 +194,32 @@ IOS_CLIENT_ID=                   # Google OAuth iOS
 - [Realtime](./realtime.md) - Supabase streaming
 - [Offline Mode](./offline.md) - Demo mode
 
-### Avançado
-- [Autenticação](./auth-flow.md) - Fluxo completo
+### Avancado
+- [Autenticacao](./auth-flow.md) - Fluxo completo
 - [Testes](./testing.md) - Unit, widget, integration
-- [Performance](./performance.md) - Otimizações
-- [Build & Deploy](./deploy.md) - Produção
+- [Performance](./performance.md) - Otimizacoes
+- [Build & Deploy](./deploy.md) - Producao
 
 ---
 
-## 🔗 Links Rápidos
+## Links Rapidos
 
 | Recurso | Local |
 |---------|-------|
-| 📁 Código | `app_flutter/lib/` |
-| 🧪 Testes | `app_flutter/test/` |
-| 🎨 Assets | `app_flutter/assets/` |
-| ⚙️ Config | `app_flutter/.env` |
+| Codigo | `frontend/lib/` |
+| Testes | `frontend/test/` |
+| Assets | `frontend/assets/` |
+| Config | `frontend/.env` |
 
 ---
 
-## 🆘 Precisa de ajuda?
+## Precisa de ajuda?
 
-1. **Erro de build?** → `flutter doctor` e verifique dependências
-2. **API não responde?** → Verifique `API_BASE_URL` no `.env`
-3. **Componente não renderiza?** → [Debugging UI](./debugging-ui.md)
+1. **Erro de build?** → `flutter doctor` e verifique dependencias
+2. **API nao responde?** → Verifique `API_BASE_URL` no `.env`
+3. **Componente nao renderiza?** → [Debugging UI](./debugging-ui.md)
 
 ---
 
-> ⬅️ [Voltar para Documentação](../index.md)  
-> ➡️ [Próximo: Estrutura do Projeto →](./estrutura.md)
+> [Voltar para Documentacao](../index.md)  
+> [Proximo: Estrutura do Projeto →](./estrutura.md)

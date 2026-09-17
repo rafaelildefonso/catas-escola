@@ -12,13 +12,21 @@
 
 ```bash
 # 1. Backend API (Flask)
-cd backend && .\.venv\Scripts\activate && flask run --port 8000
+cd backend
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python run.py
 
 # 2. Worker (FastAPI, novo terminal)
-cd backend && .\.venv\Scripts\activate && python -m worker.server
+cd backend
+venv\Scripts\activate
+python -m worker.server
 
 # 3. Flutter
-cd app_flutter && flutter run
+cd frontend
+flutter pub get
+flutter run
 ```
 
 **[Quick Start Completo →](./comecando/quickstart.md)**
@@ -78,8 +86,9 @@ Configurando deploy, banco ou integracoes?
 
 | Recurso | URL |
 |---------|-----|
-| Repositorio | `c:\Users\faely\PROJETOS\saas\CATAS\CATAS - Escola` |
+| Repositorio | https://github.com/seu-usuario/catas |
 | API Docs | http://localhost:8000/docs |
+| Produção | https://catas.app |
 
 ---
 

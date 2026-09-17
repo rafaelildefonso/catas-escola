@@ -14,8 +14,9 @@ CATAS (Context Aware Task Automation System) segue uma abordagem **Headless AI**
 - **Telas**:
   - **ChatScreen**: Interface principal de chat.
   - **MainLayout**: Drawer com navegacao, Automacoes, Integracoes, Settings.
-  - **LoginScreen**: Login com Google (via Supabase Auth).
-  - **AutomationsScreen**, **IntegrationsScreen**, **HistoryScreen**: Placeholders.
+  - **LoginScreen**: Login com Google/Email (via Firebase Auth).
+  - **AutomationsScreen**: Gerenciamento de automacoes.
+  - **IntegrationsScreen**: Gerenciamento de integracoes.
 - **Responsabilidade**: Estado do chat, envio de mensagens, renderizacao de Action Cards.
 
 ### 2. API Server (Python/Flask)
@@ -24,7 +25,7 @@ CATAS (Context Aware Task Automation System) segue uma abordagem **Headless AI**
 - **Tech**: Python 3.11+, Flask, SQLAlchemy, Pydantic.
 - **Rotas principais**:
   - `POST /api/v1/chat/message` - Chat (Groq + Gemini).
-  - CRUD de sessoes e historico em `/api/chat/`.
+  - CRUD de sessoes e historico em `/api/v1/chat/`.
   - Automacoes, Integracoes, Pagamentos, Webhooks.
 - **NLU**: Groq/Gemini classificam intencao e extraem parametros.
 
@@ -32,14 +33,16 @@ CATAS (Context Aware Task Automation System) segue uma abordagem **Headless AI**
 
 - **Funcao**: Motor de execucao de automacoes.
 - **Tech**: FastAPI, Python puro.
-- **Modulos**: Google Calendar, Gmail, Sheets, Drive, Docs, HTTP, AI Transform.
+- **Porta**: 8001
+- **Modulos**: Google Calendar, Gmail, Sheets, Drive, Flow Control.
 
 ### 4. External Services
 
-- **Supabase**: Autenticacao (Auth) + PostgreSQL via SQLAlchemy.
-- **Firebase**: Push notifications (FCM).
+- **Supabase**: PostgreSQL (database) + Auth (opcional).
+- **Firebase**: Autenticacao (Auth) + Push notifications (FCM).
 - **Stripe**: Checkout e assinaturas.
 - **Google**: Gemini AI, OAuth para integracoes.
+- **Groq**: LLM para pipeline de IA.
 
 ---
 
@@ -53,7 +56,38 @@ CATAS (Context Aware Task Automation System) segue uma abordagem **Headless AI**
 
 ---
 
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    FRONTEND (Flutter)                           │
+│    ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐        │
+│    │  Chat   │  │Automação│  │Dashboard│  │Configurações│      │
+│    └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘        │
+└─────────┼────────────┼────────────┼────────────┼───────────────┘
+          │            │            │            │
+          ▼            ▼            ▼            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                BACKEND API (Flask + Gunicorn)                   │
+│    ┌───────────────────────────────────────────────────────┐   │
+│    │              Route → Controller → Service → Model      │   │
+│    └───────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                            │
+                            ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                WORKER (FastAPI + uvicorn)                       │
+│    ┌───────────────────────────────────────────────────────┐   │
+│    │           AutomationRunner + Module Registry          │   │
+│    └───────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## Documentacao Relacionada
 
 - [Backend](backend.md) - Estrutura detalhada.
 - [Integracoes](../referencia/integracoes.md) - Google, Stripe, Supabase.
+- [Banco de Dados](banco-dados.md) - Schema e tabelas.
+- [Sistema de Creditos](sistema-creditos.md) - Como funcionam os creditos.
