@@ -1,6 +1,7 @@
 # CATAS (Context Aware Task Automation System)
 
 ## Equipe
+### 3A1
 
 - Rafael Ildefonso Furtado
 - Lucas Salman Resende
