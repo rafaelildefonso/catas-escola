@@ -85,14 +85,30 @@ Agente de Automação Inteligente baseado em Linguagem Natural que **executa aç
 8. **Listar integrarões** — `GET/POST/PUT/DELETE /api/v1/integrations`
 9. **OAuth Google** — Gmail, Calendar, Sheets, Drive
 
-### Relatórios
-10. **Dashboard** — `GET /api/v1/relatorios/dashboard`
-11. **Relatório automações** — `GET /api/v1/relatorios/automacoes`
-12. **Relatório chat** — `GET /api/v1/relatorios/chat`
-13. **Busca de mensagens** — `GET /api/v1/relatorios/mensagens/busca`
-
 ### Perfil
-14. **Atualizar perfil** — `PUT /api/v1/profiles/<id>`
+10. **Atualizar perfil** — `PUT /api/v1/profiles/<id>`
+
+### Parte 2 — Recurs    os Avançados
+
+### Relatórios
+11. **Dashboard** — `GET /api/v1/relatorios/dashboard`
+12. **Relatório automações** — `GET /api/v1/relatorios/automacoes`
+13. **Relatório chat** — `GET /api/v1/relatorios/chat`
+14. **Busca de mensagens** — `GET /api/v1/relatorios/mensagens/busca`
+
+#### Inteligência Artificial
+15. **Pipeline de IA multi-agente** — `POST /api/v1/chat/message` → IntentClassifier → EntityExtractor → PayloadBuilder
+16. **Componentes interativos no chat** — 22 componentes + `POST /api/v1/chat/message/continue`
+
+#### Motor de Automação
+17. **Execução assíncrona com 18 módulos** — `POST /execute` → AutomationRunner + `flow.condition`
+18. **Planos versionados com variáveis** — `AutomationPlan` + `{{step_id.campo}}`
+
+#### Produto
+19. **Créditos, quotas e planos** — 2000 tokens = 1 crédito + rollover mensal
+20. **Feedback e onboarding contextual** — feedback por mensagem + plano demo Calendar/Drive/Sheets
+
+> **Total: 20 funcionalidades implementadas** (14 na Parte 1 + 6 na Parte 2).
 
 ---
 
@@ -372,4 +388,4 @@ Projeto acadêmico - CATAS 2026
 
 ---
 
-**Última Atualização:** Setembro de 2026
+**Última Atualização:** Outubro de 2026
