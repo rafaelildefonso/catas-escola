@@ -16,3 +16,13 @@ from models.page_analysis_cache import PageAnalysisCache
 from models.user_device import UserDevice
 from models.user_webhook_config import UserWebhookConfig
 from models.ia_memory import IaMemory
+from models.attachment import Attachment
+from models.notification import Notification
+
+__all__ = [
+    "User", "Profile", "ChatSession", "Message", "Automation", "AutomationRun",
+    "AutomationStepLog", "AutomationGenerationLog", "ExecutionLog", "Integration",
+    "MessageFeedback", "AiSuggestion", "PageContext", "BrowserSession",
+    "PageAnalysisCache", "UserDevice", "UserWebhookConfig", "IaMemory",
+    "Attachment", "Notification",
+]

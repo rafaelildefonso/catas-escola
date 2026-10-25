@@ -7,6 +7,8 @@ import asyncio
 import logging
 import threading
 import traceback
+import hmac
+import os
 from typing import Optional
 
 from flask import Flask, jsonify, request
@@ -15,7 +17,7 @@ worker_app = Flask(__name__)
 logger = logging.getLogger("worker.server")
 
 
-async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str]):
+async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str], trigger_payload=None):
     from worker.runner import AutomationRunner
     from worker.repositorio_dados import atualizar_status_run
 
@@ -31,6 +33,7 @@ async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str])
             plan,
             run_id=automation_id,
             user_id=user_id,
+            trigger_payload=trigger_payload,
         )
 
         atualizar_status_run(
@@ -57,16 +60,21 @@ def health():
     return jsonify({"status": "ok"})
 
 
-def _run_in_thread(automation_id: str, plan: dict, user_id: Optional[str]):
+def _run_in_thread(automation_id: str, plan: dict, user_id: Optional[str], trigger_payload=None):
     loop = asyncio.new_event_loop()
     try:
-        loop.run_until_complete(_run_execution(automation_id, plan, user_id))
+        loop.run_until_complete(_run_execution(automation_id, plan, user_id, trigger_payload))
     finally:
         loop.close()
 
 
 @worker_app.route("/execute", methods=["POST"])
 def execute():
+    secret = os.getenv("WORKER_SHARED_SECRET", "")
+    if not secret and os.getenv("ENVIRONMENT", "development") != "development":
+        return jsonify({"detail": "Worker não configurado"}), 503
+    if secret and not hmac.compare_digest(request.headers.get("X-Worker-Secret", ""), secret):
+        return jsonify({"detail": "Não autorizado"}), 401
     data = request.get_json()
     automation_id = data["automation_id"]
     plan = data["plan"]
@@ -74,7 +82,7 @@ def execute():
 
     t = threading.Thread(
         target=_run_in_thread,
-        args=(automation_id, plan, user_id),
+        args=(automation_id, plan, user_id, data.get("trigger_payload")),
         daemon=True,
     )
     t.start()
@@ -87,4 +95,4 @@ def execute():
 
 
 if __name__ == "__main__":
-    worker_app.run(host="0.0.0.0", port=8001, debug=False)
+    worker_app.run(host="127.0.0.1", port=8001, debug=False)

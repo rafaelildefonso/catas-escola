@@ -159,31 +159,31 @@ Mensagem do Usuário
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_INTENT_CLASSIFIER            │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Classifica: CHAT ou ACTION         │
 └─────────────────────────────────────┘
     ↓ (se ACTION)
 ┌─────────────────────────────────────┐
 │  AGENT_ENTITY_EXTRACTOR             │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Extrai: nomes, datas, emails       │
 └─────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_INTERPRETER                  │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Interpreta: ideia do usuário       │
 └─────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_SELECTOR                     │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Seleciona: módulos disponíveis     │
 └─────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_DEVELOPER                    │
-│  (Groq llama-3.3-70b-versatile)    │
+│  (Groq openai/gpt-oss-120b)    │
 │  Gera: JSON do plano de automação   │
 └─────────────────────────────────────┘
     ↓
@@ -199,7 +199,7 @@ Plano Válido → Worker para Execução
 
 | Modelo | Provider | Uso |
 |--------|----------|-----|
-| `MODEL_TIER_BASIC` | Groq llama-3.1-8b-instant | Chat básico |
+| `MODEL_TIER_BASIC` | Groq openai/gpt-oss-20b | Chat básico |
 | `MODEL_TIER_PRO` | Gemini 2.5 Flash | Chat intermediário |
 | `MODEL_TIER_MAX` | Gemini 2.5 Pro | Chat avançado |
 

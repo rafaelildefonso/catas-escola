@@ -348,13 +348,17 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
     String userTier,
   ) {
     final bool connected = provider.isConnected(providerName);
+    final isComingSoon = _isComingSoon(providerName);
     final isAllowed = _isIntegrationAllowed(providerName, userTier);
     final requiredTier = _getRequiredTier(providerName);
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final l10n = AppLocalizations.of(context)!;
+    final displayTitle = isComingSoon ? '$title (Chega em breve)' : title;
     return InkWell(
-      onTap: !isAllowed
+      onTap: isComingSoon
+          ? null
+          : !isAllowed
           ? () {
               UpgradeModal.show(context, "Integração $title", requiredTier);
             }
@@ -431,7 +435,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             ),
             const SizedBox(height: 12),
             Text(
-              title,
+              displayTitle,
               style: GoogleFonts.inter(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
@@ -444,7 +448,9 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
               overflow: TextOverflow.ellipsis,
             ),
             Text(
-              connected
+              isComingSoon
+                  ? 'Chega em breve'
+                  : connected
                   ? l10n.integrationsConnected
                   : (isAllowed ? l10n.integrationsDisconnected : l10n.integrationsBlocked),
               style: GoogleFonts.inter(
@@ -459,7 +465,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: provider.isBusy(providerName)
+                onPressed: provider.isBusy(providerName) || isComingSoon
                     ? null
                     : (!isAllowed
                           ? () => UpgradeModal.show(
@@ -508,7 +514,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            connected ? l10n.integrationsDisconnect : l10n.integrationsConnect,
+                            isComingSoon ? 'Chega em breve' : (connected ? l10n.integrationsDisconnect : l10n.integrationsConnect),
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -533,20 +539,29 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   }
 
   bool _isIntegrationAllowed(String providerName, String userTier) {
+    if (_isComingSoon(providerName)) return false;
+    // Tier based access
     if (userTier == 'free') return false;
     if (userTier == 'max') return true;
-    if (userTier == 'pro') {
-      // Pro allows almost everything except custom API modules
-      return true;
-    }
-    // Basic allowed? The user didn't specify for basic, but usually basic should have some.
-    // Based on plans.md/project-context.md, basic has limits but allows them.
-    return true; 
+    if (userTier == 'pro') return true;
+    return true;
+  }
+
+  bool _isComingSoon(String providerName) {
+    const googleProviders = [
+      'google_calendar',
+      'google_sheets',
+      'google_drive',
+      'google_docs',
+      'google_gmail',
+      'google_meet',
+    ];
+    return !googleProviders.contains(providerName);
   }
 
   String _getRequiredTier(String providerName) {
     final proRequired = ["whatsapp", "slack", "telegram"];
     if (proRequired.contains(providerName)) return "pro";
-    return "free";
+    return "basic";
   }
 }

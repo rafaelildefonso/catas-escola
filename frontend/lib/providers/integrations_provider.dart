@@ -64,7 +64,10 @@ class IntegrationsProvider extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes)) as List;
-        _connectedProviders = data.map((e) => e['provider'] as String).toList();
+        _connectedProviders = data
+            .where((e) => e['is_connected'] == true)
+            .map((e) => e['provider'] as String)
+            .toList();
         if (!silent) _lastError = null;
       } else if (!silent) {
         _lastError = "Erro ao buscar integrações";

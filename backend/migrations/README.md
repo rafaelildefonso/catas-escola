@@ -19,9 +19,10 @@ cd backend
 docker compose up -d
 ```
 
-O diretório `./migrations` é montado em `/docker-entrypoint-initdb.d`
-do contêiner `catas_mysql` e os scripts `.sql` são executados em ordem
-alfabética **na primeira inicialização** (banco já inicializado).
+O Compose monta somente `DATABASE.sql` em `/docker-entrypoint-initdb.d`
+do contêiner `catas_mysql`. O MySQL executa esse arquivo apenas ao criar
+um volume de dados novo. Bancos já existentes exigem as migrations
+incrementais aplicáveis manualmente.
 
 ### Opção 3: CLI (mysql client)
 
@@ -44,10 +45,20 @@ Para aplicar as migrations individualmente, siga a ordem numérica:
 6. `014_create_handle_credit_debit.sql` - Função de débito de créditos
 7. `018_procedures_relatorios.sql` - Functions/Procedures de relatórios
 8. `20260330_create_user_devices.sql` - Dispositivos FCM (push)
+9. `019_billing_and_attachments.sql` - Dados de assinatura Stripe e tabela de anexos (schema existente)
 
 As demais migrations (003–008, 010–017) são atualizações incrementais.
 Se você usou o `DATABASE.sql`, elas são **opcionais** — o schema já
 inclui essas colunas. Reexecutá-las é seguro (usam `if não existe`).
+
+Para bancos existentes, aplique uma vez a migration `019_billing_and_attachments.sql` antes de
+iniciar a versão atualizada do backend. Instalações novas podem usar o `DATABASE.sql`, que já
+contém as colunas e a tabela; não execute `019` depois dele. O bucket privado `attachments` é
+provisionado automaticamente na primeira utilização do endpoint de upload.
+
+Para bancos existentes, aplique também `020_automation_scheduler.sql` uma vez,
+antes de iniciar o scheduler. Instalações novas com `DATABASE.sql` já têm
+`next_run_at`, seu índice e a tabela de notificações; não execute `020` nelas.
 
 ## ✅ Verificação
 

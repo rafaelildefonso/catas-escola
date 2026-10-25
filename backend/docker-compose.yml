@@ -14,7 +14,7 @@ services:
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./migrations:/docker-entrypoint-initdb.d:ro
+      - ./migrations/DATABASE.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
     networks:
       - catas_network
     restart: unless-stopped
@@ -47,8 +47,8 @@ services:
       context: .
       dockerfile: Dockerfile.worker
     container_name: catas_worker
-    ports:
-      - "8001:8001"
+    expose:
+      - "8001"
     env_file:
       - ./.env
     environment:
@@ -60,6 +60,23 @@ services:
       - catas_network
     depends_on:
       - mysql
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "services.automation.scheduler"]
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=mysql+pymysql://catas:catas@mysql:3306/catas_db
+      - WORKER_URL=http://catas_worker:8001
+    networks:
+      - catas_network
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - worker
 
 volumes:
   mysql_data:

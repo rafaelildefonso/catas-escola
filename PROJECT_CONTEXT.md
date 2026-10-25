@@ -110,7 +110,7 @@ Mensagem do Usuário
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_INTENT_CLASSIFIER            │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Classifica: CHAT ou ACTION         │
 └─────────────────────────────────────┘
     ↓ (se ACTION)
@@ -146,7 +146,7 @@ Plano Válido → Worker para Execução
 
 | Modelo | Provider | Uso |
 |--------|----------|-----|
-| `MODEL_TIER_BASIC` | Groq llama-3.1-8b-instant | Chat básico |
+| `MODEL_TIER_BASIC` | Groq openai/gpt-oss-20b | Chat básico |
 | `MODEL_TIER_PRO` | Gemini 2.5 Flash | Chat intermediário |
 | `MODEL_TIER_MAX` | Gemini 2.5 Pro | Chat avançado |
 
@@ -304,7 +304,7 @@ Cada entidade possui 5 endpoints REST:
 | Recurso | Free | Pro | Max |
 |---------|------|-----|-----|
 | **Créditos** | 50/mês | Ilimitado* | Ilimitado* |
-| **Modelo** | Groq llama-3.1-8b | Gemini 2.5 Flash | Gemini 2.5 Pro |
+| **Modelo** | Groq openai/gpt-oss-20b | Gemini 2.5 Flash | Gemini 2.5 Pro |
 | **Histórico** | 30 dias | Ilimitado | Ilimitado |
 | **Automações** | 1 step | Multi-step | Multi-step + Agendamento |
 | **Integrações** | Básicas | Todas | Todas + Premium |
@@ -338,7 +338,7 @@ GOOGLE_API_KEY=
 GROQ_API_KEY=
 
 # === MODELS ===
-MODEL_TIER_BASIC=groq|llama-3.1-8b-instant|https://api.groq.com/openai|GROQ_API_KEY
+MODEL_TIER_BASIC=groq|openai/gpt-oss-20b|https://api.groq.com/openai|GROQ_API_KEY
 MODEL_TIER_PRO=gemini|gemini-2.5-flash|https://generativelanguage.googleapis.com|GOOGLE_API_KEY
 MODEL_TIER_MAX=gemini|gemini-2.5-pro|https://generativelanguage.googleapis.com|GOOGLE_API_KEY
 

@@ -7,7 +7,7 @@ import '../services/token_holder.dart';
 import '../core/app_config.dart';
 
 /// Provider para gerenciar FCM (foreground notifications) e registro de dispositivo.
-/// O CRUD de notificações do servidor foi removido (endpoints não implementados no backend).
+/// A lista de notificações é carregada separadamente pelos endpoints do backend.
 class NotificationsProvider extends ChangeNotifier {
   String? _currentToken;
 
@@ -50,7 +50,7 @@ class NotificationsProvider extends ChangeNotifier {
         String? fcmToken;
         try {
           fcmToken = await _fcm.getToken();
-          debugPrint('FCM Token obtido: $fcmToken');
+          debugPrint('FCM Token obtido.');
         } catch (tokenError) {
           debugPrint('FCM Erro ao obter token: $tokenError');
         }

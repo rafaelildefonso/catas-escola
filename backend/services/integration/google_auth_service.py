@@ -1,10 +1,10 @@
-import base64
-import json
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from models.integration import Integration
+from core.config import settings
 from core.oauth_token_service import (
     get_google_auth_url,
     exchange_google_auth_code,
@@ -14,12 +14,20 @@ from core.crypto import encrypt_value
 
 
 def _build_state(user_id: str, provider: str) -> str:
-    payload = json.dumps({"uid": user_id, "p": provider})
-    return base64.urlsafe_b64encode(payload.encode()).decode()
+    return URLSafeTimedSerializer(settings.JWT_SECRET_KEY, salt="google-oauth-state").dumps(
+        {"uid": user_id, "p": provider}
+    )
 
 
 def decode_state(state: str):
-    payload = json.loads(base64.urlsafe_b64decode(state.encode()))
+    try:
+        payload = URLSafeTimedSerializer(settings.JWT_SECRET_KEY, salt="google-oauth-state").loads(
+            state, max_age=600
+        )
+    except (BadSignature, SignatureExpired) as exc:
+        raise ValueError("Estado OAuth invalido ou expirado") from exc
+    if not isinstance(payload, dict) or not payload.get("uid") or not is_google_provider(payload.get("p")):
+        raise ValueError("Estado OAuth invalido")
     return payload["uid"], payload["p"]
 
 

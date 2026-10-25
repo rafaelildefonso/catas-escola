@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diagrama de Classes — CATAS (Turma 3A1)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px;
+    background: #eef2f7;
+    color: #0f172a;
+    font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+    font-size: 15px;
+  }
+  .ficha, .cartao {
+    background: #ffffff;
+    border: 1px solid #dbe2ea;
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 0 auto 18px;
+    max-width: 1700px;
+  }
+  .ficha { border-left: 6px solid #2563eb; }
+  h1 { margin: 0 0 10px; font-size: 23px; }
+  h2 { margin: 0 0 12px; font-size: 17px; color: #1e3a8a; }
+  .ficha dl { display: grid; grid-template-columns: 190px 1fr; gap: 4px 12px; margin: 0; }
+  .ficha dt { font-weight: 600; color: #475569; }
+  .ficha dd { margin: 0; }
+  .ficha a { color: #1d4ed8; word-break: break-all; }
+  .legenda-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 14px;
+  }
+  .cartao h3 { margin: 0 0 8px; font-size: 15px; color: #334155; }
+  .simbolo { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .simbolo p { margin: 0; font-size: 14px; }
+  table.mult { border-collapse: collapse; width: 100%; font-size: 14px; }
+  table.mult th, table.mult td { border: 1px solid #cbd5e1; padding: 5px 10px; text-align: left; }
+  table.mult th { background: #f1f5f9; }
+  ul.notas { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.55; }
+  .controles {
+    max-width: 1700px;
+    margin: 0 auto 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .controles button {
+    font: inherit;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #2563eb;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
+  }
+  .controles button.secundario { background: #fff; color: #1e3a8a; }
+  .controles button:hover { filter: brightness(1.08); }
+  #zoom-nivel { font-size: 14px; color: #475569; min-width: 46px; text-align: center; }
+  #erro {
+    max-width: 1700px;
+    margin: 0 auto 12px;
+    background: #fee2e2;
+    border: 1px solid #dc2626;
+    color: #7f1d1d;
+    padding: 12px 16px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    display: none;
+  }
+  #wrap-diagrama {
+    max-width: 1700px;
+    margin: 0 auto 18px;
+    background: #ffffff;
+    border: 1px solid #dbe2ea;
+    border-radius: 10px;
+    padding: 14px;
+    overflow: auto;
+  }
+  #diagrama svg { display: block; margin: 0 auto; }
+  #codigo { display: none; }
+  .rodape { max-width: 1700px; margin: 0 auto; font-size: 13px; color: #64748b; text-align: center; padding-bottom: 20px; }
+  @media print {
+    @page { size: A3 landscape; margin: 8mm; }
+    body { background: #fff; padding: 0; }
+    .controles, #erro { display: none !important; }
+    .ficha, .cartao, #wrap-diagrama { border: 1px solid #94a3b8; break-inside: avoid; max-width: none; }
+    #wrap-diagrama { overflow: visible; padding: 6px; }
+    #diagrama svg { width: 100% !important; height: auto !important; max-width: 100% !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="ficha">
+  <h1>Diagrama de Classes do Domínio — CATAS</h1>
+  <dl>
+    <dt>Projeto</dt>
+    <dd>CATAS — Context Aware Task Automation System (camada Model da API do backend)</dd>
+    <dt>Turma</dt>
+    <dd>3A1</dd>
+    <dt>Integrantes</dt>
+    <dd>Rafael Ildefonso Furtado · Lucas Salman Resende · Henrique Santos Tavares · Miguel Teixeira Valadao · Lucas Nunes Araujo</dd>
+    <dt>Repositório</dt>
+    <dd><a href="https://github.com/rafaelildefonso/catas-escola" target="_blank">https://github.com/rafaelildefonso/catas-escola</a></dd>
+  </dl>
+</header>
+
+<section class="cartao">
+  <h2>Legenda</h2>
+  <div class="legenda-grid">
+    <div class="cartao">
+      <h3>Relacionamentos</h3>
+      <div class="simbolo">
+        <svg width="72" height="16" aria-hidden="true"><line x1="2" y1="8" x2="46" y2="8" stroke="#334155" stroke-width="1.6"/><polygon points="46,2 68,8 46,14" fill="none" stroke="#334155" stroke-width="1.6"/></svg>
+        <p><strong>Herança</strong> — subclasse herda atributos e operações da superclasse (ex.: <em>FlowConditionStep</em> é um <em>AutomationStep</em>).</p>
+      </div>
+      <div class="simbolo">
+        <svg width="72" height="16" aria-hidden="true"><polygon points="2,8 14,1 26,8 14,15" fill="#334155"/><line x1="14" y1="8" x2="70" y2="8" stroke="#334155" stroke-width="1.6"/></svg>
+        <p><strong>Composição</strong> (losango cheio) — o filho é eliminado junto com o pai: FK <em>ON DELETE CASCADE</em> (ex.: <em>ChatSession ◆ Message</em>).</p>
+      </div>
+      <div class="simbolo">
+        <svg width="72" height="16" aria-hidden="true"><polygon points="2,8 14,1 26,8 14,15" fill="#ffffff" stroke="#334155" stroke-width="1.6"/><line x1="14" y1="8" x2="70" y2="8" stroke="#334155" stroke-width="1.6"/></svg>
+        <p><strong>Agregação</strong> (losango vazio) — o filho sobrevive ao pai: FK <em>ON DELETE SET NULL</em> (ex.: <em>Automation ◇ AutomationRun</em>).</p>
+      </div>
+      <div class="simbolo">
+        <svg width="72" height="16" aria-hidden="true"><line x1="2" y1="8" x2="70" y2="8" stroke="#334155" stroke-width="1.6"/></svg>
+        <p><strong>Associação</strong> — referência lógica sem FK em cascata (ex.: <em>Message — MessageFeedback</em>).</p>
+      </div>
+      <div class="simbolo">
+        <svg width="72" height="16" aria-hidden="true"><line x1="2" y1="8" x2="46" y2="8" stroke="#334155" stroke-width="1.6" stroke-dasharray="7 4"/><polygon points="46,2 68,8 46,14" fill="none" stroke="#334155" stroke-width="1.6"/></svg>
+        <p><strong>Dependência</strong> (tracejada) — uso temporário: o JSON de <em>Automation</em> é validado pelo esquema <em>AutomationPlan</em>.</p>
+      </div>
+    </div>
+    <div class="cartao">
+      <h3>Multiplicidades</h3>
+      <table class="mult">
+        <tr><th>Notação</th><th>Significado</th></tr>
+        <tr><td><strong>1</strong></td><td>exatamente um</td></tr>
+        <tr><td><strong>0..1</strong></td><td>nenhum ou um (FK anulável / SET NULL)</td></tr>
+        <tr><td><strong>0..*</strong></td><td>zero ou muitos</td></tr>
+        <tr><td><strong>1..*</strong></td><td>um ou muitos (obrigatório)</td></tr>
+      </table>
+      <p style="font-size:14px; margin:10px 0 0;">
+        A leitura é feita de cada extremidade: em <em>Profile "1" ◆ "0..*" ChatSession</em>,
+        cada perfil possui de zero a muitas sessões e cada sessão pertence a exatamente um perfil.
+      </p>
+    </div>
+    <div class="cartao">
+      <h3>Princípios SOLID observados na camada de domínio</h3>
+      <ul class="notas">
+        <li><strong>S (Responsabilidade Única):</strong> cada classe modela exatamente uma entidade/tabela; regras de negócio ficam em <em>services</em> e consultas complexas em <em>repositories</em>.</li>
+        <li><strong>O (Aberto para extensão):</strong> novas entidades entram como novas classes, sem alterar as existentes.</li>
+        <li><strong>L/I (Substituição e interface única):</strong> todos os models persistem pela mesma interface CRUD — <em>salvar(), atualizar(), deletar(), listar_todos(), buscar_por_id(), to_dict()</em> — e são intermutáveis nas camadas acima.</li>
+        <li><strong>D (Inversão de dependência):</strong> controllers e services dependem dessa interface, não de detalhes de persistência.</li>
+      </ul>
+      <p style="font-size:14px; margin:10px 0 0;">
+        <strong>Observação:</strong> <em>PageAnalysisCache</em> é um cache global indexado por <em>url_hash</em>, sem chaves estrangeiras, por isso aparece sem relacionamentos.
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="controles">
+  <button id="btn-png">Baixar PNG (com identificação)</button>
+  <button id="btn-svg" class="secundario">Baixar SVG</button>
+  <button id="btn-print" class="secundario">Imprimir / PDF</button>
+  <button id="btn-zoom-out" class="secundario" title="Reduzir zoom">−</button>
+  <span id="zoom-nivel">100%</span>
+  <button id="btn-zoom-in" class="secundario" title="Aumentar zoom">+</button>
+</div>
+
+<div id="erro"></div>
+
+<div id="wrap-diagrama">
+  <div id="diagrama"></div>
+  <pre id="codigo" class="mermaid">
+classDiagram
+    %% Camada Model da API — backend/models (18 models SQLAlchemy + 4 classes Pydantic de automation_plan_schema)
+
+    class User {
+        +String id PK
+        +String email UK
+        -String password_hash
+        +DateTime created_at
+        +DateTime updated_at
+        +set_password(password)
+        +check_password(password) bool
+        +generate_token() String
+        +to_dict() dict
+    }
+
+    class Profile {
+        +String id PK
+        +String subscription_tier
+        +Integer monthly_quota_limit
+        +Integer quota_used
+        +Integer rollover_credits
+        +DateTime last_quota_reset
+        +String language
+        +String industry
+        +String role
+        +Boolean onboarding_completed
+        +JSON onboarding_data
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class ChatSession {
+        +String id PK
+        +String user_id FK
+        +String title
+        +Boolean is_onboarding
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class Message {
+        +String id PK
+        +String session_id FK
+        +String role
+        +Text content
+        +JSON metadata
+        +DateTime created_at
+    }
+
+    class MessageFeedback {
+        +String id PK
+        +String message_id FK
+        +String user_id FK
+        +String session_id FK
+        +Boolean is_liked
+        +String reason
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class Automation {
+        +String id PK
+        +String user_id FK
+        +String name
+        +Text description
+        +JSON trigger
+        +JSON steps
+        +String status
+        +Integer version
+        +JSON external_ref
+        +DateTime expires_at
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class AutomationRun {
+        +String id PK
+        +String user_id FK
+        +String automation_id FK
+        +String correlation_id UK
+        +String status
+        +String run_type
+        +Text input_summary
+        +JSON input_payload
+        +JSON result_metadata
+        +JSON error_details
+        +JSON steps_summary
+        +String execution_id
+        +String execution_run_id
+        +DateTime started_at
+        +DateTime finished_at
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class AutomationStepLog {
+        +String id PK
+        +String automation_id
+        +Integer step_index
+        +String module_id
+        +String status
+        +JSON result
+        +String intent
+        +String run_id FK
+        +String user_id FK
+        +DateTime updated_at
+    }
+
+    class AutomationGenerationLog {
+        +String id PK
+        +String user_id FK
+        +String session_id FK
+        +Text intent_raw
+        +JSON attempts
+        +JSON errors
+        +JSON final_plan
+        +String model
+        +Integer tokens_used
+        +DateTime created_at
+    }
+
+    class ExecutionLog {
+        +String id PK
+        +String user_id FK
+        +String suggestion_id FK
+        +String session_id FK
+        +String workflow_name
+        +String status
+        +JSON input_data
+        +JSON result_data
+        +Text error_message
+        +DateTime started_at
+        +DateTime finished_at
+    }
+
+    class Integration {
+        +String id PK
+        +String user_id FK
+        +String provider
+        +Boolean is_connected
+        +Text access_token
+        +Text refresh_token
+        +DateTime token_expires_at
+        +JSON settings
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class AiSuggestion {
+        +String id PK
+        +String user_id FK
+        +String context_id FK
+        +String title
+        +Text description
+        +Float confidence_score
+        +JSON payload_preview
+        +String suggested_workflow
+        +String status
+        +DateTime created_at
+    }
+
+    class PageContext {
+        +String id PK
+        +String user_id FK
+        +String session_id FK
+        +Text url
+        +String domain
+        +String page_title
+        +Text html_summary
+        +DateTime created_at
+    }
+
+    class BrowserSession {
+        +String id PK
+        +String user_id FK
+        +String user_agent
+        +DateTime started_at
+        +DateTime last_activity_at
+    }
+
+    class PageAnalysisCache {
+        +String url_hash PK
+        +Text url
+        +JSON analysis_result
+        +DateTime created_at
+        +DateTime expires_at
+    }
+
+    class UserDevice {
+        +String id PK
+        +String user_id FK
+        +String fcm_token
+        +String platform
+        +Boolean active
+        +DateTime last_seen_at
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class UserWebhookConfig {
+        +String id PK
+        +String user_id FK
+        +String automation_id FK
+        +String slug UK
+        +String name
+        +Text description
+        +String hmac_secret
+        +Boolean is_active
+        +JSON allowed_sources
+        +JSON payload_mapping
+        +DateTime created_at
+        +DateTime updated_at
+    }
+
+    class IaMemory {
+        +String id PK
+        +String user_id FK
+        +String key
+        +Text content
+        +JSON embedding
+        +JSON metadata
+        +DateTime created_at
+    }
+
+    class AutomationPlan {
+        +String name
+        +String description
+        +List~AutomationStep~ steps
+        +Dict context
+        +TriggerConfig trigger
+    }
+
+    class AutomationStep {
+        +String step_id
+        +String module_id
+        +Dict params
+        +String description
+    }
+
+    class FlowConditionStep {
+        +String module_id
+        +List~AutomationStep~ true_branch
+        +List~AutomationStep~ false_branch
+    }
+
+    class TriggerConfig {
+        +String type
+        +String cron_expression
+        +String webhook_id
+        +Integer interval_minutes
+    }
+
+    %% Identidade: Profile é criado com o mesmo id do User no cadastro
+    User "1" -- "1" Profile : mesmo id
+
+    %% Ciclo de vida ligado ao Profile (FK ON DELETE CASCADE = composição)
+    Profile "1" *-- "0..*" ChatSession
+    Profile "1" *-- "0..*" Automation
+    Profile "1" *-- "0..*" AutomationRun
+    Profile "1" *-- "0..*" AutomationGenerationLog
+    Profile "1" *-- "0..*" AutomationStepLog
+    Profile "1" *-- "0..*" ExecutionLog
+    Profile "1" *-- "0..*" Integration
+    Profile "1" *-- "0..*" UserDevice
+    Profile "1" *-- "0..*" UserWebhookConfig
+    Profile "1" *-- "0..*" IaMemory
+    Profile "1" *-- "0..*" BrowserSession
+    Profile "1" *-- "0..*" PageContext
+    Profile "1" *-- "0..*" AiSuggestion
+    Profile "1" -- "0..*" MessageFeedback : registra
+
+    %% Chat
+    ChatSession "1" *-- "0..*" Message : contém
+    Message "1" -- "0..*" MessageFeedback : recebe
+
+    %% Automações: referências anuláveis = agregação (FK SET NULL)
+    Automation "0..1" o-- "0..*" AutomationRun : executa
+    Automation "1" -- "0..*" AutomationStepLog : gera logs por módulo
+    Automation "0..1" o-- "0..*" UserWebhookConfig : dispara via
+    AutomationRun "0..1" o-- "0..*" AutomationStepLog : resultados
+    ChatSession "0..1" o-- "0..*" AutomationGenerationLog : origem
+    ChatSession "0..1" o-- "0..*" ExecutionLog : contexto
+    AiSuggestion "0..1" o-- "0..*" ExecutionLog : origem
+    PageContext "0..1" o-- "0..*" AiSuggestion : origem
+    BrowserSession "0..1" o-- "0..*" PageContext : páginas visitadas
+
+    %% Esquema Pydantic do plano de automação (models/automation_plan_schema.py)
+    AutomationStep <|-- FlowConditionStep
+    AutomationPlan "1" *-- "1..*" AutomationStep : steps
+    AutomationPlan "1" *-- "0..1" TriggerConfig : trigger
+    FlowConditionStep "1" *-- "0..*" AutomationStep : ramos true/false
+    Automation ..> AutomationPlan : steps e trigger como JSON
+
+    note for User "Profile nasce com o mesmo id no cadastro (services/auth)"
+    note for PageAnalysisCache "Cache global por URL (url_hash), sem FK — sem relacionamentos"
+    note for AutomationPlan "Valida o JSON persistido em Automation.steps / Automation.trigger"
+  </pre>
+</div>
+
+<p class="rodape">
+  Para anexar na atividade, use <strong>Baixar PNG</strong> — a imagem já sai com título, integrantes e repositório.
+  Fonte dos dados: <code>backend/models/</code> (18 models SQLAlchemy) e <code>backend/models/automation_plan_schema.py</code> (4 classes Pydantic).
+</p>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  const IDENTIFICACAO = {
+    titulo: "Diagrama de Classes do Domínio — CATAS",
+    linha1: "Projeto CATAS · Turma 3A1 · Camada Model da API (backend/models)",
+    linha2: "Integrantes: Rafael Ildefonso Furtado · Lucas Salman Resende · Henrique Santos Tavares · Miguel Teixeira Valadao · Lucas Nunes Araujo",
+    linha3: "Repositório: https://github.com/rafaelildefonso/catas-escola"
+  };
+
+  const erroEl = document.getElementById("erro");
+  const codigoEl = document.getElementById("codigo");
+  const diagramaEl = document.getElementById("diagrama");
+  const wrapEl = document.getElementById("wrap-diagrama");
+  let svgAtual = null;
+
+  function mostrarErro(msg) {
+    erroEl.textContent = msg;
+    erroEl.style.display = "block";
+  }
+
+  async function iniciar() {
+    if (typeof mermaid === "undefined") {
+      mostrarErro("Não foi possível carregar a biblioteca Mermaid (CDN). Verifique a conexão com a internet e recarregue a página.");
+      return;
+    }
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: "loose",
+      theme: "default",
+      fontFamily: "Segoe UI, system-ui, Arial, sans-serif",
+      fontSize: 14,
+      class: { useMaxWidth: false }
+    });
+    try {
+      const codigo = codigoEl.textContent;
+      const { svg } = await mermaid.render("grafico-classes", codigo);
+      diagramaEl.innerHTML = svg;
+      svgAtual = diagramaEl.querySelector("svg");
+      codigoEl.style.display = "none";
+    } catch (e) {
+      mostrarErro("Erro ao gerar o diagrama:\n" + (e && e.message ? e.message : e));
+      codigoEl.style.display = "block";
+    }
+  }
+
+  function svgParaImagem() {
+    const clone = svgAtual.cloneNode(true);
+    const vb = svgAtual.viewBox.baseVal;
+    const w = vb && vb.width ? vb.width : svgAtual.getBoundingClientRect().width;
+    const h = vb && vb.height ? vb.height : svgAtual.getBoundingClientRect().height;
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    clone.setAttribute("width", w);
+    clone.setAttribute("height", h);
+    clone.style.maxWidth = "none";
+    clone.style.height = "auto";
+    const fundo = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    fundo.setAttribute("x", 0);
+    fundo.setAttribute("y", 0);
+    fundo.setAttribute("width", w);
+    fundo.setAttribute("height", h);
+    fundo.setAttribute("fill", "#ffffff");
+    clone.insertBefore(fundo, clone.firstChild);
+    const texto = new XMLSerializer().serializeToString(clone);
+    return { texto: texto, w: w, h: h };
+  }
+
+  function baixar(href, nome) {
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = nome;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  document.getElementById("btn-svg").addEventListener("click", function () {
+    if (!svgAtual) { mostrarErro("Diagrama ainda não foi gerado."); return; }
+    const { texto } = svgParaImagem();
+    const blob = new Blob([texto], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    baixar(url, "diagrama-de-classes-catas.svg");
+    setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+  });
+
+  document.getElementById("btn-png").addEventListener("click", function () {
+    if (!svgAtual) { mostrarErro("Diagrama ainda não foi gerado."); return; }
+    try {
+      const { texto, w, h } = svgParaImagem();
+      const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(texto);
+      const img = new Image();
+      img.onload = function () {
+        try {
+          const escala = 2;
+          const margem = 28;
+          const alturaCabecalho = 128;
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.ceil(w * escala);
+          canvas.height = Math.ceil((h + alturaCabecalho) * escala);
+          const ctx = canvas.getContext("2d");
+          ctx.setTransform(escala, 0, 0, escala, 0, 0);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, w, h + alturaCabecalho);
+          ctx.fillStyle = "#1e3a8a";
+          ctx.font = "bold 26px 'Segoe UI', Arial, sans-serif";
+          ctx.fillText(IDENTIFICACAO.titulo, margem, 38);
+          ctx.fillStyle = "#334155";
+          ctx.font = "15px 'Segoe UI', Arial, sans-serif";
+          ctx.fillText(IDENTIFICACAO.linha1, margem, 66);
+          ctx.fillText(IDENTIFICACAO.linha2, margem, 90);
+          ctx.fillStyle = "#1d4ed8";
+          ctx.fillText(IDENTIFICACAO.linha3, margem, 114);
+          ctx.strokeStyle = "#cbd5e1";
+          ctx.beginPath();
+          ctx.moveTo(0, alturaCabecalho - 6);
+          ctx.lineTo(w, alturaCabecalho - 6);
+          ctx.stroke();
+          ctx.drawImage(img, 0, alturaCabecalho, w, h);
+          baixar(canvas.toDataURL("image/png"), "diagrama-de-classes-catas.png");
+        } catch (e) {
+          mostrarErro("Não foi possível exportar o PNG (" + (e && e.message ? e.message : e) + "). Use 'Baixar SVG' ou 'Imprimir / PDF' como alternativa.");
+        }
+      };
+      img.onerror = function () {
+        mostrarErro("Não foi possível gerar o PNG. Use 'Baixar SVG' ou 'Imprimir / PDF' como alternativa.");
+      };
+      img.src = dataUrl;
+    } catch (e) {
+      mostrarErro("Erro ao gerar o PNG: " + (e && e.message ? e.message : e));
+    }
+  });
+
+  document.getElementById("btn-print").addEventListener("click", function () {
+    window.print();
+  });
+
+  let zoom = 1;
+  function aplicarZoom() {
+    wrapEl.style.zoom = zoom;
+    document.getElementById("zoom-nivel").textContent = Math.round(zoom * 100) + "%";
+  }
+  document.getElementById("btn-zoom-in").addEventListener("click", function () {
+    zoom = Math.min(2, zoom + 0.25);
+    aplicarZoom();
+  });
+  document.getElementById("btn-zoom-out").addEventListener("click", function () {
+    zoom = Math.max(0.5, zoom - 0.25);
+    aplicarZoom();
+  });
+
+  iniciar();
+</script>
+
+</body>
+</html>

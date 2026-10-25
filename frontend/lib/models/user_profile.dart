@@ -6,6 +6,8 @@ class UserProfile {
   final int monthlyQuotaLimit;
   final int quotaRemaining;
   final int attachmentLimit;
+  final bool hasBillingAccount;
+  final bool hasBillingSubscription;
   final String? language;
 
   final String? industry;
@@ -20,6 +22,8 @@ class UserProfile {
     required this.monthlyQuotaLimit,
     required this.quotaRemaining,
     required this.attachmentLimit,
+    this.hasBillingAccount = false,
+    this.hasBillingSubscription = false,
     this.language,
     this.industry,
     this.role,
@@ -34,6 +38,8 @@ class UserProfile {
       'quota_used': quotaUsed,
       'monthly_quota_limit': monthlyQuotaLimit,
       'attachment_limit': attachmentLimit,
+      'has_billing_account': hasBillingAccount,
+      'has_billing_subscription': hasBillingSubscription,
       'language': language,
       'industry': industry,
       'role': role,
@@ -41,7 +47,7 @@ class UserProfile {
     };
   }
 
-    factory UserProfile.fromJson(Map<String, dynamic> json) {
+  factory UserProfile.fromJson(Map<String, dynamic> json) {
     final tier = (json['subscription_tier'] as String?) ?? 'free';
     final used = (json['quota_used'] as int?) ?? 0;
 
@@ -63,8 +69,10 @@ class UserProfile {
       'pro' => 7500,
       _ => 500,
     };
-    final limit = ((json['monthly_quota_limit'] as int?) ?? defaultLimit)
-        .clamp(0, tierMax);
+    final limit = ((json['monthly_quota_limit'] as int?) ?? defaultLimit).clamp(
+      0,
+      tierMax,
+    );
     final safeUsed = used.clamp(0, limit);
 
     return UserProfile(
@@ -74,8 +82,14 @@ class UserProfile {
       quotaUsed: safeUsed,
       monthlyQuotaLimit: limit,
       quotaRemaining: limit - safeUsed,
-      attachmentLimit: ((json['attachment_limit'] as int?) ?? defaultAttachLimit)
-          .clamp(0, defaultAttachLimit),
+      attachmentLimit:
+          ((json['attachment_limit'] as int?) ?? defaultAttachLimit).clamp(
+            0,
+            defaultAttachLimit,
+          ),
+      hasBillingAccount: (json['has_billing_account'] as bool?) ?? false,
+      hasBillingSubscription:
+          (json['has_billing_subscription'] as bool?) ?? false,
       language: json['language'] as String?,
       industry: json['industry'] as String?,
       role: json['role'] as String?,

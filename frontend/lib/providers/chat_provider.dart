@@ -66,8 +66,8 @@ class Message {
     this.messageId,
     this.continuationId,
     List<MessageChunk>? chunks,
-  })  : timestamp = timestamp ?? DateTime.now(),
-        chunks = chunks ?? [];
+  }) : timestamp = timestamp ?? DateTime.now(),
+       chunks = chunks ?? [];
 
   /// Whether this message is a final response (shows feedback buttons)
   bool get isFinalResponse => !isUser && status != 'requires_action';
@@ -90,7 +90,7 @@ class Message {
 
   void addChunk(MessageChunk chunk) {
     chunks.add(chunk);
-    text = text + "\n\n---\n\n" + chunk.text;
+    text = '$text\n\n---\n\n${chunk.text}';
     components = chunk.components;
     status = chunk.status;
     // Note: messageId remains the same as we are updating in-place
@@ -318,7 +318,10 @@ class ChatProvider extends ChangeNotifier {
       }
 
       if (_activeIntegrations.isNotEmpty) {
-        await prefs.setStringList(_kActiveIntegrationsKey, _activeIntegrations.toList());
+        await prefs.setStringList(
+          _kActiveIntegrationsKey,
+          _activeIntegrations.toList(),
+        );
       } else {
         await prefs.remove(_kActiveIntegrationsKey);
       }
@@ -382,7 +385,10 @@ class ChatProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void _subscribeToAutomation(String automationId, {List<Map<String, dynamic>>? demoSteps}) {
+  void _subscribeToAutomation(
+    String automationId, {
+    List<Map<String, dynamic>>? demoSteps,
+  }) {
     _unsubscribeFromAutomation();
     _automationSteps = [];
 
@@ -395,10 +401,15 @@ class ChatProvider extends ChangeNotifier {
     debugPrint("📡 Polling automation steps: $automationId");
     _automationPollingStartedAt = DateTime.now();
 
-    _automationPollingTimer = Timer.periodic(const Duration(seconds: 2), (_) async {
+    _automationPollingTimer = Timer.periodic(const Duration(seconds: 2), (
+      _,
+    ) async {
       if (_automationPollingStartedAt != null &&
-          DateTime.now().difference(_automationPollingStartedAt!) > _automationPollingTimeout) {
-        debugPrint("⏱️ Polling timeout — cancelling after ${_automationPollingTimeout.inMinutes}min");
+          DateTime.now().difference(_automationPollingStartedAt!) >
+              _automationPollingTimeout) {
+        debugPrint(
+          "⏱️ Polling timeout — cancelling after ${_automationPollingTimeout.inMinutes}min",
+        );
         _automationPollingTimer?.cancel();
         _automationPollingTimer = null;
         _automationPollingStartedAt = null;
@@ -406,7 +417,9 @@ class ChatProvider extends ChangeNotifier {
       }
       try {
         final response = await http.get(
-          Uri.parse('${AppConfig.apiBaseUrl}/automation-step-logs?automation_id=$automationId'),
+          Uri.parse(
+            '${AppConfig.apiBaseUrl}/automation-step-logs?run_id=$automationId',
+          ),
           headers: {"Authorization": "Bearer ${TokenHolder().token ?? ""}"},
         );
 
@@ -438,11 +451,15 @@ class ChatProvider extends ChangeNotifier {
                 try {
                   final quotaResp = await http.get(
                     Uri.parse('${AppConfig.apiBaseUrl}/auth/me'),
-                    headers: {"Authorization": "Bearer ${TokenHolder().token ?? ""}"},
+                    headers: {
+                      "Authorization": "Bearer ${TokenHolder().token ?? ""}",
+                    },
                   );
                   if (quotaResp.statusCode == 200) {
-                    final quotaData = jsonDecode(quotaResp.body) as Map<String, dynamic>;
-                    final profile = quotaData['profile'] as Map<String, dynamic>?;
+                    final quotaData =
+                        jsonDecode(quotaResp.body) as Map<String, dynamic>;
+                    final profile =
+                        quotaData['profile'] as Map<String, dynamic>?;
                     if (profile != null) {
                       debugPrint(
                         "📊 Créditos atualizados: ${profile['quota_used']}/${profile['monthly_quota_limit']}",
@@ -472,11 +489,15 @@ class ChatProvider extends ChangeNotifier {
                 try {
                   final quotaResp = await http.get(
                     Uri.parse('${AppConfig.apiBaseUrl}/auth/me'),
-                    headers: {"Authorization": "Bearer ${TokenHolder().token ?? ""}"},
+                    headers: {
+                      "Authorization": "Bearer ${TokenHolder().token ?? ""}",
+                    },
                   );
                   if (quotaResp.statusCode == 200) {
-                    final quotaData = jsonDecode(quotaResp.body) as Map<String, dynamic>;
-                    final profile = quotaData['profile'] as Map<String, dynamic>?;
+                    final quotaData =
+                        jsonDecode(quotaResp.body) as Map<String, dynamic>;
+                    final profile =
+                        quotaData['profile'] as Map<String, dynamic>?;
                     if (profile != null) {
                       debugPrint(
                         "📊 Créditos atualizados: ${profile['quota_used']}/${profile['monthly_quota_limit']}",
@@ -504,12 +525,17 @@ class ChatProvider extends ChangeNotifier {
   };
 
   static const Map<String, String> _moduleDescriptions = {
-    'google_calendar.create_event': 'Criar evento no calendário para a reunião de onboarding',
-    'google_drive.create_folder': 'Criar pasta dedicada no Drive para organizar documentos',
+    'google_calendar.create_event':
+        'Criar evento no calendário para a reunião de onboarding',
+    'google_drive.create_folder':
+        'Criar pasta dedicada no Drive para organizar documentos',
     'google_sheets.append_row': 'Registrar cliente na planilha de onboarding',
   };
 
-  void _simulateAutomationSteps(String automationId, List<Map<String, dynamic>> steps) {
+  void _simulateAutomationSteps(
+    String automationId,
+    List<Map<String, dynamic>> steps,
+  ) {
     _automationSteps = [];
     _automationPhase = 'appearing';
     notifyListeners();
@@ -550,23 +576,26 @@ class ChatProvider extends ChangeNotifier {
         _automationPhase = 'verifying';
         final idx = _automationSteps.indexWhere((s) => s['step_index'] == i);
         if (idx != -1) {
-          _automationSteps[idx] = Map<String, dynamic>.from(_automationSteps[idx])
-            ..['status'] = 'verifying';
+          _automationSteps[idx] = Map<String, dynamic>.from(
+            _automationSteps[idx],
+          )..['status'] = 'verifying';
           notifyListeners();
         }
       });
       Future.delayed(Duration(milliseconds: baseDelay + i * 1000 + 1000), () {
         final idx = _automationSteps.indexWhere((s) => s['step_index'] == i);
         if (idx != -1) {
-          _automationSteps[idx] = Map<String, dynamic>.from(_automationSteps[idx])
-            ..['status'] = 'verified';
+          _automationSteps[idx] = Map<String, dynamic>.from(
+            _automationSteps[idx],
+          )..['status'] = 'verified';
           notifyListeners();
         }
       });
     }
 
     // Phase 4: Test trigger
-    final verifyEnd = 500 + steps.length * 1500 + 800 + 800 + steps.length * 1000;
+    final verifyEnd =
+        500 + steps.length * 1500 + 800 + 800 + steps.length * 1000;
     Future.delayed(Duration(milliseconds: verifyEnd + 500), () {
       _automationPhase = 'testingTrigger';
       notifyListeners();
@@ -856,7 +885,9 @@ class ChatProvider extends ChangeNotifier {
               status: (m.metadata['status'] as String?) ?? 'idle',
               timestamp: m.createdAt,
               messageId: m.id,
-              continuationId: (m.metadata['status'] == 'requires_action') ? m.id : null,
+              continuationId: (m.metadata['status'] == 'requires_action')
+                  ? m.id
+                  : null,
             );
           }),
         );
@@ -911,7 +942,9 @@ class ChatProvider extends ChangeNotifier {
           status: (m.metadata['status'] as String?) ?? 'idle',
           timestamp: m.createdAt,
           messageId: m.id,
-          continuationId: (m.metadata['status'] == 'requires_action') ? m.id : null,
+          continuationId: (m.metadata['status'] == 'requires_action')
+              ? m.id
+              : null,
         );
       });
 
@@ -927,7 +960,11 @@ class ChatProvider extends ChangeNotifier {
   /// Envia feedback (like/dislike) de uma mensagem para o backend.
   /// Atualiza a UI imediatamente (optimistic update) e persiste em background.
   /// [reason] é opcional e representa o motivo do feedback (Positive/Negative feedback reasons).
-  Future<void> sendFeedback(Message message, bool voted, {String? reason}) async {
+  Future<void> sendFeedback(
+    Message message,
+    bool voted, {
+    String? reason,
+  }) async {
     if (message.messageId == null || _currentSessionId == null) return;
 
     // Toggle local: se já estava marcado com o mesmo valor, desmarca (null)
@@ -950,7 +987,7 @@ class ChatProvider extends ChangeNotifier {
       );
     } catch (e) {
       // Falha silenciosa — feedback é best-effort
-      print('⚠️ Feedback não enviado para ${message.messageId}: $e');
+      debugPrint('Feedback não enviado para ${message.messageId}: $e');
     }
   }
 
@@ -1042,7 +1079,7 @@ class ChatProvider extends ChangeNotifier {
             text: response['text'] ?? "Desculpe, não entendi.",
             components: response['components'] as List<dynamic>?,
             status: (response['status'] as String?) ?? 'idle',
-          )
+          ),
         ],
       );
 
@@ -1064,10 +1101,12 @@ class ChatProvider extends ChangeNotifier {
           final comps = response['components'] as List<dynamic>?;
           if (comps != null) {
             for (final comp in comps) {
-              if (comp is Map<String, dynamic> && comp['type'] == 'automation_progress') {
+              if (comp is Map<String, dynamic> &&
+                  comp['type'] == 'automation_progress') {
                 final data = comp['data'] as Map<String, dynamic>?;
                 if (data != null && data['steps'] is List) {
-                  demoSteps = (data['steps'] as List).cast<Map<String, dynamic>>();
+                  demoSteps = (data['steps'] as List)
+                      .cast<Map<String, dynamic>>();
                 }
                 break;
               }
@@ -1075,10 +1114,14 @@ class ChatProvider extends ChangeNotifier {
           }
 
           // Create onboarding automation run if this is an onboarding demo response
-          final actionDetails = response['actionDetails'] as Map<String, dynamic>?;
-          if (actionDetails != null && actionDetails['intent'] == 'demo_onboarding') {
-            final payload = actionDetails['payload'] as Map<String, dynamic>? ?? {};
-            final clientName = payload['client_name'] as String? ?? 'João Silva';
+          final actionDetails =
+              response['actionDetails'] as Map<String, dynamic>?;
+          if (actionDetails != null &&
+              actionDetails['intent'] == 'demo_onboarding') {
+            final payload =
+                actionDetails['payload'] as Map<String, dynamic>? ?? {};
+            final clientName =
+                payload['client_name'] as String? ?? 'João Silva';
             final meetingDate = payload['meeting_date'] as String? ?? '';
             final meetingTime = payload['meeting_time'] as String? ?? '';
             try {
@@ -1112,8 +1155,9 @@ class ChatProvider extends ChangeNotifier {
       String friendlyError = "Erro ao enviar mensagem: $e";
       if (e is DioException) {
         final data = e.response?.data;
-        final detail =
-            data is Map ? data['detail']?.toString() : data?.toString();
+        final detail = data is Map
+            ? data['detail']?.toString()
+            : data?.toString();
         final statusCode = e.response?.statusCode ?? 0;
 
         if (detail != null && detail.isNotEmpty) {
@@ -1149,7 +1193,11 @@ class ChatProvider extends ChangeNotifier {
         lastMessage != null && lastMessage.continuationId != null;
 
     if (canContinue) {
-      return await _continueMessageFlow(lastMessage, componentType, responseData);
+      return await _continueMessageFlow(
+        lastMessage,
+        componentType,
+        responseData,
+      );
     }
 
     // --- Comportamento Legado (para mensagens antigas sem fluxo de continuação) ---

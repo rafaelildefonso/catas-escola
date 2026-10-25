@@ -1,25 +1,31 @@
 ﻿import asyncio
 import copy
 import os
+import re
+from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from core.security import is_prompt_injection_safe
-from services.ia.ai_service import AIService
-from services.automacao.pipeline_service import AutomationPipelineService
-
-from models.execution_log import ExecutionLog
 from models.automation_generation_log import AutomationGenerationLog
-from repositories.sessoes_chat_repository import buscar_sessao_do_usuario
+from models.execution_log import ExecutionLog
 from repositories.integracoes_repository import listar_integracoes_do_usuario
-from services.chat.excecoes_chat import ErroPermissao, MENSAGENS_ONBOARDING
+from repositories.sessoes_chat_repository import buscar_sessao_do_usuario
+from services.automacao.iniciar_automacao_assincrona_service import (
+    IniciarAutomacaoAssincronaService,
+)
+from services.automacao.pipeline_service import AutomationPipelineService
+from services.automacao.registrar_automation_run_service import (
+    RegistrarAutomationRunService,
+)
 from services.chat.criar_sessao_chat_service import CriarSessaoChatService
+from services.chat.detectar_onboarding_demo_service import DetectarOnboardingDemoService
+from services.chat.excecoes_chat import MENSAGENS_ONBOARDING, ErroPermissao
+from services.chat.montar_plano_onboarding_service import MontarPlanoOnboardingService
+from services.chat.obter_historico_chat_service import ObterHistoricoChatService
 from services.chat.renomear_sessao_chat_service import RenomearSessaoChatService
 from services.chat.salvar_mensagem_chat_service import SalvarMensagemChatService
-from services.chat.obter_historico_chat_service import ObterHistoricoChatService
-from services.chat.detectar_onboarding_demo_service import DetectarOnboardingDemoService
-from services.chat.montar_plano_onboarding_service import MontarPlanoOnboardingService
+from services.ia.ai_service import AIService
 from services.profile.verificar_quota_service import VerificarQuotaService
-from services.automacao.iniciar_automacao_assincrona_service import IniciarAutomacaoAssincronaService
-from services.automacao.registrar_automation_run_service import RegistrarAutomationRunService
 
 ai_service = AIService()
 pipeline_service = AutomationPipelineService()
@@ -41,6 +47,7 @@ class EnviarMensagemChatService:
             raise ValueError(mensagem_erro)
 
         message = dados.get("message", "")
+        automation_request = EnviarMensagemChatService._eh_pedido_automacao(message)
         conversation_id = dados.get("conversation_id")
         current_page_url = dados.get("current_page_url")
         current_page_title = dados.get("current_page_title")
@@ -49,12 +56,18 @@ class EnviarMensagemChatService:
         active_integrations = dados.get("active_integrations", [])
         user_tools = dados.get("user_tools", [])
 
+        is_onboarding_message = message.strip() in MENSAGENS_ONBOARDING or message.strip().startswith(
+            "CATAS: quero criar minha primeira automação de demonstração"
+        )
+
         is_dev_user = user_id.startswith("dev-user-")
 
         if not is_dev_user:
             permitido, erro, profile = VerificarQuotaService.executar(user_id, model_requested=model)
             if not permitido:
                 raise ErroPermissao(erro)
+            if (profile.get("subscription_tier") or "basic").lower() == "basic" and not conversation_id and not is_onboarding_message and not automation_request:
+                raise ErroPermissao("Conversa livre disponível apenas para assinantes.")
         else:
             profile = {
                 "subscription_tier": "pro",
@@ -66,10 +79,6 @@ class EnviarMensagemChatService:
         session_id = conversation_id
         is_new_session = False
         new_title = "Nova Conversa"
-
-        is_onboarding_message = message.strip() in MENSAGENS_ONBOARDING or message.strip().startswith(
-            "CATAS: quero criar minha primeira automação de demonstração"
-        )
 
         is_onboarding_session = False
         if not session_id:
@@ -146,6 +155,14 @@ class EnviarMensagemChatService:
             if resposta_demo is not None:
                 return resposta_demo
 
+        if automation_request:
+            return EnviarMensagemChatService._fluxo_meta_automacao(
+                user_id=user_id, message=message, session_id=session_id,
+                is_new_session=is_new_session, new_title=new_title,
+                is_onboarding_session=is_onboarding_session,
+                attachment_urls=attachment_urls, model=model, ai_result={},
+            )
+
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         ai_result = loop.run_until_complete(
@@ -198,6 +215,61 @@ class EnviarMensagemChatService:
         if not is_prompt_injection_safe(message):
             return "Mensagem contém padrões proibidos"
         return None
+
+    @staticmethod
+    def _eh_pedido_automacao(message: str) -> bool:
+        text = message.casefold()
+        creation = re.search(
+            r"\b(crie|criar|quero|monte|montar|configure|configurar|"
+            r"automatize|automatizar|agende|agendar|envie|enviar|adicione|"
+            r"adicionar|avise|avisar)\b",
+            text,
+        )
+        automation = "automa" in text or "fluxo" in text
+        recurrence = any(term in text for term in ("a cada ", "todo dia", "todos os dias", "toda semana", "toda segunda", "diariamente", "semanalmente"))
+        return bool((creation and automation) or (creation and recurrence))
+
+    @staticmethod
+    def _descrever_agendamento(trigger: dict) -> str:
+        if trigger.get("type") == "schedule":
+            minutes = trigger.get("interval_minutes")
+            if minutes == 60:
+                return "a cada hora"
+            if minutes == 1440:
+                return "todos os dias"
+            if isinstance(minutes, int) and minutes % 60 == 0:
+                hours = minutes // 60
+                return f"a cada {hours} horas"
+            return f"a cada {minutes} minutos"
+
+        fields = str(trigger.get("cron_expression") or "").split()
+        if len(fields) == 5 and fields[0].isdigit() and fields[1].isdigit():
+            try:
+                utc_time = datetime.now(timezone.utc).replace(
+                    hour=int(fields[1]),
+                    minute=int(fields[0]),
+                    second=0,
+                    microsecond=0,
+                )
+                timezone_name = os.getenv(
+                    "AUTOMATION_TIMEZONE", "America/Sao_Paulo"
+                )
+                try:
+                    local_timezone = ZoneInfo(timezone_name)
+                except KeyError:
+                    if timezone_name != "America/Sao_Paulo":
+                        raise
+                    local_timezone = timezone(timedelta(hours=-3))
+                local_time = utc_time.astimezone(local_timezone)
+                time_label = local_time.strftime("%H:%M")
+                if fields[2:4] == ["*", "*"] and fields[4] == "*":
+                    return f"todos os dias às {time_label}"
+                if fields[2:4] == ["*", "*"] and fields[4] == "1-5":
+                    return f"nos dias úteis às {time_label}"
+                return f"no horário combinado, às {time_label}"
+            except (ValueError, KeyError):
+                pass
+        return "nos horários combinados"
 
     @staticmethod
     def _eh_sessao_onboarding(session_id: str, user_id: str) -> bool:
@@ -323,14 +395,18 @@ class EnviarMensagemChatService:
     def _fluxo_meta_automacao(user_id, message, session_id, is_new_session, new_title,
                               is_onboarding_session, attachment_urls, model, ai_result):
         loop2 = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop2)
-        pipeline_result = loop2.run_until_complete(
-            pipeline_service.process(
-                user_message=message,
-                user_id=user_id,
-                attachment_urls=attachment_urls,
+        try:
+            asyncio.set_event_loop(loop2)
+            pipeline_result = loop2.run_until_complete(
+                pipeline_service.process(
+                    user_message=message,
+                    user_id=user_id,
+                    attachment_urls=attachment_urls,
+                )
             )
-        )
+        finally:
+            loop2.close()
+            asyncio.set_event_loop(None)
 
         pipeline_status = pipeline_result.get("pipeline_status", "completed")
 
@@ -357,46 +433,47 @@ class EnviarMensagemChatService:
             }
 
         if pipeline_status != "completed":
-            texto = f"Não foi possível processar sua solicitação: {pipeline_result.get('message', 'Erro desconhecido')}"
+            texto = "Não consegui preparar a automação agora. Tente novamente em instantes."
             assistant_message = salvar_msg(session_id, texto, {"source": "pipeline", "pipeline_status": pipeline_status})
             return {
                 "id": assistant_message.get("id"), "text": texto,
                 "session_id": session_id, "session_title": new_title if is_new_session else None,
             }
 
+        from models.integration import Integration
+        from services.automacao.module_registry import get_module_spec
+        from services.automation.criar_automation_service import CriarAutomationService
+        from services.automation.dispatch import dispatch_automation
+
         plan_data = pipeline_result.get("workflow_json", {})
-        objetivo = pipeline_result.get("objetivo", "Automação personalizada")
-
-        response_text = (
-            f"Automação Preparada!\n\n"
-            f"Analisei seu pedido e estruturei um plano de execução resiliente.\n"
-            f"Objetivo: {objetivo}\n\n"
-            f"Vou iniciar o processamento agora. Você pode acompanhar o status em tempo real."
-        )
-
-        assistant_message = salvar_msg(session_id, response_text, {
-            "action_triggered": True,
-            "action_details": plan_data,
-            "source": "automation_pipeline",
-            "status": "running",
-        })
-
-        automation_id_val = None
+        trigger = plan_data.get("trigger") or {"type": "manual"}
+        required_providers = {
+            spec.provider for step in plan_data.get("steps", [])
+            if (spec := get_module_spec(step.get("module_id"))) and spec.provider
+        }
+        connected_providers = {
+            item.provider for item in Integration.query.filter_by(user_id=user_id, is_connected=True).all()
+        }
+        missing_providers = sorted(required_providers - connected_providers)
+        if missing_providers:
+            names = ", ".join(provider.replace("google_", "Google ").replace("_", " ") for provider in missing_providers)
+            texto = f"Para criar essa automação, conecte {names} em Integrações e depois me envie o pedido novamente."
+            assistant_message = salvar_msg(session_id, texto, {"source": "automation_pipeline", "pipeline_status": "needs_integration"})
+            return {"id": assistant_message.get("id"), "text": texto, "session_id": session_id,
+                    "session_title": new_title if is_new_session else None}
         try:
-            automation_id_val = EnviarMensagemChatService._registrar_log_execucao(
-                user_id, objetivo, {"message": message}, plan_data, session_id=session_id
-            )
-            plan_data["automation_id"] = str(automation_id_val)
-        except Exception:
-            automation_id_val = None
-
-        RegistrarAutomationRunService.executar(
-            str(automation_id_val), user_id,
-            status="running", run_type="direct",
-            input_summary=(objetivo or message)[:500],
-            input_payload={"source": "chatbot_meta", "session_id": session_id, "message": message},
-            result_metadata={"plan": copy.deepcopy(plan_data)},
-        )
+            automation = CriarAutomationService.executar({
+                "name": plan_data.get("name") or pipeline_result.get("objetivo") or "Nova automação",
+                "description": plan_data.get("description") or message,
+                "trigger": trigger,
+                "steps": plan_data.get("steps", []),
+                "status": "active",
+            }, user_id)
+        except ValueError as exc:
+            texto = f"Preciso ajustar a automação antes de salvá-la: {exc}"
+            assistant_message = salvar_msg(session_id, texto, {"source": "automation_pipeline", "pipeline_status": "needs_clarification"})
+            return {"id": assistant_message.get("id"), "text": texto, "session_id": session_id,
+                    "session_title": new_title if is_new_session else None}
 
         try:
             EnviarMensagemChatService._registrar_log_geracao(
@@ -406,14 +483,33 @@ class EnviarMensagemChatService:
         except Exception:
             pass
 
-        IniciarAutomacaoAssincronaService.executar(str(automation_id_val), plan_data, user_id)
+        run = None
+        if trigger.get("type") == "manual":
+            run = dispatch_automation(automation.id, user_id, "chat")
 
+        if run is None:
+            when = EnviarMensagemChatService._descrever_agendamento(trigger)
+            response_text = f"Criei e ativei **{automation.name}**. Ela vai executar {when}. Você pode acompanhá-la em Automações."
+        elif run.status == "failed":
+            response_text = f"Criei **{automation.name}**, mas não consegui iniciar agora. Tente executar novamente pela página Automações."
+        else:
+            response_text = f"Criei **{automation.name}** e iniciei a execução. Você pode acompanhar o resultado em Automações."
+
+        details = {"automation_id": automation.id, "trigger": trigger,
+                   "modules": [step.get("module_id") for step in plan_data.get("steps", [])]}
+        triggered = run is not None and run.status != "failed"
+        assistant_message = salvar_msg(session_id, response_text, {
+            "action_triggered": triggered, "action_details": details,
+            "source": "automation_pipeline", "status": "running" if triggered else "completed",
+        })
         perfil_atualizado = _perfil_dict(user_id)
-
         return {
             "id": assistant_message.get("id"), "text": response_text,
-            "actionTriggered": True, "actionDetails": plan_data,
-            "automation_id": automation_id_val, "session_id": session_id,
+            "actionTriggered": triggered, "actionDetails": details,
+            "status": "running" if triggered else "completed",
+            "automation_id": run.id if triggered else None,
+            "saved_automation_id": automation.id,
+            "session_id": session_id,
             "session_title": new_title if is_new_session else None,
             "quota_used": perfil_atualizado.get("quota_used"),
             "monthly_quota_limit": perfil_atualizado.get("monthly_quota_limit"),

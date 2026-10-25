@@ -16,6 +16,10 @@ class Profile(db.Model):
     monthly_quota_limit = db.Column(db.Integer, default=500)
     quota_used = db.Column(db.Integer, default=0)
     rollover_credits = db.Column(db.Integer, default=0)
+    stripe_customer_id = db.Column(db.String(255), nullable=True, unique=True)
+    stripe_subscription_id = db.Column(db.String(255), nullable=True)
+    subscription_status = db.Column(db.String(30), nullable=False, default="inactive")
+    stripe_current_period_end = db.Column(db.DateTime(timezone=True), nullable=True)
     last_quota_reset = db.Column(db.DateTime(timezone=True), default=utcnow)
     language = db.Column(db.String, default="en")
     industry = db.Column(db.String, nullable=True)
@@ -50,10 +54,14 @@ class Profile(db.Model):
     def to_dict(self):
         result = {}
         for col in self.__table__.columns:
+            if col.name in {"stripe_customer_id", "stripe_subscription_id"}:
+                continue
             value = getattr(self, col.name)
             if isinstance(value, uuid.UUID):
                 value = str(value)
             elif isinstance(value, datetime):
                 value = value.replace(tzinfo=None).isoformat()
             result[col.name] = value
+        result["has_billing_subscription"] = bool(self.stripe_subscription_id)
+        result["has_billing_account"] = bool(self.stripe_customer_id)
         return result

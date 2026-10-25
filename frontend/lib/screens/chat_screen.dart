@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 import 'package:catas/components/brand_logo.dart';
 import 'package:catas/providers/auth_provider.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +17,7 @@ import '../providers/demo_automations_provider.dart';
 import '../providers/demo_notifications_provider.dart';
 import '../components/demo_timelapse_overlay.dart';
 import '../core/app_config.dart';
+import '../core/automation_labels.dart';
 import '../components/catas_loading_indicator.dart';
 import '../components/clickable_wrapper.dart';
 import '../components/options_button.dart';
@@ -28,11 +28,13 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../components/full_screen_viewer.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../components/ai_components/component_factory.dart';
 import '../components/integrations_options_menu.dart';
 import '../components/integrations_bottom_sheet.dart';
 import '../components/attachment_bottom_sheet.dart';
 import '../components/picked_attachment_card.dart';
+import 'attachments_screen.dart';
 import '../l10n/app_localizations.dart';
 import '../components/mention_menu.dart';
 import '../screens/integrations_screen.dart'
@@ -137,7 +139,9 @@ class _ChatScreenState extends State<ChatScreen> {
     if (isTyping && typingText != null) {
       _isAutoplayTyping = true;
       _controller.text = typingText;
-      _controller.selection = TextSelection.collapsed(offset: typingText.length);
+      _controller.selection = TextSelection.collapsed(
+        offset: typingText.length,
+      );
       if (_inputVazio && typingText.isNotEmpty) {
         _inputVazio = false;
       }
@@ -494,23 +498,38 @@ class _ChatScreenState extends State<ChatScreen> {
         spacing: 8,
         runSpacing: 8,
         children: urls.map((url) {
+          final path =
+              Uri.tryParse(url)?.path.toLowerCase() ?? url.toLowerCase();
           final isLocal = !url.startsWith('http');
-          final isImage =
-              isLocal &&
-              (url.toLowerCase().endsWith('.jpg') ||
-                  url.toLowerCase().endsWith('.jpeg') ||
-                  url.toLowerCase().endsWith('.png') ||
-                  url.toLowerCase().endsWith('.gif') ||
-                  url.toLowerCase().endsWith('.webp'));
+          final isImage = [
+            '.jpg',
+            '.jpeg',
+            '.png',
+            '.gif',
+            '.webp',
+          ].any(path.endsWith);
+          final isPdf = path.endsWith('.pdf');
+          final name = path.split('/').last;
 
           return Clickable(
             onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => FullScreenViewer(url: url, tag: url),
-                ),
-              );
+              if (isPdf) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => PdfPreviewScreen(name: name, url: url),
+                  ),
+                );
+              } else if (isImage && !isLocal) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute<void>(
+                    builder: (_) => FullScreenViewer(url: url, tag: url),
+                  ),
+                );
+              } else if (!isLocal) {
+                launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+              }
             },
             child: Hero(
               tag: url,
@@ -529,13 +548,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       ).colorScheme.outline.withValues(alpha: 0.1),
                     ),
                   ),
-                  child: isLocal
-                      ? (isImage
-                            ? Image.file(File(url), fit: BoxFit.cover)
-                            : const Center(
-                                child: Icon(Icons.insert_drive_file_outlined),
-                              ))
-                      : CachedNetworkImage(
+                  child: isImage && !isLocal
+                      ? CachedNetworkImage(
                           imageUrl: url,
                           fit: BoxFit.cover,
                           placeholder: (context, url) => const Center(
@@ -547,6 +561,16 @@ class _ChatScreenState extends State<ChatScreen> {
                           ),
                           errorWidget: (context, url, error) =>
                               const Icon(Icons.error_outline),
+                        )
+                      : isImage && !kIsWeb && url.isNotEmpty
+                      ? Image.file(File(url), fit: BoxFit.cover)
+                      : Center(
+                          child: Icon(
+                            isPdf
+                                ? Icons.picture_as_pdf_outlined
+                                : Icons.description_outlined,
+                            size: 42,
+                          ),
                         ),
                 ),
               ),
@@ -560,29 +584,32 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _pickDocument() async {
     try {
       final result = await FilePicker.platform.pickFiles(
-        type: FileType.any,
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'webp'],
         allowMultiple: true,
+        withData: true,
       );
 
       if (result != null && result.files.isNotEmpty) {
-        final newAttachments = result.files.where((f) => f.path != null).map((
-          f,
-        ) {
-          final isImage = [
-            'jpg',
-            'jpeg',
-            'png',
-            'webp',
-            'gif',
-          ].any((ext) => f.name.toLowerCase().endsWith(ext));
-          return PickedAttachment(
-            id: DateTime.now().millisecondsSinceEpoch.toString() + f.name,
-            path: f.path!,
-            name: f.name,
-            isImage: isImage,
-            bytes: f.bytes,
-          );
-        }).toList();
+        final newAttachments = result.files
+            .where((f) => f.path != null || f.bytes != null)
+            .map((f) {
+              final isImage = [
+                'jpg',
+                'jpeg',
+                'png',
+                'webp',
+                'gif',
+              ].any((ext) => f.name.toLowerCase().endsWith(ext));
+              return PickedAttachment(
+                id: DateTime.now().millisecondsSinceEpoch.toString() + f.name,
+                path: f.path ?? '',
+                name: f.name,
+                isImage: isImage,
+                bytes: f.bytes,
+              );
+            })
+            .toList();
 
         if (newAttachments.isNotEmpty) {
           if (!mounted) return;
@@ -609,7 +636,10 @@ class _ChatScreenState extends State<ChatScreen> {
       final RenderBox button = buttonContext.findRenderObject() as RenderBox;
       final RenderBox overlay =
           Overlay.of(context).context.findRenderObject() as RenderBox;
-      final Offset globalOffset = button.localToGlobal(Offset.zero, ancestor: overlay);
+      final Offset globalOffset = button.localToGlobal(
+        Offset.zero,
+        ancestor: overlay,
+      );
       CatasOptionsMenu.show(
         context: context,
         position: globalOffset,
@@ -629,6 +659,11 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: Icons.insert_drive_file_outlined,
             label: 'Arquivos',
           ),
+          CatasOptionItem(
+            value: 'manage',
+            icon: Icons.folder_open_outlined,
+            label: 'Meus arquivos',
+          ),
         ],
         onSelected: (selected) {
           if (!mounted) return;
@@ -642,6 +677,9 @@ class _ChatScreenState extends State<ChatScreen> {
             case 'file':
               _pickDocument();
               break;
+            case 'manage':
+              _openAttachmentManager();
+              break;
           }
         },
       );
@@ -651,12 +689,20 @@ class _ChatScreenState extends State<ChatScreen> {
         onCameraTap: () => _pickImage(ImageSource.camera),
         onGalleryTap: () => _pickImage(ImageSource.gallery),
         onFileTap: () => _pickDocument(),
+        onManageTap: _openAttachmentManager,
       );
     }
   }
 
+  void _openAttachmentManager() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const AttachmentsScreen()));
+  }
+
   Future<void> _loadIntegrationPreferences() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final chatProvider = context.read<ChatProvider>();
 
     final integrations = [
@@ -688,25 +734,33 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _pickImage(ImageSource source) async {
     try {
       if (source == ImageSource.gallery) {
-        final List<XFile> images = await _imagePicker.pickMultiImage();
+        final List<XFile> images = await _imagePicker.pickMultiImage(
+          imageQuality: 85,
+          maxWidth: 2048,
+        );
         if (images.isNotEmpty) {
-          final newAttachments = images
-              .map(
-                (image) => PickedAttachment(
-                  id:
-                      DateTime.now().millisecondsSinceEpoch.toString() +
-                      image.name,
-                  path: image.path,
-                  name: image.name,
-                  isImage: true,
-                ),
-              )
-              .toList();
+          final newAttachments = await Future.wait(
+            images.map(
+              (image) async => PickedAttachment(
+                id:
+                    DateTime.now().millisecondsSinceEpoch.toString() +
+                    image.name,
+                path: image.path,
+                name: image.name,
+                isImage: true,
+                bytes: await image.readAsBytes(),
+              ),
+            ),
+          );
           if (!mounted) return;
           context.read<ChatProvider>().addAttachments(newAttachments);
         }
       } else {
-        final XFile? image = await _imagePicker.pickImage(source: source);
+        final XFile? image = await _imagePicker.pickImage(
+          source: source,
+          imageQuality: 85,
+          maxWidth: 2048,
+        );
         if (image != null) {
           if (!mounted) return;
           context.read<ChatProvider>().addAttachments([
@@ -715,6 +769,7 @@ class _ChatScreenState extends State<ChatScreen> {
               path: image.path,
               name: image.name,
               isImage: true,
+              bytes: await image.readAsBytes(),
             ),
           ]);
         }
@@ -748,6 +803,7 @@ class _ChatScreenState extends State<ChatScreen> {
       currentPageUrl: nativeCtx.currentPageUrl,
       currentPageTitle: nativeCtx.currentPageTitle,
     );
+    if (!mounted) return;
     _controller.clear();
     // O sendMessage agora limpa o draft e anexos internamente de forma imediata
     _scrollToBottom();
@@ -755,10 +811,10 @@ class _ChatScreenState extends State<ChatScreen> {
     // Navigate to session URL if a new session was created
     final newSessionId = response['session_id'] as String?;
     final currentLocation = GoRouterState.of(context).matchedLocation;
-    if (newSessionId != null && newSessionId.isNotEmpty && currentLocation == AppRoutes.chat) {
-      if (mounted) {
-        context.go(AppRoutes.chatSession(newSessionId));
-      }
+    if (newSessionId != null &&
+        newSessionId.isNotEmpty &&
+        currentLocation == AppRoutes.chat) {
+      context.go(AppRoutes.chatSession(newSessionId));
     }
   }
 
@@ -816,7 +872,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _onScroll() {
     if (_scrollController.hasClients) {
-      final atBottom = _scrollController.position.pixels >=
+      final atBottom =
+          _scrollController.position.pixels >=
           _scrollController.position.maxScrollExtent - 100;
       _wasAtBottom = atBottom;
 
@@ -1031,10 +1088,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     constraints: const BoxConstraints(maxWidth: 800),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .surfaceContainerHighest,
-                            // .withValues(alpha: 0.65),
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        // .withValues(alpha: 0.65),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: inputBorderColor, width: 1.5),
                         boxShadow: [
@@ -1094,8 +1151,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                 )
                               : Column(
                                   mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     if (chatProvider.attachments.isNotEmpty)
                                       Padding(
@@ -1110,15 +1166,15 @@ class _ChatScreenState extends State<ChatScreen> {
                                           runSpacing: 8,
                                           children: chatProvider.attachments
                                               .map(
-                                                (
-                                                  attachment,
-                                                ) => PickedAttachmentCard(
-                                                  attachment: attachment,
-                                                  onRemove: () => chatProvider
-                                                      .removeAttachment(
-                                                        attachment.id,
-                                                      ),
-                                                ),
+                                                (attachment) =>
+                                                    PickedAttachmentCard(
+                                                      attachment: attachment,
+                                                      onRemove: () =>
+                                                          chatProvider
+                                                              .removeAttachment(
+                                                                attachment.id,
+                                                              ),
+                                                    ),
                                               )
                                               .toList(),
                                         ),
@@ -1145,8 +1201,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                         }
                                                       },
                                                       child: TextField(
-                                                        controller:
-                                                            _controller,
+                                                        controller: _controller,
                                                         focusNode: _focusNode,
                                                         style:
                                                             GoogleFonts.inter(
@@ -1164,27 +1219,22 @@ class _ChatScreenState extends State<ChatScreen> {
                                                           context,
                                                         ).colorScheme.primary,
                                                         decoration: InputDecoration(
-                                                          hintText: l10n
-                                                              .askAnything,
+                                                          hintText:
+                                                              l10n.askAnything,
                                                           filled: false,
                                                           counterText: '',
-                                                          border: InputBorder
-                                                              .none,
+                                                          border:
+                                                              InputBorder.none,
                                                           disabledBorder:
-                                                              InputBorder
-                                                                  .none,
+                                                              InputBorder.none,
                                                           focusedBorder:
-                                                              InputBorder
-                                                                  .none,
+                                                              InputBorder.none,
                                                           errorBorder:
-                                                              InputBorder
-                                                                  .none,
+                                                              InputBorder.none,
                                                           focusedErrorBorder:
-                                                              InputBorder
-                                                                  .none,
+                                                              InputBorder.none,
                                                           enabledBorder:
-                                                              InputBorder
-                                                                  .none,
+                                                              InputBorder.none,
                                                           hintStyle: GoogleFonts.inter(
                                                             color:
                                                                 Theme.of(
@@ -1200,8 +1250,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                           contentPadding:
                                                               const EdgeInsets.symmetric(
                                                                 vertical: 14,
-                                                                horizontal:
-                                                                    16,
+                                                                horizontal: 16,
                                                               ),
                                                           isDense: true,
                                                         ),
@@ -1212,10 +1261,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                                   : TextField(
                                                       controller: _controller,
                                                       focusNode: _focusNode,
-                                                      style:
-                                                          GoogleFonts.inter(
-                                                            fontSize: 15,
-                                                          ),
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 15,
+                                                      ),
                                                       enabled: !isLoading,
                                                       minLines: 1,
                                                       maxLines: 5,
@@ -1243,14 +1291,11 @@ class _ChatScreenState extends State<ChatScreen> {
                                                             InputBorder.none,
                                                         hintStyle: GoogleFonts.inter(
                                                           color:
-                                                              Theme.of(
-                                                                    context,
-                                                                  )
+                                                              Theme.of(context)
                                                                   .colorScheme
                                                                   .onSurfaceVariant
                                                                   .withValues(
-                                                                    alpha:
-                                                                        0.6,
+                                                                    alpha: 0.6,
                                                                   ),
                                                         ),
                                                         contentPadding:
@@ -1335,8 +1380,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                           fontSize: 11,
                                                           fontWeight:
                                                               FontWeight.w600,
-                                                          color:
-                                                              progress > 0.7
+                                                          color: progress > 0.7
                                                               ? inputBorderColor
                                                                     .withValues(
                                                                       alpha:
@@ -1364,13 +1408,10 @@ class _ChatScreenState extends State<ChatScreen> {
                                                   ? Container(
                                                       width: 40,
                                                       height: 40,
-                                                      decoration:
-                                                          BoxDecoration(
-                                                            color: Colors
-                                                                .red[400],
-                                                            shape: BoxShape
-                                                                .circle,
-                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: Colors.red[400],
+                                                        shape: BoxShape.circle,
+                                                      ),
                                                       child: IconButton(
                                                         onPressed: () async {
                                                           final provider =
@@ -1380,7 +1421,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                                   >();
                                                           bool shouldStop =
                                                               true;
-                        
+
                                                           // Se estiver em fase crítica de automação, pede confirmação
                                                           if (provider.thinkingStage ==
                                                                   ThinkingStage
@@ -1389,8 +1430,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                                   ThinkingStage
                                                                       .executing) {
                                                             final confirmed = await showCatasDialog<bool>(
-                                                              context:
-                                                                  context,
+                                                              context: context,
                                                               title:
                                                                   "Parar agora?",
                                                               message:
@@ -1424,7 +1464,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                                 confirmed ??
                                                                 false;
                                                           }
-                        
+
                                                           if (shouldStop) {
                                                             provider
                                                                 .stopGeneration();
@@ -1439,8 +1479,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                                           size: 20,
                                                           color: Colors.white,
                                                         ),
-                                                        tooltip: l10n
-                                                            .stopGeneration,
+                                                        tooltip:
+                                                            l10n.stopGeneration,
                                                       ),
                                                     )
                                                   // Botão de envio ou microfone
@@ -1452,21 +1492,17 @@ class _ChatScreenState extends State<ChatScreen> {
                                                         color: Theme.of(
                                                           context,
                                                         ).colorScheme.primary,
-                                                        shape:
-                                                            BoxShape.circle,
+                                                        shape: BoxShape.circle,
                                                       ),
                                                       child: IconButton(
-                                                        onPressed:
-                                                            _sendMessage,
+                                                        onPressed: _sendMessage,
                                                         iconSize: 24,
                                                         icon: Icon(
                                                           Icons
                                                               .arrow_upward_rounded,
                                                           size: 20,
                                                           color:
-                                                              Theme.of(
-                                                                    context,
-                                                                  )
+                                                              Theme.of(context)
                                                                   .colorScheme
                                                                   .onPrimary,
                                                         ),
@@ -1480,14 +1516,12 @@ class _ChatScreenState extends State<ChatScreen> {
                                                       },
                                                       iconSize: 24,
                                                       icon: Icon(
-                                                        Icons
-                                                            .mic_none_rounded,
+                                                        Icons.mic_none_rounded,
                                                         color: Theme.of(context)
                                                             .colorScheme
                                                             .onSurfaceVariant,
                                                       ),
-                                                      tooltip:
-                                                          l10n.recordAudio,
+                                                      tooltip: l10n.recordAudio,
                                                     ),
                                             ),
                                           ],
@@ -1733,7 +1767,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    step['module_id'] ?? "Step",
+                                    friendlyAutomationStepName(
+                                      step['module_id']?.toString() ?? '',
+                                    ),
                                     style: GoogleFonts.inter(
                                       fontSize: 12,
                                       color: isRunning
@@ -2122,7 +2158,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       if (message.attachmentUrls != null &&
                           message.attachmentUrls!.isNotEmpty)
                         _buildAttachments(message.attachmentUrls!),
@@ -2245,7 +2280,9 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    l10n.actionExecuted,
+                                    message.status == 'running'
+                                        ? 'Automação iniciada'
+                                        : l10n.actionExecuted,
                                     style: GoogleFonts.inter(
                                       fontSize: 13,
                                       fontWeight: FontWeight.bold,
@@ -2329,7 +2366,9 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                l10n.actionExecuted,
+                                message.status == 'running'
+                                    ? 'Automação iniciada'
+                                    : l10n.actionExecuted,
                                 style: GoogleFonts.inter(
                                   fontSize: 12,
                                   fontWeight: FontWeight.bold,

@@ -8,6 +8,7 @@ import httpx
 logger = logging.getLogger(__name__)
 
 WORKER_URL = os.getenv("WORKER_URL", "http://localhost:8001")
+WORKER_SHARED_SECRET = os.getenv("WORKER_SHARED_SECRET", "")
 
 
 class AutomationRunnerService:
@@ -35,20 +36,18 @@ class AutomationRunnerService:
                         "plan": plan,
                         "user_id": user_id,
                     },
+                    headers={"X-Worker-Secret": WORKER_SHARED_SECRET},
                 )
-                if resp.status_code == 202:
-                    logger.info("✅ Worker aceitou execução %s", automation_id)
-                else:
-                    logger.warning(
-                        "⚠️ Worker retornou status %s para execução %s",
-                        resp.status_code, automation_id,
-                    )
+                if resp.status_code != 202:
+                    raise RuntimeError(f"Worker rejeitou execução {automation_id}: HTTP {resp.status_code}")
+                logger.info("Worker aceitou execução %s", automation_id)
 
         except Exception as e:
             logger.error(
                 "❌ Worker não disponível (%s). A automação %s NÃO será executada.",
                 e, automation_id,
             )
+            raise
 
         return {
             "id": f"direct-{automation_id}",
@@ -78,14 +77,18 @@ class AutomationRunnerService:
                         "plan": plan,
                         "user_id": user_id,
                     },
+                    headers={"X-Worker-Secret": WORKER_SHARED_SECRET},
                 )
                 if resp.status_code == 202:
                     logger.info("✅ Worker aceitou webhook %s", unique_run_id)
+                else:
+                    raise RuntimeError(f"Worker rejeitou webhook {unique_run_id}: HTTP {resp.status_code}")
         except Exception as e:
             logger.error(
                 "❌ Worker não disponível para webhook (%s). Webhook %s NÃO será executado.",
                 e, unique_run_id,
             )
+            raise
 
         return {
             "id": unique_run_id,

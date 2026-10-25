@@ -13,7 +13,7 @@ class AIFactory:
     def create(config_str: str) -> AIProvider:
         parts = config_str.split('|')
         provider_name = parts[0] if len(parts) > 0 else 'groq'
-        model = parts[1] if len(parts) > 1 else 'llama-3.1-8b-instant'
+        model = parts[1] if len(parts) > 1 else 'openai/gpt-oss-20b'
         api_url = parts[2] if len(parts) > 2 else 'https://api.groq.com/openai/v1/chat/completions'
         api_key_name = parts[3] if len(parts) > 3 else 'GROQ_API_KEY'
         

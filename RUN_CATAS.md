@@ -14,13 +14,6 @@
 ```powershell
 cd backend
 .\venv\Scripts\activate
-python run.py                # porta padrão 8000
-```
-
-Para usar outra porta (ex.: se a 8000 estiver ocupada):
-
-```powershell
-$env:PORT = "8001"
 python run.py
 ```
 
@@ -35,59 +28,14 @@ O Worker é necessário para executar automações.
 ```powershell
 cd backend
 .\venv\Scripts\activate
-python -m worker.server      # porta 8001
+python -m worker.entrypoint
 ```
 
 Validar: http://localhost:8001/health → `{"status": "ok"}`
 
 ---
 
-## 3. Emulador Android
-
-```powershell
-# listar emuladores disponíveis
-flutter emulators
-
-# iniciar (se ainda não estiver rodando)
-flutter emulators --launch Medium_Phone_API_36.1
-
-# conferir se está online (deve aparecer como "device")
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" devices
-```
-
-Se `--launch` falhar com "Running multiple emulators with the same AVD", o emulador **já está aberto** — só use.
-
-## 4. Frontend (Flutter) no emulador
-
-```powershell
-cd frontend
-flutter pub get
-
-# build + install + launch com a API apontando para o backend local
-flutter run -d emulator-5554 --dart-define=API_BASE_URL=http://10.0.2.2:8000/api/v1
-```
-
-- `10.0.2.2` = localhost da máquina host visto de dentro do emulador Android.
-- Se o backend estiver na porta padrão, use `http://10.0.2.2:8000/api/v1`.
-- O `.env` do frontend (`frontend/.env`) usa `localhost:8000`; o app converte para `10.0.2.2` automaticamente (`lib/core/app_config.dart`), mas o `--dart-define` tem prioridade.
-
-### Fallback: app não sobe após o install
-
-Em janela sem console, o `flutter run` pode travar depois de `Installing...`. Nesse caso:
-
-```powershell
-# lançar a activity direto (o APK já foi compilado com o dart-define)
-& "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe" shell am start -n com.catas.catas/.MainActivity
-
-# reconectar hot reload
-flutter attach -d emulator-5554
-```
-
-### Hot reload
-
-Com `flutter run` ou `flutter attach` conectado, basta salvar um arquivo `.dart`.
-
-## 5. Frontend (Flutter) no Chrome
+## 3. Frontend
 
 ```powershell
 cd frontend
@@ -96,33 +44,6 @@ flutter run -d chrome --web-port 52159
 ```
 
 No Chrome o backend é alcançado por `localhost:8000` (ou a porta definida em `frontend/.env`).
-
----
-
-## 6. Docker (Alternativa)
-
-Para rodar backend + worker com Docker:
-
-```powershell
-cd backend
-docker-compose up -d
-```
-
-Serviços:
-- `catas_server`: API Flask (port 8000)
-- `catas_worker`: FastAPI Worker (port 8001)
-
-Para verificar se os containers estão rodando:
-
-```powershell
-docker-compose ps
-```
-
-Para ver logs:
-
-```powershell
-docker-compose logs -f
-```
 
 ---
 
@@ -164,12 +85,6 @@ Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object -ExpandProper
 # worker (porta 8001)
 Get-NetTCPConnection -LocalPort 8001 -State Listen | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ }
 
-# app no emulador
-adb shell am force-stop com.catas.catas
-
-# Docker
-cd backend
-docker-compose down
 ```
 
 ## Troubleshooting

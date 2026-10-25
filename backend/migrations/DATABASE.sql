@@ -25,11 +25,33 @@ CREATE TABLE IF NOT EXISTS profiles (
     subscription_tier VARCHAR(255) NOT NULL DEFAULT 'basic',
     monthly_quota_limit INT NOT NULL DEFAULT 500,
     quota_used INT NOT NULL DEFAULT 0,
+    stripe_customer_id VARCHAR(255) NULL,
+    stripe_subscription_id VARCHAR(255) NULL,
+    subscription_status VARCHAR(30) NOT NULL DEFAULT 'inactive',
+    stripe_current_period_end DATETIME NULL,
     last_quota_reset DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     language VARCHAR(255) NOT NULL DEFAULT 'en',
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE UNIQUE INDEX uq_profiles_stripe_customer_id
+    ON profiles (stripe_customer_id);
+
+CREATE TABLE IF NOT EXISTS attachments (
+    id            VARCHAR(36) NOT NULL DEFAULT (UUID()),
+    user_id       VARCHAR(36) NOT NULL,
+    original_name VARCHAR(255) NOT NULL,
+    storage_path  VARCHAR(255) NOT NULL,
+    content_type  VARCHAR(100) NULL,
+    size_bytes    BIGINT NOT NULL DEFAULT 0,
+    is_public     TINYINT(1) NOT NULL DEFAULT 0,
+    created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_attachments_user (user_id),
+    CONSTRAINT fk_attachments_user
+        FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------
@@ -303,10 +325,12 @@ CREATE TABLE IF NOT EXISTS automations (
     version INT NOT NULL DEFAULT 1,
     external_ref JSON NOT NULL,
     expires_at DATETIME NULL,
+    next_run_at DATETIME NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),
     KEY idx_automations_user (user_id),
+    KEY idx_automations_due (status, next_run_at),
     CONSTRAINT fk_automations_user FOREIGN KEY (user_id) REFERENCES profiles(id) ON DELETE CASCADE,
     CONSTRAINT automations_status_check CHECK (status IN ('draft','active','paused'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -36,7 +36,8 @@ class AuthProvider extends ChangeNotifier {
   UserProfile? get profile => _profile;
   String? get userId => _currentUser?.id;
   String? get userName =>
-      _currentUser?.displayName ?? (_currentUser?.email.split('@')[0] ?? 'Usuário');
+      _currentUser?.displayName ??
+      (_currentUser?.email.split('@')[0] ?? 'Usuário');
   String? get userEmail => _currentUser?.email;
   String? get userPhotoUrl => _currentUser?.photoUrl;
   String? get userFirstName =>
@@ -55,8 +56,8 @@ class AuthProvider extends ChangeNotifier {
   String? _tokenCache;
 
   AuthProvider({LocaleProvider? localeProvider})
-      : _localeProvider = localeProvider,
-        _isDemoMode = AppConfig.isDemoMode {
+    : _localeProvider = localeProvider,
+      _isDemoMode = AppConfig.isDemoMode {
     _initAuth();
   }
 
@@ -136,13 +137,17 @@ class AuthProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
         _currentUser = UserModel.fromJson(data['user'] as Map<String, dynamic>);
-        _profile = UserProfile.fromJson(data['profile'] as Map<String, dynamic>);
+        _profile = UserProfile.fromJson(
+          data['profile'] as Map<String, dynamic>,
+        );
         _onboardingCompleted = _profile!.onboardingCompleted;
         _onboardingPrefsLoaded = true;
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(
-            'user_profile_cache', jsonEncode(_profile!.toMap()));
+          'user_profile_cache',
+          jsonEncode(_profile!.toMap()),
+        );
         await prefs.setBool('onboarding_completed', _onboardingCompleted);
 
         _isAuthenticated = true;
@@ -172,6 +177,8 @@ class AuthProvider extends ChangeNotifier {
       monthlyQuotaLimit: finalLimit,
       quotaRemaining: (finalLimit - used).clamp(0, finalLimit),
       attachmentLimit: _profile!.attachmentLimit,
+      hasBillingAccount: _profile!.hasBillingAccount,
+      hasBillingSubscription: _profile!.hasBillingSubscription,
       language: _profile!.language,
       industry: _profile!.industry,
       role: _profile!.role,
@@ -179,7 +186,9 @@ class AuthProvider extends ChangeNotifier {
     );
 
     notifyListeners();
-    debugPrint("📊 [AuthProvider] Cota atualizada manualmente: $used/$finalLimit");
+    debugPrint(
+      "📊 [AuthProvider] Cota atualizada manualmente: $used/$finalLimit",
+    );
   }
 
   Future<void> logout() async {
@@ -195,6 +204,11 @@ class AuthProvider extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<void> refreshAccount() async {
+    if (_isDemoMode || _tokenCache == null) return;
+    await _loadUserFromToken(_tokenCache!);
   }
 
   Future<bool> loginWithEmail(String email, String password) async {
@@ -275,8 +289,7 @@ class AuthProvider extends ChangeNotifier {
     _onboardingPrefsLoaded = true;
 
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        'user_profile_cache', jsonEncode(_profile!.toMap()));
+    await prefs.setString('user_profile_cache', jsonEncode(_profile!.toMap()));
     await prefs.setBool('onboarding_completed', _onboardingCompleted);
   }
 
@@ -293,7 +306,9 @@ class AuthProvider extends ChangeNotifier {
 
         final prefs = await SharedPreferences.getInstance();
         await prefs.setString(
-            'user_profile_cache', jsonEncode(_profile!.toMap()));
+          'user_profile_cache',
+          jsonEncode(_profile!.toMap()),
+        );
         await prefs.setBool('onboarding_completed', _onboardingCompleted);
 
         notifyListeners();
@@ -338,14 +353,14 @@ class AuthProvider extends ChangeNotifier {
 
     if (_isAuthenticated && !_isDemoMode && _tokenCache != null) {
       try {
-        debugPrint('🔄 Atualizando perfil no backend: industry=$industry, role=$role, tools=$tools');
+        debugPrint(
+          '🔄 Atualizando perfil no backend: industry=$industry, role=$role, tools=$tools',
+        );
         await _userRepository.updateMe(_tokenCache!, {
           'industry': industry,
           'role': role,
           'onboarding_completed': true,
-          'onboarding_data': {
-            'tools': tools ?? [],
-          },
+          'onboarding_data': {'tools': tools ?? []},
         });
         debugPrint('✅ Perfil atualizado no backend. Recarregando perfil...');
         await refreshProfile();
@@ -356,7 +371,9 @@ class AuthProvider extends ChangeNotifier {
     }
 
     notifyListeners();
-    debugPrint('🔔 AuthProvider notificado: onboardingCompleted=$_onboardingCompleted, profile.industry=${_profile?.industry}');
+    debugPrint(
+      '🔔 AuthProvider notificado: onboardingCompleted=$_onboardingCompleted, profile.industry=${_profile?.industry}',
+    );
   }
 
   Future<void> updateProfile({String? name}) async {
@@ -415,7 +432,10 @@ class UserRepository {
     }
   }
 
-  Future<Map<String, dynamic>> updateMe(String token, Map<String, dynamic> data) async {
+  Future<Map<String, dynamic>> updateMe(
+    String token,
+    Map<String, dynamic> data,
+  ) async {
     final response = await http.put(
       Uri.parse('$_baseUrl/profiles/me'),
       headers: {

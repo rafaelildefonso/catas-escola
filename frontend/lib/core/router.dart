@@ -1,10 +1,10 @@
 import 'package:catas/providers/auth_provider.dart';
-import 'package:catas/screens/automations_screen.dart';
+import 'package:catas/screens/active_automations_screen.dart';
 import 'package:catas/screens/chat_screen.dart';
 import 'package:catas/screens/dashboard/impact_dashboard_screen.dart';
 import 'package:catas/screens/history_screen.dart';
 import 'package:catas/screens/integrations_screen.dart';
-import 'package:catas/screens/notifications_screen.dart';
+import 'package:catas/screens/notification_list_screen.dart';
 import 'package:catas/screens/pricing_screen.dart';
 import 'package:catas/screens/settings_screen.dart';
 import 'package:catas/screens/web/web_main_layout.dart';
@@ -71,10 +71,7 @@ Page<T> _buildPageWithTransition<T>({
     key: state.pageKey,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return FadeTransition(
-        opacity: animation,
-        child: child,
-      );
+      return FadeTransition(opacity: animation, child: child);
     },
     transitionDuration: const Duration(milliseconds: 250),
     reverseTransitionDuration: const Duration(milliseconds: 200),
@@ -82,9 +79,7 @@ Page<T> _buildPageWithTransition<T>({
 }
 
 /// Configuração do GoRouter
-GoRouter createRouter(
-  AuthProvider authProvider,
-) {
+GoRouter createRouter(AuthProvider authProvider) {
   return GoRouter(
     navigatorKey: navigatorKey,
     debugLogDiagnostics: kDebugMode,
@@ -99,7 +94,9 @@ GoRouter createRouter(
 
       // 2. Se o AuthProvider ainda está inicializando, não redirecionamos.
       if (authProvider.isLoading) {
-        debugPrint('🛡️ Router: Protegendo contra flicker. AuthProvider ainda carregando...');
+        debugPrint(
+          '🛡️ Router: Protegendo contra flicker. AuthProvider ainda carregando...',
+        );
         return null;
       }
 
@@ -107,7 +104,8 @@ GoRouter createRouter(
 
       // 2. Limpeza de URL (Web Only) - Remove parâmetros OAuth da URL após login
       if (kIsWeb && isAuthenticated) {
-        final hasAuthParams = state.uri.queryParameters.containsKey('code') ||
+        final hasAuthParams =
+            state.uri.queryParameters.containsKey('code') ||
             state.uri.queryParameters.containsKey('type') ||
             state.uri.queryParameters.containsKey('error') ||
             state.uri.queryParameters.containsKey('access_token') ||
@@ -129,27 +127,33 @@ GoRouter createRouter(
       final isOnboardingRoute = loc == AppRoutes.onboarding;
 
       if (!isAuthenticated && !isLoginRoute && !isOnboardingRoute) {
-        final fullPath = state.uri.path + (state.uri.query.isNotEmpty ? '?${state.uri.query}' : '');
+        final fullPath =
+            state.uri.path +
+            (state.uri.query.isNotEmpty ? '?${state.uri.query}' : '');
         return '${AppRoutes.login}?from=${Uri.encodeComponent(fullPath)}';
       }
 
       if (isAuthenticated && isLoginRoute) {
-        final needsOnboarding = !authProvider.onboardingCompleted ||
-            (authProvider.profile != null && authProvider.profile!.industry == null);
+        final needsOnboarding =
+            !authProvider.onboardingCompleted ||
+            (authProvider.profile != null &&
+                authProvider.profile!.industry == null);
         if (authProvider.onboardingPrefsLoaded && needsOnboarding) {
           return AppRoutes.onboarding;
         }
-        
+
         final from = state.uri.queryParameters['from'];
         if (from != null && from.isNotEmpty) {
           return Uri.decodeComponent(from);
         }
-        
+
         return AppRoutes.chat;
       }
 
-      final needsOnboarding = !authProvider.onboardingCompleted ||
-          (authProvider.profile != null && authProvider.profile!.industry == null);
+      final needsOnboarding =
+          !authProvider.onboardingCompleted ||
+          (authProvider.profile != null &&
+              authProvider.profile!.industry == null);
 
       if (isAuthenticated &&
           authProvider.onboardingPrefsLoaded &&
@@ -166,12 +170,18 @@ GoRouter createRouter(
       GoRoute(
         path: '/',
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: Builder(builder: (context) {
-            if (kIsWeb) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => renderPage('/landing.html'));
-            }
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          }),
+          child: Builder(
+            builder: (context) {
+              if (kIsWeb) {
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => renderPage('/landing.html'),
+                );
+              }
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            },
+          ),
           state: state,
         ),
       ),
@@ -180,10 +190,8 @@ GoRouter createRouter(
       GoRoute(
         path: AppRoutes.login,
         name: 'login',
-        pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const LoginScreen(),
-          state: state,
-        ),
+        pageBuilder: (context, state) =>
+            _buildPageWithTransition(child: const LoginScreen(), state: state),
       ),
 
       GoRoute(
@@ -239,7 +247,7 @@ GoRouter createRouter(
             path: AppRoutes.automations,
             name: 'automations',
             pageBuilder: (context, state) => _buildPageWithTransition(
-              child: const AutomationsScreen(),
+              child: const ActiveAutomationsScreen(),
               state: state,
             ),
           ),
@@ -281,7 +289,10 @@ GoRouter createRouter(
             pageBuilder: (context, state) {
               final runId = state.pathParameters['runId']!;
               return _buildPageWithTransition(
-                child: AutomationDetailScreen(runId: runId),
+                child: AutomationDetailScreen(
+                  runId: runId,
+                  returnLocation: state.uri.queryParameters['from'],
+                ),
                 state: state,
               );
             },
@@ -406,7 +417,9 @@ GoRouter createRouter(
         name: 'notifications',
         parentNavigatorKey: navigatorKey,
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: const NotificationsScreen(),
+          child: NotificationListScreen(
+            returnLocation: state.uri.queryParameters['from'],
+          ),
           state: state,
         ),
       ),
@@ -417,7 +430,8 @@ GoRouter createRouter(
         name: 'payment-success',
         parentNavigatorKey: navigatorKey,
         pageBuilder: (context, state) {
-          final plan = state.uri.queryParameters['plan']?.toUpperCase() ?? 'PRO';
+          final plan =
+              state.uri.queryParameters['plan']?.toUpperCase() ?? 'PRO';
           return _buildPageWithTransition(
             child: SubscriptionSuccessScreen(planName: plan),
             state: state,
@@ -430,13 +444,19 @@ GoRouter createRouter(
         path: '/:page(terms|privacy|security|about|contact|cookies|refund)',
         name: 'static-page',
         pageBuilder: (context, state) => _buildPageWithTransition(
-          child: Builder(builder: (context) {
-            final page = state.pathParameters['page']!;
-            if (kIsWeb) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => renderPage('/$page.html'));
-            }
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          }),
+          child: Builder(
+            builder: (context) {
+              final page = state.pathParameters['page']!;
+              if (kIsWeb) {
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => renderPage('/$page.html'),
+                );
+              }
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            },
+          ),
           state: state,
         ),
       ),

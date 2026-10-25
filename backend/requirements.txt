@@ -12,6 +12,8 @@ python-jose[cryptography]
 openai
 beautifulsoup4
 stripe
+openpyxl>=3.1
+reportlab>=4.2
 google-generativeai
 cryptography==41.0.7
 anthropic

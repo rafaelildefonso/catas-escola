@@ -10,12 +10,8 @@ class FullScreenViewer extends StatelessWidget {
   final String? url;
   final String? tag;
 
-  const FullScreenViewer({
-    super.key,
-    this.attachment,
-    this.url,
-    this.tag,
-  }) : assert(attachment != null || url != null);
+  const FullScreenViewer({super.key, this.attachment, this.url, this.tag})
+    : assert(attachment != null || url != null);
 
   bool _isVideo(String name) {
     final ext = name.split('.').last.toLowerCase();
@@ -26,7 +22,8 @@ class FullScreenViewer extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     Widget content;
-    final String name = attachment?.name ?? url?.split('/').last.split('?').first ?? 'Arquivo';
+    final String name =
+        attachment?.name ?? url?.split('/').last.split('?').first ?? 'Arquivo';
 
     if (url != null) {
       final isLocal = !url!.startsWith('http');
@@ -38,16 +35,28 @@ class FullScreenViewer extends StatelessWidget {
               : CachedNetworkImage(
                   imageUrl: url!,
                   fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
+                  placeholder: (context, url) =>
+                      const Center(child: CircularProgressIndicator()),
                   errorWidget: (context, url, error) => Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.error_outline, size: 48, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54)),
+                        Icon(
+                          Icons.error_outline,
+                          size: 48,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.onSurface.withValues(alpha: 0.54),
+                        ),
                         const SizedBox(height: 16),
-                        Text(l10n.couldNotLoadImage, style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7))),
+                        Text(
+                          l10n.couldNotLoadImage,
+                          style: TextStyle(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -55,14 +64,10 @@ class FullScreenViewer extends StatelessWidget {
         ),
       );
     } else if (attachment!.isImage) {
-      if (kIsWeb && attachment!.bytes != null) {
-        content = InteractiveViewer(
-          child: Image.memory(attachment!.bytes!),
-        );
-      } else if (!kIsWeb) {
-        content = InteractiveViewer(
-          child: Image.file(File(attachment!.path)),
-        );
+      if (attachment!.bytes != null) {
+        content = InteractiveViewer(child: Image.memory(attachment!.bytes!));
+      } else if (!kIsWeb && attachment!.path.isNotEmpty) {
+        content = InteractiveViewer(child: Image.file(File(attachment!.path)));
       } else {
         content = Center(child: Text(l10n.imageUnavailable));
       }
@@ -72,11 +77,11 @@ class FullScreenViewer extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              _isVideo(name)
-                  ? Icons.videocam
-                  : Icons.insert_drive_file,
+              _isVideo(name) ? Icons.videocam : Icons.insert_drive_file,
               size: 100,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
             ),
             const SizedBox(height: 24),
             Text(
@@ -91,7 +96,12 @@ class FullScreenViewer extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               "Visualização não suportada nativamente.",
-              style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.54), fontSize: 14),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.54),
+                fontSize: 14,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -104,10 +114,15 @@ class FullScreenViewer extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
+        iconTheme: IconThemeData(
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
         title: Text(
           name,
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurface, fontSize: 16),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+            fontSize: 16,
+          ),
         ),
       ),
       body: content,

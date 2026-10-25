@@ -88,9 +88,23 @@ HTTP GET /api/v1/relatorios/automacoes?status=success&busca=...
 | `/api/v1/relatorios/automacoes` | GET | Relatorio de automacoes |
 | `/api/v1/relatorios/chat` | GET | Relatorio de conversas |
 | `/api/v1/relatorios/mensagens/busca` | GET | Busca de mensagens |
+| `/api/v1/relatorios/export` | GET | Exporta relatórios em CSV, XLSX ou PDF |
+| `/api/v1/billing/checkout` | POST | Cria uma sessão Stripe Checkout autenticada |
+| `/api/v1/billing/portal` | POST | Abre o portal de gerenciamento Stripe |
+| `/api/v1/billing/webhook` | POST | Sincroniza assinaturas e créditos via webhook assinado |
+| `/api/v1/attachments` | GET/POST | Lista anexos do usuário ou envia imagem/PDF/DOCX |
+| `/api/v1/attachments/<id>` | DELETE | Exclui um arquivo do usuário autenticado |
+| `/api/v1/attachments/<id>/preview` | GET | Retorna texto extraído de DOCX para pré-visualização |
 | `/health` | GET | Health check |
 
 **Total: 112 rotas**
+
+### Relatórios, cobrança e arquivos
+
+- A exportação aceita `tipo=automacoes|chat` e `format=csv|xlsx|pdf`. A exportação de automações aplica os filtros atuais e percorre todas as páginas até 10.000 registros.
+- Configure `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e os Price IDs em `BASIC_PLAN_ID`, `PRO_PLAN_ID` e `MAX_PLAN_ID`. Registre `/api/v1/billing/webhook` no Stripe para `checkout.session.completed`, `customer.subscription.*` e `invoice.*`.
+- Configure `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` para ativar uploads. Os arquivos são guardados em bucket privado, com links assinados temporários, limite de 10 MB e autorização por usuário. A migration `019_billing_and_attachments.sql` cria as colunas de billing e os metadados de anexos.
+- `FRONTEND_URL` controla o retorno do portal Stripe; `STRIPE_SUCCESS_URL` e `STRIPE_CANCEL_URL` podem sobrescrever os destinos do Checkout.
 
 ## Pre-requisitos
 
@@ -122,3 +136,26 @@ python -m worker.server
 ```bash
 python -m pytest tests/ -v
 ```
+# Automações agendadas
+
+Automações salvas aceitam gatilho `manual`, `schedule` com `interval_minutes`
+(1 a 10080), ou `cron` com cinco campos numéricos em UTC. Ative a automação
+para iniciar o agendamento. A próxima execução fica em `automations.next_run_at`.
+
+No Docker Compose, o serviço `scheduler` consulta as automações vencidas a cada
+15 segundos e cria um registro em `automation_runs` antes de enviar o plano ao
+worker. Para executar localmente, inicie o backend e o worker, depois rode
+`python -m services.automation.scheduler` em `backend/`. Em bancos MySQL já
+existentes, aplique `migrations/020_automation_scheduler.sql` antes de iniciar
+o scheduler. Configure o mesmo `WORKER_SHARED_SECRET` no servidor e no worker.
+
+`POST /api/v1/automations/{id}/schedule` recebe
+`{"trigger":{"type":"cron","cron_expression":"0 9 * * 1-5"}}` ou
+`{"trigger":{"type":"schedule","interval_minutes":60}}`. O endpoint
+`POST /api/v1/automations/{id}/run` dispara uma execução manual. Os dois
+exigem Bearer token e só acessam automações do usuário autenticado.
+
+O módulo `gmail.send_email` aceita `attachment_ids`, uma lista de até cinco
+IDs de arquivos do próprio usuário já enviados a `/api/v1/attachments`.
+Concluir ou falhar uma execução gera uma notificação em `/api/v1/notifications`
+e envia push FCM para os dispositivos ativos quando o Firebase está configurado.

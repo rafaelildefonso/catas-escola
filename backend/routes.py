@@ -4,8 +4,6 @@ from controllers.profile_controller import ProfileController
 from controllers.chat_session_controller import ChatSessionController
 from controllers.message_controller import MessageController
 from controllers.automation_controller import AutomationController
-from controllers.automation_run_controller import AutomationRunController
-from controllers.automation_step_log_controller import AutomationStepLogController
 from controllers.automation_generation_log_controller import AutomationGenerationLogController
 from controllers.execution_log_controller import ExecutionLogController
 from controllers.integration_controller import IntegrationController
@@ -15,10 +13,13 @@ from controllers.ai_suggestion_controller import AiSuggestionController
 from controllers.page_context_controller import PageContextController
 from controllers.browser_session_controller import BrowserSessionController
 from controllers.page_analysis_cache_controller import PageAnalysisCacheController
-from controllers.user_device_controller import UserDeviceController
 from controllers.user_webhook_config_controller import UserWebhookConfigController
 from controllers.ia_memory_controller import IaMemoryController
 from controllers.relatorio_controller import RelatorioController
+from controllers.billing_controller import BillingController
+from controllers.attachment_controller import AttachmentController
+from controllers.notification_controller import NotificationController
+from controllers.secure_automation_controller import SecureAutomationRunController, SecureStepLogController, SecureDeviceController
 from controllers.chat_controller import ChatController
 from controllers.chatbot_controller import ChatbotController
 from controllers.feedback_controller import FeedbackController
@@ -79,18 +80,21 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/automations", ["POST"], AutomationController.criar, "automation.criar")
     _rota(app, "/api/v1/automations/<id>", ["PUT"], AutomationController.atualizar, "automation.atualizar")
     _rota(app, "/api/v1/automations/<id>", ["DELETE"], AutomationController.deletar, "automation.deletar")
+    _rota(app, "/api/v1/automations/<id>/schedule", ["POST"], AutomationController.schedule, "automation.schedule")
+    _rota(app, "/api/v1/automations/<id>/run", ["POST"], AutomationController.executar, "automation.executar")
+    _rota(app, "/api/v1/automations/<id>/revise", ["POST"], AutomationController.revisar, "automation.revisar")
 
-    _rota(app, "/api/v1/automation-runs", ["GET"], AutomationRunController.listar, "automation_run.listar")
-    _rota(app, "/api/v1/automation-runs/<id>", ["GET"], AutomationRunController.buscar_por_id, "automation_run.buscar")
-    _rota(app, "/api/v1/automation-runs", ["POST"], AutomationRunController.criar, "automation_run.criar")
-    _rota(app, "/api/v1/automation-runs/<id>", ["PUT"], AutomationRunController.atualizar, "automation_run.atualizar")
-    _rota(app, "/api/v1/automation-runs/<id>", ["DELETE"], AutomationRunController.deletar, "automation_run.deletar")
+    _rota(app, "/api/v1/automation-runs", ["GET"], SecureAutomationRunController.listar, "automation_run.listar")
+    _rota(app, "/api/v1/automation-runs/<id>", ["GET"], SecureAutomationRunController.buscar_por_id, "automation_run.buscar")
+    _rota(app, "/api/v1/automation-runs", ["POST"], SecureAutomationRunController.metodo_nao_permitido, "automation_run.criar")
+    _rota(app, "/api/v1/automation-runs/<id>", ["PUT"], SecureAutomationRunController.metodo_nao_permitido, "automation_run.atualizar")
+    _rota(app, "/api/v1/automation-runs/<id>", ["DELETE"], SecureAutomationRunController.deletar, "automation_run.deletar")
 
-    _rota(app, "/api/v1/automation-step-logs", ["GET"], AutomationStepLogController.listar, "automation_step_log.listar")
-    _rota(app, "/api/v1/automation-step-logs/<id>", ["GET"], AutomationStepLogController.buscar_por_id, "automation_step_log.buscar")
-    _rota(app, "/api/v1/automation-step-logs", ["POST"], AutomationStepLogController.criar, "automation_step_log.criar")
-    _rota(app, "/api/v1/automation-step-logs/<id>", ["PUT"], AutomationStepLogController.atualizar, "automation_step_log.atualizar")
-    _rota(app, "/api/v1/automation-step-logs/<id>", ["DELETE"], AutomationStepLogController.deletar, "automation_step_log.deletar")
+    _rota(app, "/api/v1/automation-step-logs", ["GET"], SecureStepLogController.listar, "automation_step_log.listar")
+    _rota(app, "/api/v1/automation-step-logs/<id>", ["GET"], SecureStepLogController.buscar_por_id, "automation_step_log.buscar")
+    _rota(app, "/api/v1/automation-step-logs", ["POST"], SecureStepLogController.metodo_nao_permitido, "automation_step_log.criar")
+    _rota(app, "/api/v1/automation-step-logs/<id>", ["PUT"], SecureStepLogController.metodo_nao_permitido, "automation_step_log.atualizar")
+    _rota(app, "/api/v1/automation-step-logs/<id>", ["DELETE"], SecureStepLogController.metodo_nao_permitido, "automation_step_log.deletar")
 
     _rota(app, "/api/v1/automation-generation-logs", ["GET"], AutomationGenerationLogController.listar, "automation_generation_log.listar")
     _rota(app, "/api/v1/automation-generation-logs/<id>", ["GET"], AutomationGenerationLogController.buscar_por_id, "automation_generation_log.buscar")
@@ -145,11 +149,11 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/page-analysis-cache/<id>", ["PUT"], PageAnalysisCacheController.atualizar, "page_analysis_cache.atualizar")
     _rota(app, "/api/v1/page-analysis-cache/<id>", ["DELETE"], PageAnalysisCacheController.deletar, "page_analysis_cache.deletar")
 
-    _rota(app, "/api/v1/user-devices", ["GET"], UserDeviceController.listar, "user_device.listar")
-    _rota(app, "/api/v1/user-devices/<id>", ["GET"], UserDeviceController.buscar_por_id, "user_device.buscar")
-    _rota(app, "/api/v1/user-devices", ["POST"], UserDeviceController.criar, "user_device.criar")
-    _rota(app, "/api/v1/user-devices/<id>", ["PUT"], UserDeviceController.atualizar, "user_device.atualizar")
-    _rota(app, "/api/v1/user-devices/<id>", ["DELETE"], UserDeviceController.deletar, "user_device.deletar")
+    _rota(app, "/api/v1/user-devices", ["GET"], SecureDeviceController.listar, "user_device.listar")
+    _rota(app, "/api/v1/user-devices/<id>", ["GET"], SecureDeviceController.buscar_por_id, "user_device.buscar")
+    _rota(app, "/api/v1/user-devices", ["POST"], SecureDeviceController.criar, "user_device.criar")
+    _rota(app, "/api/v1/user-devices/<id>", ["PUT"], SecureDeviceController.atualizar, "user_device.atualizar")
+    _rota(app, "/api/v1/user-devices/<id>", ["DELETE"], SecureDeviceController.deletar, "user_device.deletar")
 
     _rota(app, "/api/v1/user-webhook-configs", ["GET"], UserWebhookConfigController.listar, "user_webhook_config.listar")
     _rota(app, "/api/v1/user-webhook-configs/<id>", ["GET"], UserWebhookConfigController.buscar_por_id, "user_webhook_config.buscar")
@@ -168,3 +172,18 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/relatorios/automacoes", ["GET"], RelatorioController.relatorio_automacoes, "relatorio.automacoes")
     _rota(app, "/api/v1/relatorios/chat", ["GET"], RelatorioController.relatorio_chat, "relatorio.chat")
     _rota(app, "/api/v1/relatorios/mensagens/busca", ["GET"], RelatorioController.buscar_mensagens, "relatorio.mensagens.busca")
+    _rota(app, "/api/v1/relatorios/export", ["GET"], RelatorioController.exportar, "relatorio.exportar")
+
+    # Billing: endpoints autenticados e webhook público validado pela assinatura Stripe
+    _rota(app, "/api/v1/billing/checkout", ["POST"], BillingController.checkout, "billing.checkout")
+    _rota(app, "/api/v1/billing/portal", ["POST"], BillingController.portal, "billing.portal")
+    _rota(app, "/api/v1/billing/status", ["GET"], BillingController.status, "billing.status")
+    _rota(app, "/api/v1/billing/webhook", ["POST"], BillingController.webhook, "billing.webhook")
+
+    # Upload e gerenciamento privado de anexos
+    _rota(app, "/api/v1/attachments", ["POST"], AttachmentController.upload, "attachment.upload")
+    _rota(app, "/api/v1/attachments", ["GET"], AttachmentController.listar, "attachment.listar")
+    _rota(app, "/api/v1/attachments/<attachment_id>", ["DELETE"], AttachmentController.excluir, "attachment.excluir")
+    _rota(app, "/api/v1/attachments/<attachment_id>/preview", ["GET"], AttachmentController.visualizar_docx, "attachment.preview")
+    _rota(app, "/api/v1/notifications", ["GET"], NotificationController.listar, "notification.listar")
+    _rota(app, "/api/v1/notifications/<notification_id>/read", ["PATCH"], NotificationController.marcar_lida, "notification.read")

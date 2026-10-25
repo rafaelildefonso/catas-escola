@@ -55,7 +55,7 @@ Agente de Automação Inteligente baseado em Linguagem Natural que **executa aç
 | Frontend | Flutter (Dart) - Android, iOS, Web, Desktop | 3.10.8+ |
 | Backend | Python 3.11+, Flask + SQLAlchemy | 3.0+ / 2.0+ |
 | Worker | Python 3.11+, FastAPI + uvicorn | latest |
-| AI | Groq (llama-3.1/3.3), Gemini 2.5, OpenAI | multi-provider |
+| AI | Groq (gpt-oss 20b/120b), Gemini 2.5, OpenAI | multi-provider |
 | Database | PostgreSQL (Supabase) ou SQLite (dev) | - |
 | Auth | Firebase Auth + JWT | - |
 | Pagamentos | Stripe (Basic/Pro/Max) | - |
@@ -66,49 +66,47 @@ Agente de Automação Inteligente baseado em Linguagem Natural que **executa aç
 
 ---
 
-## Funcionalidades Implementadas
+## Funcionalidades
 
-### Autenticação
-1. **Criar conta** — `POST /api/v1/auth/signup` → User + Profile
-2. **Login/logout** — `POST /api/v1/auth/login` → User
+## Parte 1
 
-### Chat
-3. **Enviar mensagem com resposta de IA** — `POST /api/v1/chat/message` → AIService + Message
-4. **Gerenciar sessões** — `GET/POST/PATCH/DELETE /api/v1/chat/sessions`
-5. **Histórico de mensagens** — `GET /api/v1/chat/history/<session_id>`
+### Conta e Perfil
+1. O sistema deve permitir ao usuário cadastrar uma conta utilizando e-mail e senha.
+2. O sistema deve permitir ao usuário realizar login e autenticação na plataforma.
+3. O sistema deve permitir ao usuário gerenciar e editar suas informações de perfil e dados pessoais.
 
-### Automações
-6. **Gerenciar automações** — `GET/POST/PUT/DELETE /api/v1/automations`
-7. **Disparar automação** — `POST /api/v1/automations/trigger`
+### Chat e IA
+4. O sistema deve permitir ao usuário enviar mensagens de texto através da interface principal.
+5. O sistema deve permitir ao usuário visualizar o histórico de conversas e chats antigos.
+6. O sistema deve permitir ao usuário interagir com um chatbot baseado em IA para tirar dúvidas ou executar comandos.
+
+### Arquivos
+7. O sistema deve permitir ao usuário anexar e enviar imagens dentro das conversas ou fluxos.
+8. O sistema deve permitir ao usuário anexar e gerenciar documentos nos formatos PDF ou DOCX.
 
 ### Integrações
-8. **Listar integrarões** — `GET/POST/PUT/DELETE /api/v1/integrations`
-9. **OAuth Google** — Gmail, Calendar, Sheets, Drive
+9. O sistema deve permitir ao usuário integrar serviços externos de terceiros à plataforma.
+10. O sistema deve permitir ao usuário conectar e sincronizar eventos com o Google Calendar.
 
-### Perfil
-10. **Atualizar perfil** — `PUT /api/v1/profiles/<id>`
+## Parte 2
 
-### Parte 2 — Recurs    os Avançados
+### Automações e Fluxos
+11. O sistema deve permitir ao usuário criar e gerenciar agendamentos de tarefas de forma automática.
+12. O sistema deve permitir ao usuário enviar e-mails automáticos baseados em gatilhos específicos.
+13. O sistema deve permitir ao usuário criar e configurar novas automações personalizadas.
+14. O sistema deve permitir ao usuário estruturar fluxos de trabalho (workflows) para automação de tarefas operacionais.
+15. O sistema deve permitir ao usuário visualizar uma página com a lista de todas as automações que estão ativas.
 
-### Relatórios
-11. **Dashboard** — `GET /api/v1/relatorios/dashboard`
-12. **Relatório automações** — `GET /api/v1/relatorios/automacoes`
-13. **Relatório chat** — `GET /api/v1/relatorios/chat`
-14. **Busca de mensagens** — `GET /api/v1/relatorios/mensagens/busca`
+### Relatórios e Notificações
+16. O sistema deve permitir ao usuário gerar e exportar relatórios automáticos sobre as atividades realizadas.
+17. O sistema deve permitir ao usuário receber notificações e alertas sobre o status de suas automações.
 
-#### Inteligência Artificial
-15. **Pipeline de IA multi-agente** — `POST /api/v1/chat/message` → IntentClassifier → EntityExtractor → PayloadBuilder
-16. **Componentes interativos no chat** — 22 componentes + `POST /api/v1/chat/message/continue`
+### Planos e Créditos
+18. O sistema deve permitir ao usuário escolher e gerenciar a assinatura de planos de uso.
+19. O sistema deve permitir ao usuário consultar a quantidade e o consumo de créditos disponíveis em sua conta.
 
-#### Motor de Automação
-17. **Execução assíncrona com 18 módulos** — `POST /execute` → AutomationRunner + `flow.condition`
-18. **Planos versionados com variáveis** — `AutomationPlan` + `{{step_id.campo}}`
-
-#### Produto
-19. **Créditos, quotas e planos** — 2000 tokens = 1 crédito + rollover mensal
-20. **Feedback e onboarding contextual** — feedback por mensagem + plano demo Calendar/Drive/Sheets
-
-> **Total: 20 funcionalidades implementadas** (14 na Parte 1 + 6 na Parte 2).
+### Preferências
+20. O sistema deve permitir ao usuário alterar o idioma da interface do aplicativo.
 
 ---
 
@@ -134,7 +132,7 @@ cp .env.example .env
 cd backend
 python -m venv venv
 venv\Scripts\activate
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python run.py
 ```
 

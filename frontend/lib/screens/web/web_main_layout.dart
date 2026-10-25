@@ -45,18 +45,22 @@ class _WebMainLayoutState extends State<WebMainLayout> {
     if (details.files.isEmpty) return;
 
     final file = details.files.first;
-    final isImage = ['jpg', 'jpeg', 'png', 'webp', 'gif'].any(
-      (ext) => file.name.toLowerCase().endsWith(ext),
-    );
+    final isImage = [
+      'jpg',
+      'jpeg',
+      'png',
+      'webp',
+      'gif',
+    ].any((ext) => file.name.toLowerCase().endsWith(ext));
 
     final chatProvider = context.read<ChatProvider>();
     chatProvider.addAttachments([
       PickedAttachment(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        path: file.path, 
+        path: file.path,
         name: file.name,
         isImage: isImage,
-      )
+      ),
     ]);
 
     final l10n = AppLocalizations.of(context)!;
@@ -85,7 +89,7 @@ class _WebMainLayoutState extends State<WebMainLayout> {
     // Sincroniza o NavigationProvider com a rota atual (Importante para F5/Link Direto)
     final String location = GoRouterState.of(context).matchedLocation;
     final page = getPageFromLocation(location);
-    
+
     // Título e página atuais baseados na rota real (evita flicker do Provider)
     final currentPage = page;
 
@@ -93,7 +97,7 @@ class _WebMainLayoutState extends State<WebMainLayout> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           nav.setPage(page);
-}
+        }
       });
     }
 
@@ -228,13 +232,36 @@ class _WebMainLayoutState extends State<WebMainLayout> {
 
           const Spacer(),
 
+          Semantics(
+            button: true,
+            label: 'Abrir notificações',
+            child: IconButton(
+              onPressed: () {
+                final currentLocation = GoRouterState.of(
+                  context,
+                ).uri.toString();
+                final notificationsLocation = Uri.parse(AppRoutes.notifications)
+                    .replace(queryParameters: {'from': currentLocation})
+                    .toString();
+                context.push(notificationsLocation);
+              },
+              tooltip: 'Notificações',
+              constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+              icon: const Icon(Icons.notifications_none_rounded),
+            ),
+          ),
+          const SizedBox(width: 8),
+
           // Model selector (only on chat page)
-          if (currentPage == AppPage.chat && auth.subscriptionTier != 'free' && !AppConfig.isDemoMode) ...[
+          if (currentPage == AppPage.chat &&
+              auth.subscriptionTier != 'free' &&
+              !AppConfig.isDemoMode) ...[
             Flexible(
               child: ModelSelectorWidget(
                 horizontalPadding: 16,
                 iconSpacing: 6,
-                onUpgradeRequired: (context, model) => _showUpgradeModal(context, model),
+                onUpgradeRequired: (context, model) =>
+                    _showUpgradeModal(context, model),
               ),
             ),
             const SizedBox(width: 16),
@@ -244,8 +271,6 @@ class _WebMainLayoutState extends State<WebMainLayout> {
       ),
     );
   }
-
-
 
   Widget _buildCreditsBadge(
     BuildContext context,
@@ -275,8 +300,6 @@ class _WebMainLayoutState extends State<WebMainLayout> {
       ),
     );
   }
-
-
 
   void _showUpgradeModal(BuildContext context, String model) {
     final requiredTier = getRequiredTier(model);
@@ -318,7 +341,7 @@ class _WebMainLayoutState extends State<WebMainLayout> {
                 ),
               ),
               const SizedBox(height: 20),
-              
+
               // Title
               Text(
                 "Desbloqueie o $model",
@@ -330,7 +353,7 @@ class _WebMainLayoutState extends State<WebMainLayout> {
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               // Description (Fixed redundancy)
               Text(
                 "Este modelo faz parte do plano ${requiredTier.toUpperCase()}. Faça o upgrade agora para acessar recursos avançados e maior velocidade.",
@@ -342,7 +365,7 @@ class _WebMainLayoutState extends State<WebMainLayout> {
                 ),
               ),
               const SizedBox(height: 32),
-              
+
               // Actions
               Row(
                 children: [
@@ -380,9 +403,7 @@ class _WebMainLayoutState extends State<WebMainLayout> {
                       ),
                       child: Text(
                         "Ver Planos",
-                        style: GoogleFonts.inter(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: GoogleFonts.inter(fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -394,6 +415,4 @@ class _WebMainLayoutState extends State<WebMainLayout> {
       ),
     );
   }
-
-
 }

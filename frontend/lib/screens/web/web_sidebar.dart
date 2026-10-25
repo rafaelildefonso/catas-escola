@@ -43,7 +43,7 @@ class _WebSidebarState extends State<WebSidebar> {
 
   Future<void> _openSession(String sessionId) async {
     await context.read<ChatProvider>().switchSession(sessionId);
-    if (!context.mounted) return;
+    if (!mounted) return;
     context.go(AppRoutes.chatSession(sessionId));
     context.read<NavigationProvider>().setPage(AppPage.chat);
   }
@@ -72,7 +72,12 @@ class _WebSidebarState extends State<WebSidebar> {
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+            padding: EdgeInsets.fromLTRB(
+              _isCollapsed ? 11 : 16,
+              20,
+              _isCollapsed ? 11 : 16,
+              16,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -102,66 +107,81 @@ class _WebSidebarState extends State<WebSidebar> {
                           ),
                         ],
                       ),
-                    SizedBox(
-                      width: 38,
-                      child: FilledButton(
-                        onPressed: () =>
-                            setState(() => _isCollapsed = !_isCollapsed),
-                        style: FilledButton.styleFrom(
-                          padding: EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 0,
+                    Tooltip(
+                      message: _isCollapsed ? 'Expandir menu' : 'Recolher menu',
+                      child: Semantics(
+                        button: true,
+                        label: _isCollapsed
+                            ? 'Expandir menu lateral'
+                            : 'Recolher menu lateral',
+                        child: SizedBox(
+                          width: 48,
+                          height: 48,
+                          child: FilledButton(
+                            onPressed: () =>
+                                setState(() => _isCollapsed = !_isCollapsed),
+                            style: FilledButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              alignment: Alignment.center,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              backgroundColor: theme.colorScheme.surface,
+                              foregroundColor: theme.colorScheme.onSurface,
+                            ),
+                            child: Icon(
+                              _isCollapsed ? Icons.menu : Icons.menu_open,
+                              size: 18,
+                            ),
                           ),
-                          alignment: Alignment.center,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          backgroundColor: theme.colorScheme.surface,
-                          foregroundColor: theme.colorScheme.onSurface,
-                        ),
-                        child: Icon(
-                          _isCollapsed ? Icons.menu : Icons.menu_open,
-                          size: 18,
                         ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: widget.onNewChat,
-                    style: FilledButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        vertical: 14,
-                        horizontal: _isCollapsed ? 0 : 16,
-                      ),
-                      alignment: _isCollapsed
-                          ? Alignment.center
-                          : Alignment.centerLeft,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const NeverScrollableScrollPhysics(),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.add, size: 18),
-                          if (!_isCollapsed) ...[
-                            const SizedBox(width: 8),
-                            const Text(
-                              "Novo Chat",
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ],
+                Tooltip(
+                  message: 'Novo chat',
+                  child: Semantics(
+                    button: true,
+                    label: 'Iniciar novo chat',
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: widget.onNewChat,
+                        style: FilledButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: _isCollapsed ? 0 : 16,
+                          ),
+                          alignment: _isCollapsed
+                              ? Alignment.center
+                              : Alignment.centerLeft,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const NeverScrollableScrollPhysics(),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.add, size: 18),
+                              if (!_isCollapsed) ...[
+                                const SizedBox(width: 8),
+                                const Text(
+                                  "Novo Chat",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -203,13 +223,6 @@ class _WebSidebarState extends State<WebSidebar> {
             label: "Planos",
             page: AppPage.pricing,
             isSelected: nav.currentPage == AppPage.pricing,
-          ),
-          _buildNavItem(
-            context,
-            icon: Icons.storage_outlined,
-            label: "Gerenciar Dados",
-            page: AppPage.crud,
-            isSelected: nav.currentPage == AppPage.crud,
           ),
           _buildNavItem(
             context,
@@ -378,11 +391,12 @@ class _WebSidebarState extends State<WebSidebar> {
                                 fontWeight: FontWeight.bold,
                                 color: auth.subscriptionTier == 'max'
                                     ? (theme.brightness == Brightness.dark
-                                        ? Colors.blue[400]!
-                                        : const Color(0xFF0D47A1))
+                                          ? Colors.blue[400]!
+                                          : const Color(0xFF0D47A1))
                                     : (auth.subscriptionTier == 'pro'
-                                        ? theme.colorScheme.primary
-                                        : theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.onSurfaceVariant
+                                                .withValues(alpha: 0.5)),
                               ),
                             ),
                           ],
@@ -413,41 +427,52 @@ class _WebSidebarState extends State<WebSidebar> {
   }) {
     final theme = Theme.of(context);
 
-    return InkWell(
-      onTap: () {
-        widget.onNavigate(page);
-        context.read<NavigationProvider>().setPage(page);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected
-              ? theme.colorScheme.primary.withValues(alpha: 0.1)
-              : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: Tooltip(
+        message: _isCollapsed ? label : '',
+        child: InkWell(
+          onTap: () {
+            widget.onNavigate(page);
+            context.read<NavigationProvider>().setPage(page);
+          },
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
               color: isSelected
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
+                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                  : null,
             ),
-            if (!_isCollapsed) ...[
-              const SizedBox(width: 12),
-              Text(
-                label,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
                   color: isSelected
                       ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface,
+                      : theme.colorScheme.onSurfaceVariant,
                 ),
-              ),
-            ],
-          ],
+                if (!_isCollapsed) ...[
+                  const SizedBox(width: 12),
+                  Text(
+                    label,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
+                      color: isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -488,66 +513,72 @@ class _WebSidebarState extends State<WebSidebar> {
             child: Row(
               mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [_isCollapsed ? 
-                  const SizedBox(width: 14) // Centering adjustment
-                :
-                  const SizedBox(width: 12),
-                  SizedBox(
-                    width: 164, // max width to avoid overflow
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
-                        fontSize: 13,
-                        color: isActive
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface,
-                        fontWeight: isActive
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+              children: [
+                _isCollapsed
+                    ? const SizedBox(width: 14) // Centering adjustment
+                    : const SizedBox(width: 12),
+                SizedBox(
+                  width: 164, // max width to avoid overflow
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: isActive
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface,
+                      fontWeight: isActive
+                          ? FontWeight.w600
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ),
+                if (pinned)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: Icon(
+                      Icons.push_pin,
+                      size: 14,
+                      color: theme.colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.5,
                       ),
                     ),
                   ),
-                  if (pinned)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: Icon(
-                        Icons.push_pin,
-                        size: 14,
-                        color: theme.colorScheme.onSurfaceVariant.withValues(
-                          alpha: 0.5,
+                if (!_isCollapsed && sessionId != null)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 4),
+                    child: OptionsButton(
+                      iconSize: 16,
+                      padding: const EdgeInsets.all(4),
+                      items: [
+                        CatasOptionItem(
+                          value: 'rename',
+                          icon: Icons.edit_outlined,
+                          label: l10n.actionRename,
                         ),
+                        CatasOptionItem(
+                          value: 'pin',
+                          icon: pinned
+                              ? Icons.push_pin
+                              : Icons.push_pin_outlined,
+                          label: pinned ? l10n.actionUnpin : l10n.actionPin,
+                        ),
+                        CatasOptionItem(
+                          value: 'delete',
+                          icon: Icons.delete_outline,
+                          label: l10n.actionDelete,
+                          isDestructive: true,
+                        ),
+                      ],
+                      onSelected: (value) => _handleSessionAction(
+                        context,
+                        value,
+                        sessionId,
+                        title,
                       ),
                     ),
-                  if (!_isCollapsed && sessionId != null)
-                    Padding(
-                      padding: const EdgeInsets.only(left: 4),
-                      child: OptionsButton(
-                        iconSize: 16,
-                        padding: const EdgeInsets.all(4),
-                        items: [
-                          CatasOptionItem(
-                            value: 'rename',
-                            icon: Icons.edit_outlined,
-                            label: l10n.actionRename,
-                          ),
-                          CatasOptionItem(
-                            value: 'pin',
-                            icon: pinned ? Icons.push_pin : Icons.push_pin_outlined,
-                            label: pinned ? l10n.actionUnpin : l10n.actionPin,
-                          ),
-                          CatasOptionItem(
-                            value: 'delete',
-                            icon: Icons.delete_outline,
-                            label: l10n.actionDelete,
-                            isDestructive: true,
-                          ),
-                        ],
-                        onSelected: (value) => _handleSessionAction(context, value, sessionId, title),
-                      ),
-                    ),
-
+                  ),
               ],
             ),
           ),
@@ -576,9 +607,7 @@ class _WebSidebarState extends State<WebSidebar> {
               controller: controller,
               autofocus: true,
               maxLength: 50,
-              decoration: InputDecoration(
-                hintText: l10n.renameChatHint,
-              ),
+              decoration: InputDecoration(hintText: l10n.renameChatHint),
             ),
             actions: [
               TextButton(
@@ -614,7 +643,9 @@ class _WebSidebarState extends State<WebSidebar> {
               ),
               TextButton(
                 onPressed: () => Navigator.of(dctx).pop(true),
-                style: TextButton.styleFrom(foregroundColor: deleteTheme.colorScheme.error),
+                style: TextButton.styleFrom(
+                  foregroundColor: deleteTheme.colorScheme.error,
+                ),
                 child: Text(l10n.actionDelete),
               ),
             ],

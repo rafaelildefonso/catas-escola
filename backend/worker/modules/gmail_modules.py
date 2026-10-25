@@ -2,6 +2,8 @@ import base64
 import logging
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
 
 import httpx
 
@@ -25,14 +27,69 @@ def _raise_if_forbidden(response: httpx.Response):
     response.raise_for_status()
 
 
-def _build_rfc2822_message(to: str, subject: str, body: str, cc: str = None) -> str:
-    msg = MIMEMultipart() if cc else MIMEText(body, "plain")
+def _build_rfc2822_message(
+    to: str, subject: str, body: str, cc: str = None, attachments=()
+) -> str:
+    if any(
+        not isinstance(value, str) or "\r" in value or "\n" in value
+        for value in (to, subject)
+    ):
+        raise ValueError("Cabeçalho de e-mail inválido")
+    if cc is not None and (not isinstance(cc, str) or "\r" in cc or "\n" in cc):
+        raise ValueError("Cc inválido")
+    if not isinstance(body, str):
+        raise ValueError("Corpo de e-mail inválido")
+    msg = MIMEMultipart() if cc or attachments else MIMEText(body, "plain", "utf-8")
     msg["To"] = to
     msg["Subject"] = subject
     if cc:
         msg["Cc"] = cc
-        msg.attach(MIMEText(body, "plain"))
+    if cc or attachments:
+        msg.attach(MIMEText(body, "plain", "utf-8"))
+    for filename, content_type, content in attachments:
+        main_type, sub_type = content_type.split("/", 1)
+        part = MIMEBase(main_type, sub_type)
+        part.set_payload(content)
+        encoders.encode_base64(part)
+        part.add_header("Content-Disposition", "attachment", filename=filename)
+        msg.attach(part)
     return base64.urlsafe_b64encode(msg.as_bytes()).decode()
+
+
+def _load_owned_attachments(user_id: str, attachment_ids) -> list:
+    if (
+        not isinstance(attachment_ids, list)
+        or len(attachment_ids) > 5
+        or any(not isinstance(item, str) for item in attachment_ids)
+        or len(set(attachment_ids)) != len(attachment_ids)
+    ):
+        raise ValueError("Informe até cinco IDs de anexos distintos")
+    if not attachment_ids:
+        return []
+    from worker.repositorio_dados import obter_app
+    from models.attachment import Attachment
+    from services.storage.attachment_service import AttachmentService
+
+    result = []
+    total = 0
+    with obter_app().app_context():
+        for attachment_id in attachment_ids:
+            attachment = Attachment.query.filter_by(
+                id=attachment_id, user_id=user_id
+            ).first()
+            if not attachment:
+                raise ValueError("Anexo não encontrado para este usuário")
+            total += attachment.size_bytes
+            if total > 15 * 1024 * 1024:
+                raise ValueError("Anexos excedem 15 MB")
+            result.append(
+                (
+                    attachment.original_name,
+                    attachment.content_type,
+                    AttachmentService._baixar_storage(attachment.storage_path),
+                )
+            )
+    return result
 
 
 @register_module("gmail.send_email")
@@ -43,12 +100,23 @@ async def gmail_send_email(params: dict) -> dict:
     subject = params.get("subject")
     body = params.get("body")
     cc = params.get("cc")
+    attachment_ids = params.get("attachment_ids", [])
 
-    if not all([user_id, to, subject, body]):
-        raise ValueError("Parâmetros obrigatórios: user_id, to, subject, body")
+    required = {
+        "a conta conectada": user_id,
+        "o destinatário": to,
+        "o assunto": subject,
+        "a mensagem": body,
+    }
+    missing = [label for label, value in required.items() if not value]
+    if missing:
+        raise ValueError(
+            "Não foi possível enviar o e-mail porque faltou " + ", ".join(missing) + "."
+        )
 
     token = get_google_access_token(user_id, "google_gmail")
-    raw_message = _build_rfc2822_message(to, subject, body, cc)
+    attachments = _load_owned_attachments(user_id, attachment_ids)
+    raw_message = _build_rfc2822_message(to, subject, body, cc, attachments)
 
     async with httpx.AsyncClient() as client:
         response = await client.post(
@@ -75,8 +143,19 @@ async def gmail_create_draft(params: dict) -> dict:
     subject = params.get("subject")
     body = params.get("body")
 
-    if not all([user_id, to, subject, body]):
-        raise ValueError("Parâmetros obrigatórios: user_id, to, subject, body")
+    required = {
+        "a conta conectada": user_id,
+        "o destinatário": to,
+        "o assunto": subject,
+        "a mensagem": body,
+    }
+    missing = [label for label, value in required.items() if not value]
+    if missing:
+        raise ValueError(
+            "Não foi possível criar o rascunho porque faltou "
+            + ", ".join(missing)
+            + "."
+        )
 
     token = get_google_access_token(user_id, "google_gmail")
     raw_message = _build_rfc2822_message(to, subject, body)
@@ -134,24 +213,31 @@ async def gmail_get_unread_emails(params: dict) -> dict:
             msg_resp.raise_for_status()
             msg_data = msg_resp.json()
 
-            headers = {h["name"]: h["value"] for h in msg_data.get("payload", {}).get("headers", [])}
+            headers = {
+                h["name"]: h["value"]
+                for h in msg_data.get("payload", {}).get("headers", [])
+            }
 
             payload = msg_data.get("payload", {})
             snippet = msg_data.get("snippet", "")
             body_data = ""
             if payload.get("body", {}).get("data"):
-                body_data = base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8", errors="ignore")
+                body_data = base64.urlsafe_b64decode(payload["body"]["data"]).decode(
+                    "utf-8", errors="ignore"
+                )
 
-            emails.append({
-                "id": msg_data["id"],
-                "thread_id": msg_data.get("threadId"),
-                "from": headers.get("From", ""),
-                "to": headers.get("To", ""),
-                "subject": headers.get("Subject", ""),
-                "date": headers.get("Date", ""),
-                "snippet": snippet,
-                "body_preview": body_data[:500],
-            })
+            emails.append(
+                {
+                    "id": msg_data["id"],
+                    "thread_id": msg_data.get("threadId"),
+                    "from": headers.get("From", ""),
+                    "to": headers.get("To", ""),
+                    "subject": headers.get("Subject", ""),
+                    "date": headers.get("Date", ""),
+                    "snippet": snippet,
+                    "body_preview": body_data[:500],
+                }
+            )
 
     logger.info(f"📬 {len(emails)} e-mails não lidos encontrados")
     return {"emails": emails}

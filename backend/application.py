@@ -18,19 +18,40 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+def resolver_database_url() -> str:
+    """Resolve a URI do banco de dados.
+
+    Prioridade:
+    1. DATABASE_URL do ambiente (MySQL/PostgreSQL em producao).
+    2. SQLite local (backend/instance/catas_dev.db) quando em desenvolvimento.
+    """
+    if settings.DATABASE_URL:
+        return settings.DATABASE_URL
+
+    if os.getenv("ENVIRONMENT", "development") != "development":
+        raise RuntimeError(
+            "DATABASE_URL nao configurada. Defina a connection string do banco "
+            "(ex.: mysql+pymysql://user:senha@host:3306/catas_db) fora do ambiente de desenvolvimento."
+        )
+
+    instance_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance")
+    os.makedirs(instance_dir, exist_ok=True)
+    caminho_sqlite = os.path.join(instance_dir, "catas_dev.db")
+    logger.info("DATABASE_URL vazia: usando SQLite local em %s", caminho_sqlite)
+    return "sqlite:///" + caminho_sqlite.replace("\\", "/")
+
+
 def create_app():
     app = Flask(__name__)
 
     app.config.from_prefixed_env()
-    db_url = settings.DATABASE_URL or "mysql+pymysql://root:root@localhost:3306/catas_db"
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+    app.config["SQLALCHEMY_DATABASE_URI"] = resolver_database_url()
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
         "pool_pre_ping": True,
         "pool_recycle": 280,
     }
 
-    import os
     is_dev = os.getenv("ENVIRONMENT", "development") == "development"
     if is_dev:
         CORS(app, supports_credentials=True, allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])

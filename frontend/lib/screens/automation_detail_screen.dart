@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/automations_provider.dart';
@@ -7,6 +8,7 @@ import '../core/responsive.dart';
 import '../components/brand_logo.dart';
 import '../components/options_button.dart';
 import '../core/app_config.dart';
+import '../core/router.dart';
 import '../main.dart' show navigatorKey;
 import '../providers/demo_automations_provider.dart';
 import '../providers/demo_autoplay_controller.dart';
@@ -14,8 +16,13 @@ import '../providers/chat_provider.dart';
 
 class AutomationDetailScreen extends StatefulWidget {
   final String runId;
+  final String? returnLocation;
 
-  const AutomationDetailScreen({super.key, required this.runId});
+  const AutomationDetailScreen({
+    super.key,
+    required this.runId,
+    this.returnLocation,
+  });
 
   @override
   State<AutomationDetailScreen> createState() => _AutomationDetailScreenState();
@@ -25,6 +32,22 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
   AutomationStepLog? _selectedStep;
   Timer? _restartTimer;
   bool _restartTriggered = false;
+
+  String get _safeReturnLocation {
+    final location = widget.returnLocation;
+    if (location != null && location.startsWith('/app')) return location;
+    return AppRoutes.automations;
+  }
+
+  void _goBack() {
+    if (widget.returnLocation != null) {
+      context.go(_safeReturnLocation);
+    } else if (context.canPop()) {
+      context.pop();
+    } else {
+      context.go(AppRoutes.automations);
+    }
+  }
 
   @override
   void initState() {
@@ -65,7 +88,9 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
       if (ctx != null && ctx.mounted) {
         ctx.read<ChatProvider>().clearChat();
         Future.delayed(const Duration(milliseconds: 300), () {
-          ctx.read<DemoAutoplayController>().startOnboardingDemo();
+          if (ctx.mounted) {
+            ctx.read<DemoAutoplayController>().startOnboardingDemo();
+          }
         });
       }
     });
@@ -82,39 +107,48 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
       orElse: () => null,
     );
 
-    final isOnboardingDemo = AppConfig.isDemoMode &&
-        run != null &&
-        run.runType == 'onboarding';
+    final isOnboardingDemo =
+        AppConfig.isDemoMode && run != null && run.runType == 'onboarding';
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        title: Text(
-          run?.inputSummary ?? "Detalhes da Automação",
-          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-        ),
-        leading: isOnboardingDemo
-            ? IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  _restartTimer?.cancel();
-                  Navigator.of(context).pop();
-                },
-              )
-            : null,
-        actions: isOnboardingDemo
-            ? []
-            : [
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: _loadData,
-                  tooltip: "Recarregar",
+    return PopScope(
+      canPop: context.canPop(),
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _goBack();
+      },
+      child: Scaffold(
+        backgroundColor: colorScheme.surface,
+        appBar: AppBar(
+          title: Text(
+            run?.inputSummary ?? "Detalhes da Automação",
+            style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+          ),
+          leading: isOnboardingDemo
+              ? IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    _restartTimer?.cancel();
+                    Navigator.of(context).pop();
+                  },
+                )
+              : IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  tooltip: 'Voltar para a tela anterior',
+                  onPressed: _goBack,
                 ),
-              ],
+          actions: isOnboardingDemo
+              ? []
+              : [
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: _loadData,
+                    tooltip: "Recarregar",
+                  ),
+                ],
+        ),
+        body: isOnboardingDemo
+            ? _buildOnboardingCanvas(provider, colorScheme, run)
+            : _buildStandard(provider, colorScheme),
       ),
-      body: isOnboardingDemo
-          ? _buildOnboardingCanvas(provider, colorScheme, run)
-          : _buildStandard(provider, colorScheme),
     );
   }
 
@@ -136,7 +170,9 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
 
   Widget _buildFlowCanvas(List<AutomationStepLog> steps) {
     if (steps.isEmpty) {
-      return const Center(child: Text("Nenhum passo registrado nesta execução."));
+      return const Center(
+        child: Text("Nenhum passo registrado nesta execução."),
+      );
     }
 
     return InteractiveViewer(
@@ -216,7 +252,10 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
                 Text(
                   subtitle,
@@ -248,11 +287,20 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
             color: Theme.of(context).colorScheme.secondaryContainer,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? Theme.of(context).colorScheme.primary : color.withValues(alpha: 0.3),
+              color: isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : color.withValues(alpha: 0.3),
               width: isSelected ? 2 : 1,
             ),
             boxShadow: isSelected
-                ? [BoxShadow(color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2), blurRadius: 8)]
+                ? [
+                    BoxShadow(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.2),
+                      blurRadius: 8,
+                    ),
+                  ]
                 : [],
           ),
           child: Row(
@@ -267,7 +315,10 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
                       step.stepName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 14),
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
                     ),
                     Text(
                       _getStatusLabel(step.status),
@@ -328,35 +379,55 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
         shape: BoxShape.circle,
       ),
       child: logoId != null
-          ? Logo(logoId: logoId, size: 20, onErrorIcon: const Icon(Icons.auto_awesome, size: 20))
-          : Icon(_getStepIcon(step.status), color: _getStepColor(step.status), size: 20),
+          ? Logo(
+              logoId: logoId,
+              size: 20,
+              onErrorIcon: const Icon(Icons.auto_awesome, size: 20),
+            )
+          : Icon(
+              _getStepIcon(step.status),
+              color: _getStepColor(step.status),
+              size: 20,
+            ),
     );
   }
 
   Color _getStepColor(String status) {
     switch (status) {
-      case 'success': return Colors.green;
-      case 'error': return Colors.red;
-      case 'running': return Colors.blue;
-      default: return Colors.grey;
+      case 'success':
+        return Colors.green;
+      case 'error':
+        return Colors.red;
+      case 'running':
+        return Colors.blue;
+      default:
+        return Colors.grey;
     }
   }
 
   IconData _getStepIcon(String status) {
     switch (status) {
-      case 'success': return Icons.check_circle_outline;
-      case 'error': return Icons.error_outline;
-      case 'running': return Icons.sync;
-      default: return Icons.schedule;
+      case 'success':
+        return Icons.check_circle_outline;
+      case 'error':
+        return Icons.error_outline;
+      case 'running':
+        return Icons.sync;
+      default:
+        return Icons.schedule;
     }
   }
 
   String _getStatusLabel(String status) {
     switch (status) {
-      case 'success': return "Concluído";
-      case 'error': return "Erro";
-      case 'running': return "Processando";
-      default: return "Aguardando";
+      case 'success':
+        return "Concluído";
+      case 'error':
+        return "Erro";
+      case 'running':
+        return "Processando";
+      default:
+        return "Aguardando";
     }
   }
 
@@ -365,7 +436,9 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
       width: 350,
       decoration: BoxDecoration(
         color: colorScheme.surface,
-        border: Border(left: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.1))),
+        border: Border(
+          left: BorderSide(color: colorScheme.onSurface.withValues(alpha: 0.1)),
+        ),
       ),
       child: _buildStepDetails(step),
     );
@@ -376,9 +449,7 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(step.stepName),
-        content: SingleChildScrollView(
-          child: _buildStepDetails(step),
-        ),
+        content: SingleChildScrollView(child: _buildStepDetails(step)),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -404,7 +475,10 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
               Expanded(
                 child: Text(
                   step.stepName,
-                  style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
               IconButton(
@@ -435,7 +509,10 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
           if (step.errorMessage != null)
             _buildDetailSection("Erro", step.errorMessage!, isError: true),
           const SizedBox(height: 16),
-          _buildDetailSection("Duração", step.durationMs != null ? "${step.durationMs}ms" : "—"),
+          _buildDetailSection(
+            "Duração",
+            step.durationMs != null ? "${step.durationMs}ms" : "—",
+          ),
           const SizedBox(height: 24),
           Text(
             "Metadados",
@@ -459,13 +536,21 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
     );
   }
 
-  Widget _buildDetailSection(String label, String value, {bool isError = false}) {
+  Widget _buildDetailSection(
+    String label,
+    String value, {
+    bool isError = false,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: Colors.grey,
+            fontWeight: FontWeight.w500,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
@@ -488,7 +573,8 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
     AutomationRun run,
   ) {
     final steps = provider.stepLogs;
-    final allCompleted = steps.isNotEmpty && steps.every((s) => s.status == 'success');
+    final allCompleted =
+        steps.isNotEmpty && steps.every((s) => s.status == 'success');
 
     if (allCompleted && !_restartTriggered) {
       _restartTriggered = true;
@@ -546,7 +632,11 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.check_circle, color: Colors.white, size: 18),
+                      const Icon(
+                        Icons.check_circle,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                       const SizedBox(width: 6),
                       Text(
                         '3 etapas concluídas em ${steps.fold<int>(0, (sum, s) => sum + (s.durationMs ?? 0))}ms',
@@ -669,7 +759,12 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
     );
   }
 
-  Widget _buildLegendRow(IconData icon, Color color, String label, ColorScheme colorScheme) {
+  Widget _buildLegendRow(
+    IconData icon,
+    Color color,
+    String label,
+    ColorScheme colorScheme,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -688,7 +783,10 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
     );
   }
 
-  Widget _buildOnboardingStepCard(AutomationStepLog step, ColorScheme colorScheme) {
+  Widget _buildOnboardingStepCard(
+    AutomationStepLog step,
+    ColorScheme colorScheme,
+  ) {
     final isRunning = step.status == 'running';
     final isSuccess = step.status == 'success';
     final isPending = step.status == 'pending';
@@ -739,10 +837,7 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: borderColor,
-            width: isRunning ? 2 : 1,
-          ),
+          border: Border.all(color: borderColor, width: isRunning ? 2 : 1),
           boxShadow: isRunning
               ? [
                   BoxShadow(
@@ -762,109 +857,111 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                  color: isRunning
-                      ? Colors.blue.withValues(alpha: 0.1)
-                      : isSuccess
-                          ? Colors.green.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.05),
-                  shape: BoxShape.circle,
-                ),
-                child: logoId != null
-                    ? Logo(logoId: logoId, size: 24, onErrorIcon: const Icon(Icons.auto_awesome, size: 24))
-                    : Icon(Icons.auto_awesome, size: 24, color: borderColor),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      step.stepName,
-                      style: GoogleFonts.inter(
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: isPending
-                            ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
-                            : colorScheme.onSurface,
-                      ),
-                    ),
-                    if (subtitle.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: Text(
-                          subtitle,
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (isRunning)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                ),
-              if (isSuccess)
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withValues(alpha: 0.1),
+                    color: isRunning
+                        ? Colors.blue.withValues(alpha: 0.1)
+                        : isSuccess
+                        ? Colors.green.withValues(alpha: 0.1)
+                        : Colors.grey.withValues(alpha: 0.05),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.check_circle_rounded,
-                    size: 18,
-                    color: Colors.green,
+                  child: logoId != null
+                      ? Logo(
+                          logoId: logoId,
+                          size: 24,
+                          onErrorIcon: const Icon(Icons.auto_awesome, size: 24),
+                        )
+                      : Icon(Icons.auto_awesome, size: 24, color: borderColor),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        step.stepName,
+                        style: GoogleFonts.inter(
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                          color: isPending
+                              ? colorScheme.onSurfaceVariant.withValues(
+                                  alpha: 0.6,
+                                )
+                              : colorScheme.onSurface,
+                        ),
+                      ),
+                      if (subtitle.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            subtitle,
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
-              if (isPending)
-                const Icon(
-                  Icons.schedule,
-                  size: 18,
-                  color: Colors.grey,
+                if (isRunning)
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  ),
+                if (isSuccess)
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check_circle_rounded,
+                      size: 18,
+                      color: Colors.green,
+                    ),
+                  ),
+                if (isPending)
+                  const Icon(Icons.schedule, size: 18, color: Colors.grey),
+              ],
+            ),
+            if (desc.isNotEmpty && (isRunning || isSuccess)) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.08),
+                  ),
                 ),
+                child: Text(
+                  desc,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+              ),
             ],
-          ),
-          if (desc.isNotEmpty && (isRunning || isSuccess)) ...[
-            const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: colorScheme.outline.withValues(alpha: 0.08),
-                ),
-              ),
-              child: Text(
-                desc,
+            if (isSuccess && step.durationMs != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Concluído em ${(step.durationMs ?? 0) ~/ 10}ms',
                 style: GoogleFonts.inter(
-                  fontSize: 13,
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.4,
+                  fontSize: 11,
+                  color: Colors.green,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-            ),
+            ],
           ],
-          if (isSuccess && step.durationMs != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              'Concluído em ${(step.durationMs ?? 0) ~/ 10}ms',
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                color: Colors.green,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
-    ),
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/relatorio_provider.dart';
+import '../../components/report_export_menu.dart';
 
 /// Tela de Relatórios — consome os endpoints de relatório/busca da API
 /// (funcionalidades além do CRUD básico implementadas via procedures).
@@ -121,6 +122,19 @@ class _RelatorioScreenState extends State<RelatorioScreen>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (userId != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: ReportExportMenu(
+                userId: userId,
+                tipo: 'automacoes',
+                filtros: {
+                  if (_statusFiltro != null) 'status': _statusFiltro!,
+                  if (_buscaFiltro != null) 'busca': _buscaFiltro!,
+                  'ordem': _ordem,
+                },
+              ),
+            ),
           _buildFiltrosRuns(rel, userId),
           const SizedBox(height: 12),
           if (rel.carregandoRuns)
@@ -202,7 +216,10 @@ class _RelatorioScreenState extends State<RelatorioScreen>
                 _reloadRuns(rel, userId);
               },
               itemBuilder: (context) => const [
-                PopupMenuItem(value: 'created_at', child: Text('Mais recentes')),
+                PopupMenuItem(
+                  value: 'created_at',
+                  child: Text('Mais recentes'),
+                ),
                 PopupMenuItem(value: 'status', child: Text('Por status')),
                 PopupMenuItem(value: 'started_at', child: Text('Por início')),
                 PopupMenuItem(value: 'run_type', child: Text('Por tipo')),
@@ -321,6 +338,7 @@ class _AbaConversas extends StatelessWidget {
     final rel = context.watch<RelatorioProvider>();
     final theme = Theme.of(context);
     final chat = rel.chat;
+    final userId = context.read<AuthProvider>().userId;
 
     return RefreshIndicator(
       onRefresh: () async {
@@ -332,6 +350,11 @@ class _AbaConversas extends StatelessWidget {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          if (userId != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: ReportExportMenu(userId: userId, tipo: 'chat'),
+            ),
           if (rel.carregandoChat)
             const Center(
               child: Padding(
@@ -437,7 +460,11 @@ class _AbaConversas extends StatelessWidget {
             children: [
               _papelItem('Usuário', '${porRole['user'] ?? 0}', Colors.blue),
               const SizedBox(width: 16),
-              _papelItem('Assistente', '${porRole['assistant'] ?? 0}', Colors.green),
+              _papelItem(
+                'Assistente',
+                '${porRole['assistant'] ?? 0}',
+                Colors.green,
+              ),
               const SizedBox(width: 16),
               _papelItem('Sistema', '${porRole['system'] ?? 0}', Colors.orange),
             ],
@@ -453,11 +480,17 @@ class _AbaConversas extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: cor, borderRadius: BorderRadius.circular(3)),
+          decoration: BoxDecoration(
+            color: cor,
+            borderRadius: BorderRadius.circular(3),
+          ),
         ),
         const SizedBox(width: 4),
         Text(label, style: const TextStyle(fontSize: 12)),
-        Text(' $valor', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+        Text(
+          ' $valor',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
@@ -471,7 +504,10 @@ class _AbaConversas extends StatelessWidget {
     }
     final total = porDia.fold<int>(
       0,
-      (acc, d) => acc + ((d['usuarios'] ?? 0) as num).toInt() + ((d['assistentes'] ?? 0) as num).toInt(),
+      (acc, d) =>
+          acc +
+          ((d['usuarios'] ?? 0) as num).toInt() +
+          ((d['assistentes'] ?? 0) as num).toInt(),
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,9 +534,7 @@ class _AbaConversas extends StatelessWidget {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: _barra(theme, usuarios, total, Colors.blue),
-                ),
+                Expanded(child: _barra(theme, usuarios, total, Colors.blue)),
                 const SizedBox(width: 4),
                 Expanded(
                   child: _barra(theme, assistentes, total, Colors.green),
@@ -556,7 +590,9 @@ class _MetricaCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: [
@@ -568,11 +604,18 @@ class _MetricaCard extends StatelessWidget {
               children: [
                 Text(
                   valor,
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: theme.colorScheme.onSurface),
+                  style: GoogleFonts.inter(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
                 Text(
                   titulo,
-                  style: GoogleFonts.inter(fontSize: 12, color: theme.colorScheme.onSurfaceVariant),
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -591,7 +634,8 @@ class _RunFiltradoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final nome = run['automation_name'] as String? ??
+    final nome =
+        run['automation_name'] as String? ??
         run['input_summary'] as String? ??
         'Automação sem título';
     final subtitulo = run['input_summary'] as String? ?? '';
@@ -604,20 +648,49 @@ class _RunFiltradoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         children: [
-          Icon(Icons.route_outlined, color: theme.colorScheme.primary, size: 20),
+          Icon(
+            Icons.route_outlined,
+            color: theme.colorScheme.primary,
+            size: 20,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(nome.isEmpty ? 'Automação sem título' : nome, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 14, color: theme.colorScheme.onSurface)),
+                Text(
+                  nome.isEmpty ? 'Automação sem título' : nome,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
                 if (subtitulo.isNotEmpty && subtitulo != nome)
-                  Text(subtitulo, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: theme.colorScheme.onSurfaceVariant)),
-                Text(_formatarData(createdAt), style: TextStyle(fontSize: 11, color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    subtitulo,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                Text(
+                  _formatarData(createdAt),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),
@@ -642,8 +715,14 @@ class _RunFiltradoCard extends StatelessWidget {
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: cor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(20)),
-      child: Text(status, style: TextStyle(fontSize: 11, color: cor, fontWeight: FontWeight.w600)),
+      decoration: BoxDecoration(
+        color: cor.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        status,
+        style: TextStyle(fontSize: 11, color: cor, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
@@ -674,20 +753,41 @@ class _MensagemResultado extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.colorScheme.onSurface.withValues(alpha: 0.05)),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(role == 'user' ? Icons.person_outline : Icons.smart_toy_outlined, size: 18, color: theme.colorScheme.primary),
+          Icon(
+            role == 'user' ? Icons.person_outline : Icons.smart_toy_outlined,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(titulo, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface)),
+                Text(
+                  titulo,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(conteudo, maxLines: 3, overflow: TextOverflow.ellipsis, style: GoogleFonts.inter(fontSize: 13, color: theme.colorScheme.onSurfaceVariant)),
+                Text(
+                  conteudo,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    fontSize: 13,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
           ),

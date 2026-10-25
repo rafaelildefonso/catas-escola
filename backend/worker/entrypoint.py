@@ -43,7 +43,7 @@ def main():
     from worker.server import worker_app
 
     logger.info(f"Worker CATAS inicializado. Servidor HTTP na porta {WORKER_PORT}.")
-    worker_app.run(host="0.0.0.0", port=WORKER_PORT, debug=False)
+    worker_app.run(host="127.0.0.1", port=WORKER_PORT, debug=False)
 
 
 if __name__ == "__main__":

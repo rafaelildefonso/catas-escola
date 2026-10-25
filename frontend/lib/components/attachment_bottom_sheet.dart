@@ -10,12 +10,14 @@ class AttachmentBottomSheet extends StatelessWidget {
   final VoidCallback onCameraTap;
   final VoidCallback onGalleryTap;
   final VoidCallback onFileTap;
+  final VoidCallback onManageTap;
 
   const AttachmentBottomSheet({
     super.key,
     required this.onCameraTap,
     required this.onGalleryTap,
     required this.onFileTap,
+    required this.onManageTap,
   });
 
   /// Mostra o BottomSheet
@@ -24,6 +26,7 @@ class AttachmentBottomSheet extends StatelessWidget {
     required VoidCallback onCameraTap,
     required VoidCallback onGalleryTap,
     required VoidCallback onFileTap,
+    required VoidCallback onManageTap,
   }) {
     return showModalBottomSheet<void>(
       context: context,
@@ -38,6 +41,7 @@ class AttachmentBottomSheet extends StatelessWidget {
         onCameraTap: onCameraTap,
         onGalleryTap: onGalleryTap,
         onFileTap: onFileTap,
+        onManageTap: onManageTap,
       ),
     );
   }
@@ -128,6 +132,15 @@ class AttachmentBottomSheet extends StatelessWidget {
                 ),
                 // Busca na Web
                 _ToolListTile(
+                  icon: Icons.folder_open_outlined,
+                  title: 'Meus arquivos',
+                  subtitle: 'Visualizar e gerenciar documentos enviados',
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    onManageTap();
+                  },
+                ),
+                _ToolListTile(
                   icon: Icons.travel_explore_outlined,
                   title: 'Busca na Web',
                   subtitle: 'Pesquisar informações online',
@@ -207,11 +220,7 @@ class _QuickActionCard extends StatelessWidget {
                     color: colorScheme.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    icon,
-                    size: 24,
-                    color: colorScheme.primary,
-                  ),
+                  child: Icon(icon, size: 24, color: colorScheme.primary),
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -258,18 +267,11 @@ class _ToolListTile extends StatelessWidget {
           color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        child: Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
       ),
       title: Text(
         title,
-        style: GoogleFonts.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-        ),
+        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500),
       ),
       subtitle: Text(
         subtitle,
@@ -278,15 +280,15 @@ class _ToolListTile extends StatelessWidget {
           color: colorScheme.onSurfaceVariant,
         ),
       ),
-      trailing: trailing ?? Icon(
-        Icons.chevron_right_rounded,
-        size: 20,
-        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-      ),
+      trailing:
+          trailing ??
+          Icon(
+            Icons.chevron_right_rounded,
+            size: 20,
+            color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+          ),
       onTap: onTap,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }

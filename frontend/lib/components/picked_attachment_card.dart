@@ -21,14 +21,14 @@ class PickedAttachmentCard extends StatelessWidget {
 
   Widget _buildPreview(BuildContext context) {
     if (attachment.isImage) {
-      if (kIsWeb && attachment.bytes != null) {
+      if (attachment.bytes != null) {
         return Image.memory(
           attachment.bytes!,
           width: 50,
           height: 50,
           fit: BoxFit.cover,
         );
-      } else if (!kIsWeb) {
+      } else if (!kIsWeb && attachment.path.isNotEmpty) {
         return Image.file(
           File(attachment.path),
           width: 50,
@@ -37,7 +37,7 @@ class PickedAttachmentCard extends StatelessWidget {
         );
       }
     }
-    
+
     // Fallback para icones
     return Container(
       width: 50,

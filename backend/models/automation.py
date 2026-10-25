@@ -21,6 +21,7 @@ class Automation(db.Model):
     version = db.Column(db.Integer, default=1)
     external_ref = db.Column(db.JSON, default=dict)
     expires_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    next_run_at = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
     created_at = db.Column(db.DateTime(timezone=True), default=utcnow)
     updated_at = db.Column(db.DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 

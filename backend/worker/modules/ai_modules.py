@@ -7,8 +7,8 @@ from worker.modules.registry import register_module
 logger = logging.getLogger(__name__)
 
 # Configuração padrão caso AGENT_WORKER_TRANSFORM não esteja definida no .env
-# Usa Groq/llama gratuito como fallback econômico
-_DEFAULT_AGENT_CONFIG = "groq|llama-3.1-8b-instant|https://api.groq.com/openai/v1/chat/completions|GROQ_API_KEY"
+# Usa Groq/gpt-oss gratuito como fallback econômico
+_DEFAULT_AGENT_CONFIG = "groq|openai/gpt-oss-20b|https://api.groq.com/openai/v1/chat/completions|GROQ_API_KEY"
 
 
 def _get_provider():

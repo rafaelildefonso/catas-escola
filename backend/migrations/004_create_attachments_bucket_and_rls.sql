@@ -1,10 +1,10 @@
 -- =========================================================
 -- Migration 004: Anexos (MySQL)
 -- =========================================================
--- O bucket Supabase Storage ("attachments") não existe no MySQL.
--- No MySQL o controle de anexos é feito via tabela de metadados +
--- armazenamento de arquivos na aplicação (S3/disco local).
--- O backend valida o dono do arquivo (user_id) na camada de serviço.
+-- Esta tabela guarda metadados dos anexos associados ao perfil.
+-- Os arquivos ficam no bucket privado "attachments" do Supabase Storage,
+-- criado pelo backend na primeira utilização com SUPABASE_SERVICE_ROLE_KEY.
+-- O backend valida o dono do arquivo (user_id) e gera links temporários.
 
 CREATE TABLE IF NOT EXISTS attachments (
     id            VARCHAR(36) NOT NULL DEFAULT (UUID()),

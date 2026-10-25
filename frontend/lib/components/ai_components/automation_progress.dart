@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../core/automation_labels.dart';
 import '../../providers/chat_provider.dart';
 import '../brand_logo.dart';
 
@@ -47,7 +48,9 @@ class AutomationProgressComponent extends StatelessWidget {
             border: Border.all(
               color: isCompleted
                   ? Colors.green.withValues(alpha: 0.3)
-                  : Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+                  : Theme.of(
+                      context,
+                    ).colorScheme.outline.withValues(alpha: 0.1),
             ),
             boxShadow: [
               BoxShadow(
@@ -68,7 +71,9 @@ class AutomationProgressComponent extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Column(
-                    children: steps.map((step) => _buildStepItem(context, step, phase)).toList(),
+                    children: steps
+                        .map((step) => _buildStepItem(context, step, phase))
+                        .toList(),
                   ),
                 ),
               if (isCompleted && automationId != null) ...[
@@ -78,11 +83,15 @@ class AutomationProgressComponent extends StatelessWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: TextButton.icon(
-                      onPressed: () => context.push('/app/automations/$automationId'),
+                      onPressed: () =>
+                          context.push('/app/automations/$automationId'),
                       icon: const Icon(Icons.visibility, size: 18),
                       label: Text(
                         'Ver Detalhes',
-                        style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13),
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
@@ -107,7 +116,8 @@ class AutomationProgressComponent extends StatelessWidget {
         title = 'Preparando automação';
         subtitle = 'Identificando integrações...';
         icon = SizedBox(
-          width: 18, height: 18,
+          width: 18,
+          height: 18,
           child: CircularProgressIndicator(
             strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
@@ -118,7 +128,8 @@ class AutomationProgressComponent extends StatelessWidget {
         title = 'Mapeando ações';
         subtitle = 'Definindo o que cada integração fará';
         icon = SizedBox(
-          width: 18, height: 18,
+          width: 18,
+          height: 18,
           child: CircularProgressIndicator(
             strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
@@ -129,7 +140,8 @@ class AutomationProgressComponent extends StatelessWidget {
         title = 'Verificando integrações';
         subtitle = 'Testando conexão com cada serviço';
         icon = SizedBox(
-          width: 18, height: 18,
+          width: 18,
+          height: 18,
           child: CircularProgressIndicator(
             strokeWidth: 2,
             valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
@@ -140,14 +152,19 @@ class AutomationProgressComponent extends StatelessWidget {
         title = 'Testando automação';
         subtitle = 'Ativando gatilho da automação...';
         icon = const _PulseIcon(
-          child: Icon(Icons.electric_bolt_rounded, size: 18, color: Colors.amber),
+          child: Icon(
+            Icons.electric_bolt_rounded,
+            size: 18,
+            color: Colors.amber,
+          ),
         );
         break;
       case 'completed':
         title = 'Automação pronta!';
         subtitle = '3 integrações verificadas com sucesso';
         icon = Container(
-          width: 22, height: 22,
+          width: 22,
+          height: 22,
           decoration: BoxDecoration(
             color: Colors.green.withValues(alpha: 0.15),
             shape: BoxShape.circle,
@@ -159,10 +176,13 @@ class AutomationProgressComponent extends StatelessWidget {
         title = 'Iniciando...';
         subtitle = '';
         icon = SizedBox(
-          width: 18, height: 18,
+          width: 18,
+          height: 18,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(cs.onSurfaceVariant.withValues(alpha: 0.5)),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              cs.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
           ),
         );
     }
@@ -218,10 +238,15 @@ class AutomationProgressComponent extends StatelessWidget {
     );
   }
 
-  Widget _buildStepItem(BuildContext context, Map<String, dynamic> step, String phase) {
+  Widget _buildStepItem(
+    BuildContext context,
+    Map<String, dynamic> step,
+    String phase,
+  ) {
     final moduleId = step['module_id'] ?? '';
     final status = step['status'] as String? ?? 'pending';
-    final label = step['label'] as String? ?? _formatModuleName(moduleId);
+    final label =
+        step['label'] as String? ?? friendlyAutomationStepName(moduleId);
     final description = step['description'] as String? ?? '';
     final logoId = _moduleLogoId[moduleId];
     final cs = Theme.of(context).colorScheme;
@@ -244,12 +269,18 @@ class AutomationProgressComponent extends StatelessWidget {
         iconColor = cs.onSurfaceVariant.withValues(alpha: 0.4);
     }
 
-    final showDescription = phase == 'descriptions' || phase == 'verifying' || phase == 'testingTrigger' || phase == 'completed';
-    final isStepVisible = true;
+    final showDescription =
+        phase == 'descriptions' ||
+        phase == 'verifying' ||
+        phase == 'testingTrigger' ||
+        phase == 'completed';
+    final animationsDisabled = MediaQuery.of(context).disableAnimations;
 
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.0, end: isStepVisible ? 1.0 : 0.0),
-      duration: Duration(milliseconds: 400 + idx * 80),
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: animationsDisabled
+          ? Duration.zero
+          : Duration(milliseconds: 400 + idx * 80),
       curve: Curves.easeOut,
       builder: (context, value, child) {
         return Opacity(
@@ -276,13 +307,25 @@ class AutomationProgressComponent extends StatelessWidget {
                       color: showSpinner
                           ? Colors.blue.withValues(alpha: 0.1)
                           : showCheck
-                              ? Colors.green.withValues(alpha: 0.1)
-                              : Colors.grey.withValues(alpha: 0.05),
+                          ? Colors.green.withValues(alpha: 0.1)
+                          : Colors.grey.withValues(alpha: 0.05),
                       shape: BoxShape.circle,
                     ),
                     child: logoId != null
-                        ? Logo(logoId: logoId, size: 18, onErrorIcon: Icon(Icons.circle_rounded, size: 18, color: iconColor))
-                        : Icon(Icons.circle_rounded, size: 18, color: iconColor),
+                        ? Logo(
+                            logoId: logoId,
+                            size: 18,
+                            onErrorIcon: Icon(
+                              Icons.circle_rounded,
+                              size: 18,
+                              color: iconColor,
+                            ),
+                          )
+                        : Icon(
+                            Icons.circle_rounded,
+                            size: 18,
+                            color: iconColor,
+                          ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -293,7 +336,9 @@ class AutomationProgressComponent extends StatelessWidget {
                         color: showSpinner || showCheck
                             ? cs.onSurface
                             : cs.onSurfaceVariant,
-                        fontWeight: showSpinner || showCheck ? FontWeight.w600 : FontWeight.normal,
+                        fontWeight: showSpinner || showCheck
+                            ? FontWeight.w600
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -304,7 +349,11 @@ class AutomationProgressComponent extends StatelessWidget {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   if (showCheck)
-                    const Icon(Icons.check_circle_rounded, size: 16, color: Colors.green),
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      size: 16,
+                      color: Colors.green,
+                    ),
                 ],
               ),
               AnimatedCrossFade(
@@ -331,15 +380,6 @@ class AutomationProgressComponent extends StatelessWidget {
       ),
     );
   }
-
-  String _formatModuleName(String name) {
-    final parts = name.split('.');
-    final last = parts.isNotEmpty ? parts.last : name;
-    return last.split('_').map((word) {
-      if (word.isEmpty) return "";
-      return word[0].toUpperCase() + word.substring(1);
-    }).join(' ');
-  }
 }
 
 class _PulseIcon extends StatefulWidget {
@@ -350,7 +390,8 @@ class _PulseIcon extends StatefulWidget {
   State<_PulseIcon> createState() => _PulseIconState();
 }
 
-class _PulseIconState extends State<_PulseIcon> with SingleTickerProviderStateMixin {
+class _PulseIconState extends State<_PulseIcon>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
@@ -361,9 +402,10 @@ class _PulseIconState extends State<_PulseIcon> with SingleTickerProviderStateMi
       vsync: this,
       duration: const Duration(milliseconds: 600),
     )..repeat(reverse: true);
-    _animation = Tween(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -374,9 +416,9 @@ class _PulseIconState extends State<_PulseIcon> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _animation,
-      child: widget.child,
-    );
+    if (MediaQuery.of(context).disableAnimations) {
+      return widget.child;
+    }
+    return FadeTransition(opacity: _animation, child: widget.child);
   }
 }

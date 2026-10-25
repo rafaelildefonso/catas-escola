@@ -42,7 +42,7 @@ Crie um arquivo `.env` na raiz de `backend/` com as seguintes variaveis:
 
 **Exemplo de valor:**
 ```env
-AGENT_INTENT_CLASSIFIER=groq|llama-3.3-70b-versatile|https://api.groq.com/openai/v1|GROQ_API_KEY
+AGENT_INTENT_CLASSIFIER=groq|openai/gpt-oss-20b|https://api.groq.com/openai/v1|GROQ_API_KEY
 ```
 
 ### Stripe (Billing)
@@ -92,8 +92,8 @@ GROQ_API_KEY=gsk_...
 TOKENS_PER_CREDIT=2000
 
 # Agentes de IA
-AGENT_INTENT_CLASSIFIER=groq|llama-3.3-70b-versatile|https://api.groq.com/openai/v1|GROQ_API_KEY
-AGENT_INTERPRETER=groq|llama-3.3-70b|https://api.groq.com/openai/v1|GROQ_API_KEY
+AGENT_INTENT_CLASSIFIER=groq|openai/gpt-oss-20b|https://api.groq.com/openai/v1|GROQ_API_KEY
+AGENT_INTERPRETER=groq|openai/gpt-oss-120b|https://api.groq.com/openai/v1|GROQ_API_KEY
 
 # Google OAuth
 GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com

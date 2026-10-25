@@ -1,7 +1,7 @@
 ﻿"""
 Ponte de acesso a dados do Worker.
 
-O worker roda como serviço FastAPI separado, mas usa os MESMOS Models
+O worker roda como serviço Flask separado, mas usa os MESMOS Models
 (Flask-SQLAlchemy) da API. Cada função abre um app context do Flask para
 executar as operações de persistência, mantendo um único ORM no projeto.
 """
@@ -87,6 +87,8 @@ def atualizar_status_run(
         if not run:
             logger.warning("Run %s não encontrada ao atualizar status.", run_id)
             return
+        if run.status in ("completed", "failed", "canceled"):
+            return
 
         campos = {"status": status}
         if status in ("completed", "failed", "canceled"):
@@ -99,6 +101,12 @@ def atualizar_status_run(
             campos["steps_summary"] = steps_summary
 
         run.atualizar(**campos)
+        if status in ("completed", "failed"):
+            try:
+                from services.notification.notification_service import NotificationService
+                NotificationService.notify_run(run_id, status)
+            except Exception:
+                logger.exception("Falha ao notificar execução %s", run_id)
 
 
 def obter_integracao(user_id: str, provider: str) -> Optional[Dict]:
@@ -141,6 +149,8 @@ def obter_integracao(user_id: str, provider: str) -> Optional[Dict]:
                     from core.crypto import encrypt_value
                     integration_model.access_token = encrypt_value(new_access)
                     integration_model.refresh_token = encrypt_value(new_refresh)
+                    if expires_at:
+                        integration_model.token_expires_at = datetime.fromisoformat(expires_at)
                     db.session.commit()
 
                     integration["access_token"] = new_access

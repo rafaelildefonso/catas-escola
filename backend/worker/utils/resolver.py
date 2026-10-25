@@ -1,14 +1,15 @@
 import logging
 from typing import Any
-from jinja2 import Template
+from jinja2 import StrictUndefined, Template
 
 logger = logging.getLogger(__name__)
+
 
 def get_path_value(path_str: str, context: dict) -> Any:
     """
     Navega no contexto (dicionário) para extrair o valor de um path pontuado (ex: 'step_1.data.status').
     """
-    parts = path_str.split('.')
+    parts = path_str.split(".")
     current = context
     for part in parts:
         if isinstance(current, dict) and part in current:
@@ -16,8 +17,11 @@ def get_path_value(path_str: str, context: dict) -> Any:
         elif hasattr(current, part):
             current = getattr(current, part)
         else:
-            raise KeyError(f"Chave '{part}' não encontrada no caminho '{path_str}' do contexto.")
+            raise KeyError(
+                f"Chave '{part}' não encontrada no caminho '{path_str}' do contexto."
+            )
     return current
+
 
 def resolve_variables(params: Any, context: dict) -> Any:
     """
@@ -36,23 +40,27 @@ def resolve_variables(params: Any, context: dict) -> Any:
                 try:
                     return get_path_value(expr, context)
                 except Exception as e:
-                    logger.debug(f"Falha ao avaliar path direto '{expr}': {e}. Tentando Jinja2 genérico.")
+                    logger.debug(
+                        f"Falha ao avaliar path direto '{expr}': {e}. Tentando Jinja2 genérico."
+                    )
                     pass
-        
+
         # Renderização padrão via Jinja2 para strings
         try:
-            template = Template(params)
+            template = Template(params, undefined=StrictUndefined)
             # Renderiza no contexto
             rendered = template.render(**context)
-            
+
             # Se for "True" ou "False" após renderização e a string original parecia um boolean,
             # ou parecia um número, podemos opcionalmente converter? Geralmente mantemos string,
             # mas o path direto acima já cobre 90% dos casos de tipagem.
             return rendered
         except Exception as e:
-            logger.warning(f"Erro ao renderizar template Jinja2 para '{params}': {e}")
-            return params
-            
+            logger.warning(f"Erro ao resolver uma informação da automação: {e}")
+            raise ValueError(
+                "Não foi possível obter uma informação necessária para executar esta etapa."
+            ) from e
+
     elif isinstance(params, dict):
         return {k: resolve_variables(v, context) for k, v in params.items()}
     elif isinstance(params, list):

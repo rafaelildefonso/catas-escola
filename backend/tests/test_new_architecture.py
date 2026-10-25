@@ -1,9 +1,23 @@
 ﻿import pytest
 import json
+import uuid
+from datetime import datetime, timedelta, timezone
+
+from jose import jwt
+from core.config import settings
 
 from models.profile import Profile
 from models.chat_session import ChatSession
 from models.message import Message
+
+
+def _profile_auth(user_id):
+    token = jwt.encode(
+        {"user_id": user_id, "email": "owner@example.com", "exp": datetime.now(timezone.utc) + timedelta(minutes=10)},
+        settings.JWT_SECRET_KEY,
+        algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {token}"}
 
 
 class TestProfileModelCRUD:
@@ -100,57 +114,81 @@ class TestProfileController:
     BASE = "/api/v1/profiles"
 
     def test_listar_vazio(self, client):
-        resp = client.get(self.BASE)
+        assert client.get(self.BASE).status_code == 401
+        resp = client.get(self.BASE, headers=_profile_auth(str(uuid.uuid4())))
         assert resp.status_code == 200
         assert resp.json == []
 
     def test_criar(self, client, app):
         with app.app_context():
+            user_id = str(uuid.uuid4())
             resp = client.post(
                 self.BASE,
                 data=json.dumps({"language": "pt-BR", "subscription_tier": "pro"}),
                 content_type="application/json",
+                headers=_profile_auth(user_id),
             )
             assert resp.status_code in (200, 201)
             data = resp.json
             assert data["language"] == "pt-BR"
+            assert data["id"] == user_id
+            assert data["subscription_tier"] == "basic"
 
     def test_criar_e_buscar(self, client, app):
         with app.app_context():
+            user_id = str(uuid.uuid4())
+            headers = _profile_auth(user_id)
             created = client.post(
                 self.BASE,
                 data=json.dumps({"language": "en", "industry": "tech"}),
                 content_type="application/json",
+                headers=headers,
             ).json
-            resp = client.get(f"{self.BASE}/{created['id']}")
+            resp = client.get(f"{self.BASE}/{created['id']}", headers=headers)
             assert resp.status_code == 200
             assert resp.json["language"] == "en"
+            assert client.get(f"{self.BASE}/{created['id']}", headers=_profile_auth(str(uuid.uuid4()))).status_code == 404
 
     def test_atualizar(self, client, app):
         with app.app_context():
+            headers = _profile_auth(str(uuid.uuid4()))
             created = client.post(
                 self.BASE,
                 data=json.dumps({"language": "es", "subscription_tier": "basic"}),
                 content_type="application/json",
+                headers=headers,
             ).json
             resp = client.put(
                 f"{self.BASE}/{created['id']}",
-                data=json.dumps({"subscription_tier": "pro"}),
+                data=json.dumps({"language": "pt"}),
                 content_type="application/json",
+                headers=headers,
             )
             assert resp.status_code == 200
-            assert resp.json["subscription_tier"] == "pro"
+            assert resp.json["language"] == "pt"
+            assert resp.json["subscription_tier"] == "basic"
+            alteracao_plano = client.put(
+                f"{self.BASE}/{created['id']}",
+                data=json.dumps({"subscription_tier": "pro"}),
+                content_type="application/json",
+                headers=headers,
+            )
+            assert alteracao_plano.status_code == 400
+            assert client.put(f"{self.BASE}/{created['id']}", json={"language": "fr"}, headers=_profile_auth(str(uuid.uuid4()))).status_code == 404
 
     def test_deletar(self, client, app):
         with app.app_context():
+            headers = _profile_auth(str(uuid.uuid4()))
             created = client.post(
                 self.BASE,
                 data=json.dumps({"language": "fr"}),
                 content_type="application/json",
+                headers=headers,
             ).json
-            resp = client.delete(f"{self.BASE}/{created['id']}")
+            assert client.delete(f"{self.BASE}/{created['id']}", headers=_profile_auth(str(uuid.uuid4()))).status_code == 404
+            resp = client.delete(f"{self.BASE}/{created['id']}", headers=headers)
             assert resp.status_code in (200, 204)
-            resp2 = client.get(f"{self.BASE}/{created['id']}")
+            resp2 = client.get(f"{self.BASE}/{created['id']}", headers=headers)
             assert resp2.status_code == 404
 
 

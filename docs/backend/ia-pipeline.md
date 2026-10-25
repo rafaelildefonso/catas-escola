@@ -11,31 +11,31 @@ Mensagem do Usuário
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_INTENT_CLASSIFIER            │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Classifica: CHAT ou ACTION         │
 └─────────────────────────────────────┘
     ↓ (se ACTION)
 ┌─────────────────────────────────────┐
 │  AGENT_ENTITY_EXTRACTOR             │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Extrai: nomes, datas, emails       │
 └─────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_INTERPRETER                  │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Interpreta: ideia do usuário       │
 └─────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_SELECTOR                     │
-│  (Groq llama-3.1-8b-instant)       │
+│  (Groq openai/gpt-oss-20b)       │
 │  Seleciona: módulos disponíveis     │
 └─────────────────────────────────────┘
     ↓
 ┌─────────────────────────────────────┐
 │  AGENT_DEVELOPER                    │
-│  (Groq llama-3.3-70b-versatile)    │
+│  (Groq openai/gpt-oss-120b)    │
 │  Gera: JSON do plano de automação   │
 └─────────────────────────────────────┘
     ↓
@@ -52,31 +52,31 @@ Plano Válido → Worker para Execução
 ### 1. Intent Classifier (Router)
 
 - **Função**: Identifica se a mensagem é uma conversa ou uma ação
-- **Modelo**: Groq llama-3.1-8b-instant
+- **Modelo**: Groq openai/gpt-oss-20b
 - **Saída**: `{"route": "chat" | "automation"}`
 
 ### 2. Entity Extractor
 
 - **Função**: Extrai entidades relevantes da mensagem
-- **Modelo**: Groq llama-3.1-8b-instant
+- **Modelo**: Groq openai/gpt-oss-20b
 - **Entidades**: nomes, datas, emails, valores, etc.
 
 ### 3. Interpreter (Planner)
 
 - **Função**: Interpreta a ideia do usuário e planeja a automação
-- **Modelo**: Groq llama-3.1-8b-instant
+- **Modelo**: Groq openai/gpt-oss-20b
 - **Saída**: Descrição da automação desejada
 
 ### 4. Selector
 
 - **Função**: Seleciona os módulos disponíveis no registry
-- **Modelo**: Groq llama-3.1-8b-instant
+- **Modelo**: Groq openai/gpt-oss-20b
 - **Saída**: Lista de módulos a serem utilizados
 
 ### 5. Developer (Coder)
 
 - **Função**: Gera o JSON do plano de automação
-- **Modelo**: Groq llama-3.3-70b-versatile
+- **Modelo**: Groq openai/gpt-oss-120b
 - **Saída**: JSON válido com steps e parâmetros
 
 ### 6. Validator (QA Agent)
@@ -102,7 +102,7 @@ Plano Válido → Worker para Execução
 
 | Modelo | Provider | Uso |
 |--------|----------|-----|
-| `MODEL_TIER_BASIC` | Groq llama-3.1-8b-instant | Chat básico |
+| `MODEL_TIER_BASIC` | Groq openai/gpt-oss-20b | Chat básico |
 | `MODEL_TIER_PRO` | Gemini 2.5 Flash | Chat intermediário |
 | `MODEL_TIER_MAX` | Gemini 2.5 Pro | Chat avançado |
 
@@ -110,11 +110,11 @@ Plano Válido → Worker para Execução
 
 | Agente | Modelo Default | Função |
 |--------|---------------|--------|
-| `AGENT_INTENT_CLASSIFIER` | Groq llama-3.1-8b-instant | Classifica intenção |
-| `AGENT_ENTITY_EXTRACTOR` | Groq llama-3.1-8b-instant | Extrai entidades |
-| `AGENT_INTERPRETER` | Groq llama-3.1-8b-instant | Interpreta ideia |
-| `AGENT_SELECTOR` | Groq llama-3.1-8b-instant | Seleciona módulos |
-| `AGENT_DEVELOPER` | Groq llama-3.3-70b-versatile | Gera plano |
+| `AGENT_INTENT_CLASSIFIER` | Groq openai/gpt-oss-20b | Classifica intenção |
+| `AGENT_ENTITY_EXTRACTOR` | Groq openai/gpt-oss-20b | Extrai entidades |
+| `AGENT_INTERPRETER` | Groq openai/gpt-oss-20b | Interpreta ideia |
+| `AGENT_SELECTOR` | Groq openai/gpt-oss-20b | Seleciona módulos |
+| `AGENT_DEVELOPER` | Groq openai/gpt-oss-120b | Gera plano |
 
 ---
 

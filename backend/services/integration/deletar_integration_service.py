@@ -2,8 +2,8 @@
 
 class DeletarIntegrationService:
     @staticmethod
-    def executar(id):
-        model = Integration.buscar_por_id(id)
+    def executar(id, user_id):
+        model = Integration.query.filter_by(id=id, user_id=user_id).first()
         if not model:
             raise ValueError(f"Integration com id {id} nao encontrado")
         model.deletar()
