@@ -26,3 +26,5 @@ build/
 .flutter-plugins-dependencies
 *.js.deps
 *.js.map
+# Database files (development)
+backend/instance/*.db
