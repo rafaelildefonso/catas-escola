@@ -441,7 +441,7 @@ GoRouter createRouter(AuthProvider authProvider) {
 
       // Páginas HTML: busca e substitui página (mantém URL limpa)
       GoRoute(
-        path: '/:page(terms|privacy|security|about|contact|cookies|refund)',
+        path: '/:page(terms|consent|privacy|security|about|contact|cookies|refund)',
         name: 'static-page',
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: Builder(
@@ -449,7 +449,7 @@ GoRouter createRouter(AuthProvider authProvider) {
               final page = state.pathParameters['page']!;
               if (kIsWeb) {
                 WidgetsBinding.instance.addPostFrameCallback(
-                  (_) => renderPage('/$page.html'),
+                  (_) => renderPage('/pages/institucional/$page.html'),
                 );
               }
               return const Scaffold(
