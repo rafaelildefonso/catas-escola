@@ -23,6 +23,7 @@ from controllers.secure_automation_controller import SecureAutomationRunControll
 from controllers.chat_controller import ChatController
 from controllers.chatbot_controller import ChatbotController
 from controllers.feedback_controller import FeedbackController
+from controllers.termo_aceite_controller import TermoAceiteController
 
 
 def _rota(app, url, methods, controller_func, endpoint):
@@ -62,6 +63,10 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/users", ["POST"], UserController.criar, "user.criar")
     _rota(app, "/api/v1/users/<id>", ["PUT"], UserController.atualizar, "user.atualizar")
     _rota(app, "/api/v1/users/<id>", ["DELETE"], UserController.deletar, "user.deletar")
+
+    # Termos de Uso e Consentimento (LGPD)
+    _rota(app, "/api/v1/termos/aceite", ["GET"], TermoAceiteController.consultar, "termo_aceite.consultar")
+    _rota(app, "/api/v1/termos/aceite", ["POST"], TermoAceiteController.registrar, "termo_aceite.registrar")
 
     _rota(app, "/api/v1/chat-sessions", ["GET"], ChatSessionController.listar, "chat_session.listar")
     _rota(app, "/api/v1/chat-sessions/<id>", ["GET"], ChatSessionController.buscar_por_id, "chat_session.buscar")
