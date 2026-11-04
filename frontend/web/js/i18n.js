@@ -50,9 +50,13 @@ const translations = {
         
         // About
         about_title: "Sobre o CATAS",
-        about_p1: "[Placeholder] O CATAS - Context Aware Task Automation System - foi construído com a visão de que falar com a máquina deveria ser suficiente para programá-la.",
+        about_p1: "Este projeto nasceu nas salas de aula do Cotemig. Somos um time de alunos apaixonados por tecnologia, que aceitou o desafio de um trabalho de escola com a ambição de ser destaque. Não queríamos que o projeto ficasse apenas na escola; queremos levá‑lo para a vida real e transformar o CATAS em uma startup de verdade.",
         about_h2_1: "Nossa Visão",
-        about_p2: "[Placeholder] Democratizar o acesso a workflows B2B complexos sem exigir experiência em lógica de programação ou ferramentas nocode complexas. A IA como interface definitiva.",
+        about_p2: "Nossa visão é democratizar o acesso a workflows B2B complexos sem exigir experiência em programação ou ferramentas nocode, colocando a IA como interface definitiva.",
+        about_h2_2: "Nossa Missão",
+        about_p3: "Eliminar a complexidade desnecessária da automação, ajudando pessoas e empresas a reduzir tarefas manuais, otimizar processos e dedicar mais tempo ao que realmente importa.",
+        about_h2_3: "O que nos move",
+        about_p4: "Acreditamos que a tecnologia deve se adaptar às pessoas, e não o contrário. É essa convicção que orienta o desenvolvimento do CATAS e nossa busca por uma forma mais simples, inteligente e acessível de automatizar o trabalho. Estamos construindo o CATAS com a ambição de transformar essa visão em uma solução real, útil e escalável.",
         
         // Contact
         contact_title: "Contato e Suporte",
@@ -112,9 +116,13 @@ const translations = {
         
         // About
         about_title: "About CATAS",
-        about_p1: "[Placeholder] CATAS - Context Aware Task Automation System - was built upon the vision that talking to the machine should be enough to program it.",
+        about_p1: "This project was born in the classrooms of Cotemig. We are a team of students passionate about technology, who took on a school assignment with the ambition to stand out. We didn’t want the project to stay only in school; we want to take it into real life and turn CATAS into a real startup.",
         about_h2_1: "Our Vision",
-        about_p2: "[Placeholder] To democratize B2B automation. No block-building, no code, just the AI acting as the ultimate interface.",
+        about_p2: "Our vision is to democratize access to complex B2B workflows without requiring programming experience or complex no‑code tools, making AI the ultimate interface.",
+        about_h2_2: "Our Mission",
+        about_p3: "Eliminate unnecessary complexity in automation, helping people and companies reduce manual tasks, optimise processes and spend more time on what truly matters.",
+        about_h2_3: "What drives us",
+        about_p4: "We believe technology should adapt to people, not the other way around. This conviction drives CATAS development and our search for a simpler, smarter, and more accessible way to automate work. We're building CATAS with the ambition to turn this vision into a real, useful, and scalable solution.",
         
         // Contact
         contact_title: "Contact & Support",
