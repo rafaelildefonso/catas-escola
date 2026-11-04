@@ -6,6 +6,7 @@ import '../../components/chat/model_selector.dart';
 import '../../core/navigation_helpers.dart';
 import '../../core/app_config.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/termo_aceite_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/integrations_provider.dart';
@@ -13,6 +14,7 @@ import '../../core/router.dart';
 import 'web_sidebar.dart';
 import 'web_settings_modal.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/picked_attachment.dart';
 import '../../l10n/app_localizations.dart';
 
@@ -27,6 +29,7 @@ class WebMainLayout extends StatefulWidget {
 
 class _WebMainLayoutState extends State<WebMainLayout> {
   bool _isDragging = false;
+  bool _aceitoNoGate = false;
 
   void _navigateTo(AppPage page) {
     context.go(getRouteForPage(page));
@@ -109,6 +112,21 @@ class _WebMainLayoutState extends State<WebMainLayout> {
         context.read<IntegrationsProvider>().fetchIntegrations();
       });
     }
+
+    // Verifica o aceite dosTermos de Uso/Consentimento (LGPD) do usuário
+    final termos = context.watch<TermoAceiteProvider>();
+    final usuarioSeparado = !AppConfig.isDemoMode && auth.isAuthenticated;
+    if (usuarioSeparado) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<TermoAceiteProvider>().carregar(
+            auth.userEmail ?? 'usuario',
+          );
+        }
+      });
+    }
+    final precisaAceitar =
+        usuarioSeparado && termos.aceito == false && termos.carregado;
 
     return DropTarget(
       onDragDone: _handleGlobalDrop,
@@ -196,9 +214,160 @@ class _WebMainLayoutState extends State<WebMainLayout> {
                 ),
               ),
           ],
+          if (precisaAceitar) _buildGateTermos(theme, termos),
         ),
       ),
     );
+  }
+
+  // ─── GATE DE TERMOS (LGPD) ────────────────────────────────
+
+  Widget _buildGateTermos(ThemeData theme, TermoAceiteProvider termos) {
+    return Positioned.fill(
+      child: Material(
+        color: theme.colorScheme.scrim.withValues(alpha: 0.6),
+        child: Center(
+          child: Container(
+            width: 480,
+            constraints: const BoxConstraints(maxWidth: 480),
+            padding: const EdgeInsets.all(28),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.15),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 24,
+                  offset: const Offset(0, 12),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.gavel_rounded,
+                        size: 22,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        'Termos de Uso e Consentimento',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Para usar o CATAS, é necessário que você leia e concorde com '
+                  'o Termo de Uso e o Termo de Consentimento para Tratamento de '
+                  'Dados Pessoais (LGPD), versão ${termos.versaoAtual ?? '1.0'}.',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    height: 1.5,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: () => _abrirTermo('terms'),
+                  icon: const Icon(Icons.article_outlined, size: 16),
+                  label: const Text('Ler o Termo de Uso'),
+                ),
+                TextButton.icon(
+                  onPressed: () => _abrirTermo('consent'),
+                  icon: const Icon(Icons.fact_check_outlined, size: 16),
+                  label: const Text('Ler o Termo de Consentimento'),
+                ),
+                const SizedBox(height: 4),
+                CheckboxListTile(
+                  value: _aceitoNoGate,
+                  onChanged: (value) =>
+                      setState(() => _aceitoNoGate = value ?? false),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(
+                    'Li e aceito os dois termos, de forma livre e informada.',
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: termos.registrando
+                            ? null
+                            : () => context.read<AuthProvider>().logout(),
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('Sair'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _aceitoNoGate && !termos.registrando
+                            ? () async {
+                                await context
+                                    .read<TermoAceiteProvider>()
+                                    .aceitar();
+                              }
+                            : null,
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: termos.registrando
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Text('Aceitar e continuar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _abrirTermo(String page) {
+    if (!kIsWeb) return;
+    final uri = Uri.base.replace(path: '/$page');
+    launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 
   Widget _buildHeader(

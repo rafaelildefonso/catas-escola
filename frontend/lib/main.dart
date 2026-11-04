@@ -16,6 +16,7 @@ import 'providers/native_context_provider.dart';
 import 'providers/notifications_provider.dart';
 import 'providers/locale_provider.dart';
 import 'providers/automations_provider.dart';
+import 'providers/termo_aceite_provider.dart';
 import 'providers/relatorio_provider.dart';
 // Demo providers
 import 'providers/demo_automations_provider.dart';
@@ -93,6 +94,7 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => IntegrationsProvider()),
         ChangeNotifierProvider(create: (_) => NativeContextProvider()),
         ChangeNotifierProvider(create: (_) => RelatorioProvider()),
+        ChangeNotifierProvider(create: (_) => TermoAceiteProvider()),
         // Always register base provider types, but use demo implementations when in demo mode
         ChangeNotifierProvider<NotificationsProvider>(
           create: (_) => isDemoMode ? DemoNotificationsProvider() : NotificationsProvider(),

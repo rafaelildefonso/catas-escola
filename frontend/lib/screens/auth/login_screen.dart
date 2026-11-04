@@ -22,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _loadingMessage;
   bool _isSignUpMode = false;
+  bool _aceitouTermos = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -94,6 +95,16 @@ class _LoginScreenState extends State<LoginScreen> {
   void _signUpWithEmail() async {
     final l10n = AppLocalizations.of(context)!;
     if (!_formKey.currentState!.validate()) return;
+    if (!_aceitouTermos) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+              'Para criar sua conta, leia e aceite o Termo de Uso e o Termo de Consentimento.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
     setState(() {
       _isLoading = true;
       _loadingMessage = l10n.signingUp;
@@ -253,9 +264,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _buildEmailForm(colorScheme, l10n),
 
         const SizedBox(height: 24),
-        Center(
-          child: _buildTermsText(colorScheme, l10n),
-        ),
+        _buildTermsConsent(colorScheme, l10n),
       ],
     );
   }
@@ -445,6 +454,79 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ],
       ],
+    );
+  }
+
+  // ─── TERMS CONSENT ────────────────────────────────────────
+
+  Widget _buildTermsConsent(ColorScheme colorScheme, AppLocalizations l10n) {
+    if (!_isSignUpMode) {
+      // Modo login: apenas informativo
+      return Center(child: _buildTermsText(colorScheme, l10n));
+    }
+
+    // Modo cadastro: consentimento explícito obrigatório (LGPD)
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.primary.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Checkbox(
+            value: _aceitouTermos,
+            onChanged: (value) => setState(() => _aceitouTermos = value ?? false),
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: RichText(
+                text: TextSpan(
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    height: 1.5,
+                  ),
+                  children: [
+                    const TextSpan(
+                      text: 'Declaro que li e aceito o ',
+                    ),
+                    TextSpan(
+                      text: l10n.termsOfService,
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => _navigateToPage('/terms'),
+                    ),
+                    const TextSpan(text: ' e o '),
+                    TextSpan(
+                      text: 'Termo de Consentimento (LGPD)',
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      recognizer: TapGestureRecognizer()
+                        ..onTap = () => _navigateToPage('/consent'),
+                    ),
+                    const TextSpan(text: '.'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

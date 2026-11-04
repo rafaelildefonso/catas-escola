@@ -253,7 +253,11 @@ class AuthProvider extends ChangeNotifier {
       final response = await http.post(
         Uri.parse('${AppConfig.apiBaseUrl}/auth/signup'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'password': password}),
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+          'aceito_termos': true,
+        }),
       );
 
       if (response.statusCode == 201) {
