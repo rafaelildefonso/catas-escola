@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import '../../components/model_selector.dart';
+import '../../components/chat/model_selector.dart';
 import '../../core/navigation_helpers.dart';
 import '../../core/app_config.dart';
 import '../../providers/auth_provider.dart';

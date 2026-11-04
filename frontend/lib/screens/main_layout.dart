@@ -11,7 +11,7 @@ import '../providers/navigation_provider.dart';
 import '../components/app_drawer.dart';
 import '../providers/integrations_provider.dart';
 import '../components/upgrade_modal.dart';
-import '../components/model_selector.dart';
+import '../components/chat/model_selector.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import '../models/picked_attachment.dart';
 import '../l10n/app_localizations.dart';

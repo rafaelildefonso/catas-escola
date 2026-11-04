@@ -1,16 +1,16 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import '../core/web_page_renderer.dart';
+import '../../core/web_page_renderer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/auth_provider.dart';
-import '../providers/theme_provider.dart';
-import '../providers/locale_provider.dart';
-import '../core/router.dart';
-import '../l10n/app_localizations.dart';
-import '../components/catas_dropdown.dart';
-import '../components/catas_dialog.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/theme_provider.dart';
+import '../../providers/locale_provider.dart';
+import '../../core/router.dart';
+import '../../l10n/app_localizations.dart';
+import '../../components/catas_dropdown.dart';
+import '../../components/catas_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});

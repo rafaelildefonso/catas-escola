@@ -3,13 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
-import '../core/router.dart';
-import '../components/brand_logo.dart';
-import '../components/upgrade_modal.dart';
-import '../components/options_button.dart';
-import '../providers/auth_provider.dart';
-import '../providers/automations_provider.dart';
-import '../l10n/app_localizations.dart';
+import '../../core/router.dart';
+import '../../components/brand_logo.dart';
+import '../../components/upgrade_modal.dart';
+import '../../components/chat/options_button.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/automations_provider.dart';
+import '../../l10n/app_localizations.dart';
 
 class AutomationsScreen extends StatefulWidget {
   const AutomationsScreen({super.key});

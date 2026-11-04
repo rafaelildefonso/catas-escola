@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:catas/providers/auth_provider.dart';
 import 'package:catas/providers/integrations_provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
-import 'package:catas/screens/integration_details_screen.dart';
+import 'package:catas/screens/integracoes/integration_details_screen.dart';
 import 'package:catas/components/upgrade_modal.dart';
 import 'package:catas/l10n/app_localizations.dart';
 

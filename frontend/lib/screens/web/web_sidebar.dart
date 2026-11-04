@@ -6,7 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/navigation_provider.dart';
 import '../../core/router.dart';
-import '../../components/options_button.dart';
+import '../../components/chat/options_button.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../l10n/app_localizations.dart';
 

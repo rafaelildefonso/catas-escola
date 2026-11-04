@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 
-import '../data/storage_repository.dart';
+import '../../data/storage_repository.dart';
 
 class AttachmentsScreen extends StatefulWidget {
   const AttachmentsScreen({super.key});

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:catas/components/brand_logo.dart';
-import 'package:catas/screens/integrations_screen.dart' show IntegrationItem, IntegrationCategory;
+import 'package:catas/screens/integracoes/integrations_screen.dart' show IntegrationItem, IntegrationCategory;
 
 class MentionMenu extends StatelessWidget {
   final List<IntegrationItem> items;

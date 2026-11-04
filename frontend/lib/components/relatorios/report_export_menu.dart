@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/relatorio_repository.dart';
+import '../../data/relatorio_repository.dart';
 import 'report_export_delivery.dart';
 
 class ReportExportMenu extends StatefulWidget {

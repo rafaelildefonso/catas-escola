@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../core/automation_labels.dart';
-import '../core/router.dart';
-import '../data/automations_repository.dart';
-import '../providers/chat_provider.dart';
+import '../../core/automation_labels.dart';
+import '../../core/router.dart';
+import '../../data/automations_repository.dart';
+import '../../providers/chat_provider.dart';
 
 String _triggerLabel(Map<String, dynamic> trigger) {
   switch (trigger['type']) {

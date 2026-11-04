@@ -10,7 +10,7 @@ import '../core/navigation_helpers.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../l10n/app_localizations.dart';
 import 'catas_input.dart';
-import 'options_button.dart';
+import 'chat/options_button.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});

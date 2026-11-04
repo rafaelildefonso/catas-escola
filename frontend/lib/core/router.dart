@@ -1,14 +1,14 @@
 import 'package:catas/providers/auth_provider.dart';
-import 'package:catas/screens/active_automations_screen.dart';
-import 'package:catas/screens/chat_screen.dart';
+import 'package:catas/screens/automacoes/active_automations_screen.dart';
+import 'package:catas/screens/chat/chat_screen.dart';
 import 'package:catas/screens/dashboard/impact_dashboard_screen.dart';
-import 'package:catas/screens/history_screen.dart';
-import 'package:catas/screens/integrations_screen.dart';
-import 'package:catas/screens/notification_list_screen.dart';
-import 'package:catas/screens/pricing_screen.dart';
-import 'package:catas/screens/settings_screen.dart';
+import 'package:catas/screens/chat/history_screen.dart';
+import 'package:catas/screens/integracoes/integrations_screen.dart';
+import 'package:catas/screens/notificacoes/notification_list_screen.dart';
+import 'package:catas/screens/assinatura/pricing_screen.dart';
+import 'package:catas/screens/configuracoes/settings_screen.dart';
 import 'package:catas/screens/web/web_main_layout.dart';
-import 'package:catas/screens/automation_detail_screen.dart';
+import 'package:catas/screens/automacoes/automation_detail_screen.dart';
 import 'package:catas/screens/crud/crud_management_screen.dart';
 import 'package:catas/screens/relatorios/relatorio_screen.dart';
 import 'package:catas/screens/main_layout.dart';
@@ -23,12 +23,12 @@ import 'package:go_router/go_router.dart';
 import 'package:catas/core/responsive.dart';
 import 'package:catas/screens/auth/login_screen.dart';
 import 'package:catas/screens/onboarding/onboarding_screen.dart';
-import 'package:catas/screens/account_settings_screen.dart';
-import 'package:catas/screens/manage_subscription_screen.dart';
+import 'package:catas/screens/configuracoes/account_settings_screen.dart';
+import 'package:catas/screens/assinatura/manage_subscription_screen.dart';
 import 'package:catas/components/settings_sub_screen.dart';
 import 'package:catas/main.dart' show navigatorKey;
-import 'package:catas/screens/settings_content.dart';
-import 'package:catas/screens/subscription_success_screen.dart';
+import 'package:catas/screens/configuracoes/settings_content.dart';
+import 'package:catas/screens/assinatura/subscription_success_screen.dart';
 
 /// Rotas do aplicativo
 class AppRoutes {

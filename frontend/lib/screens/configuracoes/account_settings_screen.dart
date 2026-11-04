@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../l10n/app_localizations.dart';
-import '../components/clickable_wrapper.dart';
-import '../providers/auth_provider.dart';
-import '../components/catas_dialog.dart';
-import '../components/catas_input.dart';
+import '../../l10n/app_localizations.dart';
+import '../../components/clickable_wrapper.dart';
+import '../../providers/auth_provider.dart';
+import '../../components/catas_dialog.dart';
+import '../../components/catas_input.dart';
 
 class AccountSettingsScreen extends StatefulWidget {
   final bool isEmbedded;

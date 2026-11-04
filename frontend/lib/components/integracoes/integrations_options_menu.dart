@@ -8,7 +8,7 @@ import 'package:catas/providers/auth_provider.dart';
 import 'package:catas/providers/integrations_provider.dart';
 import 'package:catas/components/toggle.dart';
 import 'package:catas/components/upgrade_modal.dart';
-import 'package:catas/screens/integrations_screen.dart' show IntegrationItem, IntegrationCategory;
+import 'package:catas/screens/integracoes/integrations_screen.dart' show IntegrationItem, IntegrationCategory;
 import 'package:go_router/go_router.dart';
 import 'package:catas/core/router.dart';
 

@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import '../models/picked_attachment.dart';
-import 'full_screen_viewer.dart';
+import '../../models/picked_attachment.dart';
+import '../full_screen_viewer.dart';
 
 class PickedAttachmentCard extends StatelessWidget {
   final PickedAttachment attachment;

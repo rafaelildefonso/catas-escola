@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../data/billing_repository.dart';
-import '../providers/auth_provider.dart';
+import '../../data/billing_repository.dart';
+import '../../providers/auth_provider.dart';
 
 class PricingScreen extends StatefulWidget {
   const PricingScreen({super.key});

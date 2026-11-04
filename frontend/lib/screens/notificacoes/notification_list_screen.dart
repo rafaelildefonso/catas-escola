@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../core/automation_labels.dart';
-import '../core/router.dart';
-import '../data/notifications_repository.dart';
+import '../../core/automation_labels.dart';
+import '../../core/router.dart';
+import '../../data/notifications_repository.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key, this.returnLocation});

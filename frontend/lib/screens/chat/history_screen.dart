@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:catas/l10n/app_localizations.dart';
 import 'package:catas/core/router.dart';
-import '../providers/chat_provider.dart';
+import '../../providers/chat_provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:intl/intl.dart';
 

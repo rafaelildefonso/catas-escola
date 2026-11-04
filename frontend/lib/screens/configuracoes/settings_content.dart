@@ -80,6 +80,8 @@ List<Widget> buildAboutContent(BuildContext context) {
       ),
     ),
     const SizedBox(height: 32),
+    _buildAboutUsCard(context),
+    const SizedBox(height: 32),
     OutlinedButton.icon(
       onPressed: () { if (kIsWeb) navigateTo('/terms'); },
       icon: const Icon(Icons.description_outlined),
@@ -92,6 +94,93 @@ List<Widget> buildAboutContent(BuildContext context) {
       label: Text(l10n.privacyPolicy),
     ),
   ];
+}
+
+Widget _buildAboutUsCard(BuildContext context) {
+  final theme = Theme.of(context);
+
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(24),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [
+          theme.colorScheme.primaryContainer.withValues(alpha: 0.55),
+          theme.colorScheme.secondaryContainer.withValues(alpha: 0.45),
+        ],
+      ),
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(
+        color: theme.colorScheme.outline.withValues(alpha: 0.15),
+      ),
+    ),
+    child: Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.group_outlined,
+              size: 20,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "Sobre nós",
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          "Este projeto nasceu nas salas de aula do Cotemig. Somos um time de alunos apaixonados por tecnologia, que aceitou o desafio de um trabalho de escola com uma ambição a mais: ser destaque.",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            height: 1.6,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(
+          "Mas não queríamos que tudo acabasse na entrega. Construímos o CATAS querendo levar o projeto não só para a escola, mas para a vida — transformando o que começou como nota de apresentação em um sonho real: criar uma startup de verdade.",
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            height: 1.6,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.rocket_launch_outlined,
+              size: 18,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "Da sala de aula para o futuro.",
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                fontStyle: FontStyle.italic,
+                fontWeight: FontWeight.w600,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
 }
 
 Future<void> _launchUrl(String url) async {

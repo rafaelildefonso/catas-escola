@@ -3,16 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/automations_provider.dart';
-import '../core/responsive.dart';
-import '../components/brand_logo.dart';
-import '../components/options_button.dart';
-import '../core/app_config.dart';
-import '../core/router.dart';
-import '../main.dart' show navigatorKey;
-import '../providers/demo_automations_provider.dart';
-import '../providers/demo_autoplay_controller.dart';
-import '../providers/chat_provider.dart';
+import '../../providers/automations_provider.dart';
+import '../../core/responsive.dart';
+import '../../components/brand_logo.dart';
+import '../../components/chat/options_button.dart';
+import '../../core/app_config.dart';
+import '../../core/router.dart';
+import '../../main.dart' show navigatorKey;
+import '../../providers/demo_automations_provider.dart';
+import '../../providers/demo_autoplay_controller.dart';
+import '../../providers/chat_provider.dart';
 
 class AutomationDetailScreen extends StatefulWidget {
   final String runId;

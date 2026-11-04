@@ -10,8 +10,8 @@ import '../../providers/navigation_provider.dart';
 import '../../components/catas_dropdown.dart';
 import '../../components/catas_dialog.dart';
 import '../../l10n/app_localizations.dart';
-import '../account_settings_screen.dart';
-import '../manage_subscription_screen.dart';
+import '../configuracoes/account_settings_screen.dart';
+import '../assinatura/manage_subscription_screen.dart';
 
 class WebSettingsModal extends StatefulWidget {
   const WebSettingsModal({super.key});

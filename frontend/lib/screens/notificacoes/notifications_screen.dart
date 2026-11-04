@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import '../core/router.dart';
+import '../../core/router.dart';
 
 /// Tela de notificações simplificada — sem backend de CRUD no momento.
 /// Mostra estado vazio com mensagem explicativa.

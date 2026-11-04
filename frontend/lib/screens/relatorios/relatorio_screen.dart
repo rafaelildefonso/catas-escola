@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/relatorio_provider.dart';
-import '../../components/report_export_menu.dart';
+import '../../components/relatorios/report_export_menu.dart';
 
 /// Tela de Relatórios — consome os endpoints de relatório/busca da API
 /// (funcionalidades além do CRUD básico implementadas via procedures).
