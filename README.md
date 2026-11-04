@@ -148,18 +148,7 @@ python -m worker.server
 
 Worker: http://localhost:8001
 
-### 4. Usando Docker
-
-```bash
-cd backend
-docker-compose up -d
-```
-
-Serviços:
-- `catas_server`: API Flask (port 8000)
-- `catas_worker`: FastAPI Worker (port 8001)
-
-### 5. Rodar o Flutter App
+### 4. Rodar o Flutter App
 
 ```bash
 cd frontend
