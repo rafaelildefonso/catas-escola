@@ -1,6 +1,7 @@
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import urlencode
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from models.integration import Integration
@@ -32,7 +33,11 @@ def decode_state(state: str):
 
 
 def _frontend_url() -> str:
-    return os.getenv("FRONTEND_URL", "http://localhost:52159")
+    return os.getenv("FRONTEND_URL", "http://localhost:52159").rstrip("/")
+
+
+def montar_url_retorno_integracoes(**params: str) -> str:
+    return f"{_frontend_url()}/app/integrations?{urlencode(params)}"
 
 
 def gerar_auth_url(user_id: str, provider: str) -> Optional[str]:
@@ -89,5 +94,5 @@ def processar_callback(code: str, state: str) -> dict:
     return {
         "success": True,
         "provider": provider,
-        "redirect_url": f"{_frontend_url()}/integrations?connected={provider}",
+        "redirect_url": montar_url_retorno_integracoes(connected=provider),
     }

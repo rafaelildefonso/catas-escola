@@ -1,6 +1,10 @@
 from flask import request, jsonify, redirect
 from core.security import get_current_user
-from services.integration.google_auth_service import gerar_auth_url, processar_callback, _frontend_url
+from services.integration.google_auth_service import (
+    gerar_auth_url,
+    montar_url_retorno_integracoes,
+    processar_callback,
+)
 
 
 class GoogleIntegrationController:
@@ -27,10 +31,10 @@ class GoogleIntegrationController:
         state = request.args.get("state")
 
         if not code or not state:
-            return redirect(f"{_frontend_url()}/integrations?error=missing_params")
+            return redirect(montar_url_retorno_integracoes(error="missing_params"))
 
         try:
             result = processar_callback(code, state)
             return redirect(result["redirect_url"])
         except Exception as e:
-            return redirect(f"{_frontend_url()}/integrations?error=callback_failed")
+            return redirect(montar_url_retorno_integracoes(error="callback_failed"))
