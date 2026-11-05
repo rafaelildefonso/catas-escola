@@ -4,7 +4,7 @@
 
 ## 1. Resposta curta: o que é o CATAS?
 
-**CATAS** significa **Context Aware Task Automation System**. É uma plataforma de automação inteligente em que a pessoa conversa em linguagem natural com uma IA. A IA interpreta o pedido, coleta informações necessárias, monta um plano de automação e, quando aplicável, executa ações em serviços externos.
+**CATAS**. É uma plataforma de automação inteligente em que a pessoa conversa em linguagem natural com uma IA. A IA interpreta o pedido, coleta informações necessárias, monta um plano de automação e, quando aplicável, executa ações em serviços externos.
 
 Exemplo: a pessoa pede “envie um e-mail toda segunda-feira para a equipe”. O sistema entende a intenção, confirma dados que estiverem faltando, salva uma automação recorrente, agenda sua próxima execução e o worker envia o e-mail no momento certo.
 
