@@ -1,0 +1,92 @@
+[
+  {
+    "test": "HTTP real",
+    "status": "PASS",
+    "detail": "GET externo real: HTTP 200, JSON id=1"
+  },
+  {
+    "test": "gmail.send_email (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "gmail.create_draft (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "gmail.get_unread_emails (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_calendar.create_event (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_calendar.list_events (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_calendar.update_event (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_calendar.delete_event (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_sheets.append_row (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_sheets.get_values (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_sheets.update_values (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_sheets.create_spreadsheet (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_drive.list_files (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_drive.upload_file (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_drive.create_folder (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "google_drive.get_file_content (isolado)",
+    "status": "PASS",
+    "detail": "Resposta Google simulada; metodo, endpoint, autenticacao e resultado verificados"
+  },
+  {
+    "test": "IA: falha simulada do provedor",
+    "status": "FAIL",
+    "detail": "AssertionError: Retornou MOCK, nao uma resposta de IA real"
+  },
+  {
+    "test": "Inicializacao API com configuracao local",
+    "status": "FAIL",
+    "detail": "ModuleNotFoundError: No module named 'flask_cors'"
+  }
+]

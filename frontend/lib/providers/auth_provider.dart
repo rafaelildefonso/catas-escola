@@ -297,14 +297,14 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setBool('onboarding_completed', _onboardingCompleted);
   }
 
-  Future<void> refreshProfile() async {
-    if (!_isAuthenticated || _isDemoMode || _tokenCache == null) return;
+  Future<bool> refreshProfile() async {
+    if (!_isAuthenticated || _isDemoMode || _tokenCache == null) return false;
 
     try {
       final response = await _userRepository.getMe(_tokenCache!);
-      final data = response['data'] as Map<String, dynamic>?;
-      if (data != null) {
-        _profile = UserProfile.fromJson(data);
+      final profileData = response['profile'] as Map<String, dynamic>?;
+      if (profileData != null) {
+        _profile = UserProfile.fromJson(profileData);
         _onboardingCompleted = _profile!.onboardingCompleted;
         _onboardingPrefsLoaded = true;
 
@@ -316,10 +316,13 @@ class AuthProvider extends ChangeNotifier {
         await prefs.setBool('onboarding_completed', _onboardingCompleted);
 
         notifyListeners();
+        return true;
       }
     } catch (e) {
       debugPrint("⚠️ Erro ao atualizar perfil: $e");
     }
+
+    return false;
   }
 
   Future<void> refreshOnboardingState() async {
@@ -341,43 +344,52 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> completeOnboarding({
+  Future<bool> completeOnboarding({
     String? industry,
     String? role,
     List<String>? tools,
     bool scheduleAhaDemo = true,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('onboarding_completed', true);
-    if (scheduleAhaDemo) {
-      await prefs.setBool('onboarding_aha_pending', true);
-    }
+    if (_isDemoMode) return true;
+    if (!_isAuthenticated || _tokenCache == null) return false;
 
-    _onboardingCompleted = true;
+    try {
+      debugPrint(
+        '🔄 Atualizando perfil no backend: industry=$industry, role=$role, tools=$tools',
+      );
+      await _userRepository.updateMe(_tokenCache!, {
+        'industry': industry,
+        'role': role,
+        'onboarding_completed': true,
+        'onboarding_data': {'tools': tools ?? []},
+      });
+      debugPrint('✅ Perfil atualizado no backend. Recarregando perfil...');
 
-    if (_isAuthenticated && !_isDemoMode && _tokenCache != null) {
-      try {
-        debugPrint(
-          '🔄 Atualizando perfil no backend: industry=$industry, role=$role, tools=$tools',
-        );
-        await _userRepository.updateMe(_tokenCache!, {
-          'industry': industry,
-          'role': role,
-          'onboarding_completed': true,
-          'onboarding_data': {'tools': tools ?? []},
-        });
-        debugPrint('✅ Perfil atualizado no backend. Recarregando perfil...');
-        await refreshProfile();
-        debugPrint('✅ Perfil recarregado: industry=${_profile?.industry}');
-      } catch (e) {
-        debugPrint('⚠️ Erro ao salvar onboarding no backend: $e');
+      final refreshed = await refreshProfile();
+      final completed = refreshed &&
+          _profile?.onboardingCompleted == true &&
+          _profile?.industry == industry;
+      if (!completed) {
+        debugPrint('⚠️ Backend não confirmou a finalização do onboarding.');
+        return false;
       }
-    }
 
-    notifyListeners();
-    debugPrint(
-      '🔔 AuthProvider notificado: onboardingCompleted=$_onboardingCompleted, profile.industry=${_profile?.industry}',
-    );
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', true);
+      if (scheduleAhaDemo) {
+        await prefs.setBool('onboarding_aha_pending', true);
+      }
+
+      _onboardingCompleted = true;
+      notifyListeners();
+      debugPrint(
+        '🔔 AuthProvider notificado: onboardingCompleted=$_onboardingCompleted, profile.industry=${_profile?.industry}',
+      );
+      return true;
+    } catch (e) {
+      debugPrint('⚠️ Erro ao salvar onboarding no backend: $e');
+      return false;
+    }
   }
 
   Future<void> updateProfile({String? name}) async {
@@ -390,9 +402,8 @@ class AuthProvider extends ChangeNotifier {
       if (updates.isEmpty) return;
 
       final response = await _userRepository.updateMe(_tokenCache!, updates);
-      final data = response['data'] as Map<String, dynamic>?;
-      if (data != null) {
-        _profile = UserProfile.fromJson(data);
+      if (response.isNotEmpty) {
+        _profile = UserProfile.fromJson(response);
         _onboardingCompleted = _profile!.onboardingCompleted;
         _onboardingPrefsLoaded = true;
 

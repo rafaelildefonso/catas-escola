@@ -27,6 +27,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   final List<String> _selectedTools = [];
   int _setupStep = 0;
+  bool _isFinishing = false;
 
   final List<_IndustryData> _industries = [
     _IndustryData(
@@ -122,26 +123,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
+    if (_isFinishing) return;
+
     final industry = _selectedIndustry ?? 'other';
     final role = _selectedPains.isNotEmpty ? _selectedPains.join(', ') : 'Usuário';
 
     debugPrint('🏁 [_finish] Iniciando finalização do onboarding...');
-    
+    setState(() => _isFinishing = true);
+
     final authProvider = context.read<AuthProvider>();
-    await authProvider.completeOnboarding(
+    final completed = await authProvider.completeOnboarding(
       industry: industry,
       role: role,
       tools: _selectedTools,
       scheduleAhaDemo: true,
     );
-    
+
+    if (!mounted) return;
+    if (!completed) {
+      setState(() => _isFinishing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível concluir o onboarding. Tente novamente.',
+          ),
+        ),
+      );
+      return;
+    }
+
     debugPrint('🏁 [_finish] completeOnboarding finalizado. Verificando estado...');
     debugPrint('🏁 [_finish] onboardingCompleted=${authProvider.onboardingCompleted}');
     debugPrint('🏁 [_finish] profile.industry=${authProvider.profile?.industry}');
     
     // Aguarda um frame para garantir que o GoRouter processou a notificação
     await Future.delayed(const Duration(milliseconds: 100));
-    
+
     if (!mounted) return;
     debugPrint('🚀 [_finish] Navegando para o Chat...');
     context.go(AppRoutes.chat);
@@ -273,7 +290,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_page == 0) return _selectedIndustry != null;
     if (_page == 1) return _selectedPains.isNotEmpty || _isCustomPain;
     if (_page == 2) return true; // Seleção de ferramentas opcional
-    if (_page == 3) return _setupStep == 3;
+    if (_page == 3) return _setupStep == 3 && !_isFinishing;
     return true;
   }
 
