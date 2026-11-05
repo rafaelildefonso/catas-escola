@@ -1,117 +1,62 @@
 import 'package:dio/dio.dart';
+
+import '../core/api_client.dart';
+import '../core/api_exception.dart';
 import '../core/app_config.dart';
-import '../services/token_holder.dart';
 import 'chat_repository_interface.dart';
 
 class ChatRepository implements IChatRepository {
-  final Dio _dio = Dio();
+  ChatRepository({ApiClient? apiClient})
+    : _apiClient = apiClient ?? ApiClient();
 
-  String _getBaseUrl() {
-    return AppConfig.apiBaseUrl;
-  }
+  final ApiClient _apiClient;
 
-  Options _getOptions() {
-    final token = TokenHolder().token ?? "dev-token";
-
-    return Options(
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-    );
-  }
+  String get _baseUrl => AppConfig.apiBaseUrl;
 
   @override
   Future<List<Map<String, dynamic>>> getSessions({
     int limit = 50,
     int offset = 0,
   }) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/chat/sessions";
-
-    try {
-      final response = await _dio.get(
-        url,
-        queryParameters: {"limit": limit, "offset": offset},
-        options: _getOptions(),
+    final response = await _apiClient.get(
+      '$_baseUrl/chat/sessions',
+      queryParameters: {'limit': limit, 'offset': offset},
+    );
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      throw const ApiException(
+        message: 'Resposta inválida ao carregar conversas.',
       );
-
-      if (response.statusCode == 200) {
-        final data = (response.data['data'] as List<dynamic>? ?? const []);
-        return data.cast<Map<String, dynamic>>();
-      }
-
-      throw Exception("HttpError: ${response.statusCode}");
-    } catch (e) {
-      throw Exception("Erro de conexão: $e");
     }
+    return (data['data'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
   }
 
   @override
   Future<Map<String, dynamic>> createSession({String? title}) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/chat/sessions";
-    final payload = {"title": title};
-
-    try {
-      final response = await _dio.post(
-        url,
-        options: _getOptions(),
-        data: payload,
-      );
-
-      if (response.statusCode == 200) {
-        final data = response.data['data'] as Map<String, dynamic>?;
-        if (data == null) {
-          throw Exception("Resposta inválida ao criar sessão");
-        }
-        return data;
-      }
-
-      throw Exception("HttpError: ${response.statusCode}");
-    } catch (e) {
-      throw Exception("Erro de conexão: $e");
+    final response = await _apiClient.post(
+      '$_baseUrl/chat/sessions',
+      data: {'title': title},
+    );
+    final data = response.data;
+    if (data is Map<String, dynamic> && data['data'] is Map<String, dynamic>) {
+      return data['data'] as Map<String, dynamic>;
     }
+    throw const ApiException(message: 'Resposta inválida ao criar conversa.');
   }
 
   @override
   Future<void> renameSession(String sessionId, String title) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/chat/sessions/$sessionId/title";
-
-    try {
-      final response = await _dio.patch(
-        url,
-        options: _getOptions(),
-        data: {"title": title},
-      );
-
-      if (response.statusCode == 200) {
-        return;
-      }
-
-      throw Exception("HttpError: ${response.statusCode}");
-    } catch (e) {
-      throw Exception("Erro de conexão: $e");
-    }
+    await _apiClient.patch(
+      '$_baseUrl/chat/sessions/$sessionId/title',
+      data: {'title': title},
+    );
   }
 
   @override
   Future<void> deleteSession(String sessionId) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/chat/sessions/$sessionId";
-
-    try {
-      final response = await _dio.delete(url, options: _getOptions());
-
-      if (response.statusCode == 200) {
-        return;
-      }
-
-      throw Exception("HttpError: ${response.statusCode}");
-    } catch (e) {
-      throw Exception("Erro de conexão: $e");
-    }
+    await _apiClient.delete('$_baseUrl/chat/sessions/$sessionId');
   }
 
   @override
@@ -120,25 +65,19 @@ class ChatRepository implements IChatRepository {
     int limit = 100,
     int offset = 0,
   }) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/chat/history/$sessionId";
-
-    try {
-      final response = await _dio.get(
-        url,
-        queryParameters: {"limit": limit, "offset": offset},
-        options: _getOptions(),
+    final response = await _apiClient.get(
+      '$_baseUrl/chat/history/$sessionId',
+      queryParameters: {'limit': limit, 'offset': offset},
+    );
+    final data = response.data;
+    if (data is! Map<String, dynamic>) {
+      throw const ApiException(
+        message: 'Resposta inválida ao carregar histórico.',
       );
-
-      if (response.statusCode == 200) {
-        final data = (response.data['data'] as List<dynamic>? ?? const []);
-        return data.cast<Map<String, dynamic>>();
-      }
-
-      throw Exception("HttpError: ${response.statusCode}");
-    } catch (e) {
-      throw Exception("Erro de conexão: $e");
     }
+    return (data['data'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .toList();
   }
 
   @override
@@ -153,46 +92,23 @@ class ChatRepository implements IChatRepository {
     List<String>? attachmentUrls,
     CancelToken? cancelToken,
   }) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/chat/message";
-
     final payload = <String, dynamic>{
-      "message": text,
-      "conversation_id": sessionId,
-      "model": model ?? "CATAS Basic",
-      "web_search": webSearch,
-      "active_integrations": activeIntegrations ?? [],
+      'message': text,
+      'conversation_id': sessionId,
+      'model': model ?? 'CATAS Basic',
+      'web_search': webSearch,
+      'active_integrations': activeIntegrations ?? [],
+      if (currentPageUrl != null) 'current_page_url': currentPageUrl,
+      if (currentPageTitle != null) 'current_page_title': currentPageTitle,
+      if (attachmentUrls != null && attachmentUrls.isNotEmpty)
+        'attachment_urls': attachmentUrls,
     };
-
-    if (currentPageUrl != null) {
-      payload["current_page_url"] = currentPageUrl;
-    }
-    if (currentPageTitle != null) {
-      payload["current_page_title"] = currentPageTitle;
-    }
-    if (attachmentUrls != null && attachmentUrls.isNotEmpty) {
-      payload["attachment_urls"] = attachmentUrls;
-    }
-
-    try {
-      final response = await _dio.post(
-        url,
-        options: _getOptions(),
-        data: payload,
-        cancelToken: cancelToken,
-      );
-
-      if (response.statusCode == 200) {
-        return response.data as Map<String, dynamic>;
-      } else {
-        throw Exception("HttpError: ${response.statusCode}");
-      }
-    } catch (e) {
-      if (e is DioException && CancelToken.isCancel(e)) {
-        throw Exception("cancelled");
-      }
-      throw Exception("Erro de conexão: $e");
-    }
+    final response = await _apiClient.post(
+      '$_baseUrl/chat/message',
+      data: payload,
+      cancelToken: cancelToken,
+    );
+    return _responseMap(response.data, 'enviar a mensagem');
   }
 
   @override
@@ -202,25 +118,10 @@ class ChatRepository implements IChatRepository {
     required bool? isLiked,
     String? reason,
   }) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/chat/messages/$messageId/feedback";
-
-    try {
-      final response = await _dio.post(
-        url,
-        options: _getOptions(),
-        data: {
-          "session_id": sessionId,
-          "is_liked": isLiked,
-          "reason": reason,
-        },
-      );
-
-      if (response.statusCode == 200) return;
-      throw Exception("HttpError: ${response.statusCode}");
-    } catch (e) {
-      throw Exception("Erro ao enviar feedback: $e");
-    }
+    await _apiClient.post(
+      '$_baseUrl/chat/messages/$messageId/feedback',
+      data: {'session_id': sessionId, 'is_liked': isLiked, 'reason': reason},
+    );
   }
 
   @override
@@ -232,35 +133,22 @@ class ChatRepository implements IChatRepository {
     String? model,
     CancelToken? cancelToken,
   }) async {
-    final baseUrl = _getBaseUrl();
-    final url = "$baseUrl/chat/message/continue";
+    final response = await _apiClient.post(
+      '$_baseUrl/chat/message/continue',
+      data: {
+        'session_id': sessionId,
+        'continuation_id': continuationId,
+        'component_type': componentType,
+        'response_data': responseData,
+        'model': model ?? 'CATAS Basic',
+      },
+      cancelToken: cancelToken,
+    );
+    return _responseMap(response.data, 'continuar a mensagem');
+  }
 
-    final payload = {
-      "session_id": sessionId,
-      "continuation_id": continuationId,
-      "component_type": componentType,
-      "response_data": responseData,
-      "model": model ?? "CATAS Basic",
-    };
-
-    try {
-      final response = await _dio.post(
-        url,
-        options: _getOptions(),
-        data: payload,
-        cancelToken: cancelToken,
-      );
-
-      if (response.statusCode == 200) {
-        return response.data as Map<String, dynamic>;
-      } else {
-        throw Exception("HttpError: ${response.statusCode}");
-      }
-    } catch (e) {
-      if (e is DioException && CancelToken.isCancel(e)) {
-        throw Exception("cancelled");
-      }
-      throw Exception("Erro de conexão: $e");
-    }
+  Map<String, dynamic> _responseMap(Object? data, String action) {
+    if (data is Map<String, dynamic>) return data;
+    throw ApiException(message: 'Resposta inválida ao $action.');
   }
 }

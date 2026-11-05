@@ -12,6 +12,7 @@ import '../data/chat_repository_interface.dart';
 import '../data/demo_repository.dart';
 import '../services/token_holder.dart';
 import '../core/app_config.dart';
+import '../core/api_exception.dart';
 import '../models/picked_attachment.dart';
 import 'package:catas/data/storage_repository.dart';
 import 'package:catas/main.dart' show navigatorKey;
@@ -1152,7 +1153,13 @@ class ChatProvider extends ChangeNotifier {
       _thinkingStage = ThinkingStage.idle;
       _lastError = e.toString();
 
-      String friendlyError = "Erro ao enviar mensagem: $e";
+      String friendlyError = e is ApiException
+          ? e.message
+          : 'Não foi possível enviar a mensagem.';
+      if (e is ApiException && e.isUnauthorized) {
+        friendlyError =
+            'Sua sessão expirou ou sua conta não foi encontrada. Por favor, faça login novamente.';
+      }
       if (e is DioException) {
         final data = e.response?.data;
         final detail = data is Map
