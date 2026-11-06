@@ -1,47 +1,47 @@
-name: Cleanup & Maintenance
+# name: Cleanup & Maintenance
 
-on:
-  workflow_dispatch: # Permite execução manual
-  schedule:
-    - cron: '0 0 * * 0' # Todo domingo à meia-noite
+# on:
+#   workflow_dispatch: # Permite execução manual
+#   schedule:
+#     - cron: '0 0 * * 0' # Todo domingo à meia-noite
 
-jobs:
-  cleanup:
-    name: Cleanup Actions Workspace
-    runs-on: ubuntu-latest
-    permissions:
-      actions: write
-      contents: read
-    steps:
-      - name: Delete old artifacts
-        uses: actions/github-script@v7
-        with:
-          github-token: ${{ github.token }}
-          script: |
-            const { data: { artifacts } } = await github.rest.actions.listArtifactsForRepo({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-            });
-            for (const artifact of artifacts) {
-              const createdAt = new Date(artifact.created_at);
-              const now = new Date();
-              const diffDays = Math.ceil((now - createdAt) / (1000 * 60 * 60 * 24));
+# jobs:
+#   cleanup:
+#     name: Cleanup Actions Workspace
+#     runs-on: ubuntu-latest
+#     permissions:
+#       actions: write
+#       contents: read
+#     steps:
+#       - name: Delete old artifacts
+#         uses: actions/github-script@v7
+#         with:
+#           github-token: ${{ github.token }}
+#           script: |
+#             const { data: { artifacts } } = await github.rest.actions.listArtifactsForRepo({
+#               owner: context.repo.owner,
+#               repo: context.repo.repo,
+#             });
+#             for (const artifact of artifacts) {
+#               const createdAt = new Date(artifact.created_at);
+#               const now = new Date();
+#               const diffDays = Math.ceil((now - createdAt) / (1000 * 60 * 60 * 24));
               
-              // Remove artefatos com mais de 14 dias (conforme plano)
-              if (diffDays > 14) {
-                console.log(`Deletando artefato: ${artifact.name} (${artifact.id}) - ${diffDays} dias atrás`);
-                await github.rest.actions.deleteArtifact({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  artifact_id: artifact.id,
-                });
-              }
-            }
+#               // Remove artefatos com mais de 14 dias (conforme plano)
+#               if (diffDays > 14) {
+#                 console.log(`Deletando artefato: ${artifact.name} (${artifact.id}) - ${diffDays} dias atrás`);
+#                 await github.rest.actions.deleteArtifact({
+#                   owner: context.repo.owner,
+#                   repo: context.repo.repo,
+#                   artifact_id: artifact.id,
+#                 });
+#               }
+#             }
 
-      - name: Delete old workflow runs (Logs)
-        uses: Mattraks/delete-workflow-runs@v2
-        with:
-          token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          retain_days: 14
-          keep_minimum_runs: 10
+#       - name: Delete old workflow runs (Logs)
+#         uses: Mattraks/delete-workflow-runs@v2
+#         with:
+#           token: ${{ github.token }}
+#           repository: ${{ github.repository }}
+#           retain_days: 14
+#           keep_minimum_runs: 10
