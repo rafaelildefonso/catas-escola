@@ -19,6 +19,28 @@ app = create_app()
 with app.app_context():
     db.create_all()
     if db.engine.dialect.name == "sqlite":
+        step_log_indexes = {
+            item["name"]
+            for item in inspect(db.engine).get_indexes("automation_step_logs")
+        }
+        step_log_indexes.update(
+            item["name"]
+            for item in inspect(db.engine).get_unique_constraints("automation_step_logs")
+            if item.get("name")
+        )
+        if "automation_step_logs_automation_step_unique" in step_log_indexes:
+            db.session.execute(
+                text("DROP INDEX IF EXISTS automation_step_logs_automation_step_unique")
+            )
+        if "automation_step_logs_run_step_unique" not in step_log_indexes:
+            db.session.execute(
+                text(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS "
+                    "automation_step_logs_run_step_unique "
+                    "ON automation_step_logs (run_id, step_index)"
+                )
+            )
+
         automation_columns = {
             column["name"] for column in inspect(db.engine).get_columns("automations")
         }
