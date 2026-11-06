@@ -12,6 +12,7 @@ from services.profile.verificar_quota_service import VerificarQuotaService
 from services.chat.detectar_onboarding_demo_service import DetectarOnboardingDemoService
 from services.chat.montar_plano_onboarding_service import MontarPlanoOnboardingService
 from services.chat.excecoes_chat import ErroPermissao
+from services.chat.enviar_mensagem_chat_service import EnviarMensagemChatService
 
 
 def _criar_usuario(app, tier="pro"):
@@ -197,8 +198,8 @@ class TestChatbotController:
             assert resp.status_code == 400
             assert resp.json["detail"] == "Mensagem contém padrões proibidos"
 
-    def test_tier_basic_nao_inicia_conversa_livre(self, client, app):
-        usuario = _criar_usuario(app, tier="basic")
+    def test_tier_free_nao_inicia_conversa_livre(self, client, app):
+        usuario = _criar_usuario(app, tier="free")
         with app.app_context():
             resp = client.post(
                 self.URL,
@@ -208,6 +209,16 @@ class TestChatbotController:
             )
             assert resp.status_code == 403
             assert "assinantes" in resp.json["detail"]
+
+    def test_tier_basic_pode_iniciar_conversa_livre(self):
+        permitido = EnviarMensagemChatService._pode_iniciar_conversa_livre(
+            {"subscription_tier": "basic"},
+            None,
+            False,
+            False,
+        )
+
+        assert permitido is True
 
 
 class TestVerificarQuotaService:

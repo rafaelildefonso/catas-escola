@@ -123,6 +123,140 @@ def test_checkout_cria_sessao_stripe(monkeypatch):
     assert profile.stripe_customer_id == "cus_test"
 
 
+def test_checkout_local_retorna_para_a_porta_do_flutter(monkeypatch):
+    profile = Profile()
+    profile.salvar()
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test")
+    monkeypatch.setattr(settings, "PRO_PLAN_ID", "price_pro")
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(settings, "STRIPE_SUCCESS_URL_CONFIGURED", False)
+    monkeypatch.setattr(settings, "STRIPE_CANCEL_URL_CONFIGURED", False)
+    monkeypatch.setattr(
+        stripe.Customer, "create", lambda **kwargs: SimpleNamespace(id="cus_test")
+    )
+    checkout_args = {}
+    monkeypatch.setattr(
+        stripe.checkout.Session,
+        "create",
+        lambda **kwargs: checkout_args.update(kwargs)
+        or SimpleNamespace(url="https://checkout.stripe.test/session"),
+    )
+
+    BillingService.criar_checkout(
+        profile.id, "test@example.com", "pro", "http://localhost:53842"
+    )
+
+    assert checkout_args["success_url"] == (
+        "http://localhost:53842/app/payment-success?billing=success"
+        "&session_id={CHECKOUT_SESSION_ID}"
+    )
+    assert checkout_args["cancel_url"] == "http://localhost:53842/?billing=cancelled"
+
+
+def test_checkout_nunca_aceita_origin_externo_como_retorno(monkeypatch):
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
+    monkeypatch.setattr(settings, "STRIPE_SUCCESS_URL_CONFIGURED", False)
+    monkeypatch.setattr(settings, "STRIPE_CANCEL_URL_CONFIGURED", False)
+    monkeypatch.setattr(
+        settings, "STRIPE_SUCCESS_URL", "https://catas.app/?billing=success"
+    )
+    monkeypatch.setattr(
+        settings, "STRIPE_CANCEL_URL", "https://catas.app/?billing=cancelled"
+    )
+
+    assert BillingService._checkout_return_url("success", "https://evil.example") == (
+        "https://catas.app/?billing=success&session_id={CHECKOUT_SESSION_ID}"
+    )
+
+
+def test_checkout_exige_usuario_autenticado(client):
+    resposta = client.post("/api/v1/billing/checkout", json={"plan_tier": "pro"})
+
+    assert resposta.status_code == 401
+
+
+def test_checkout_rejeita_plano_fora_do_catalogo(client):
+    profile = Profile()
+    profile.salvar()
+
+    resposta = client.post(
+        "/api/v1/billing/checkout",
+        json={"plan_tier": "enterprise"},
+        headers={"Authorization": f"Bearer {_token(profile.id)}"},
+    )
+
+    assert resposta.status_code == 400
+    assert resposta.get_json()["detail"] == "Plano inválido."
+
+
+def test_webhook_rejeita_requisicao_sem_assinatura(monkeypatch):
+    monkeypatch.setattr(settings, "STRIPE_WEBHOOK_SECRET", "whsec_test")
+
+    with pytest.raises(BillingError, match="Assinatura do webhook ausente"):
+        BillingService.processar_webhook(b"{}", None)
+
+
+def test_confirmar_checkout_sincroniza_plano_pro(monkeypatch):
+    profile = Profile(stripe_customer_id="cus_test")
+    profile.salvar()
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test")
+    monkeypatch.setattr(settings, "PRO_PLAN_ID", "price_pro")
+    subscription = {
+        "id": "sub_test",
+        "customer": "cus_test",
+        "status": "active",
+        "current_period_end": 1_800_000_000,
+        "items": {"data": [{"price": {"id": "price_pro"}}]},
+    }
+    checkout_session = {
+        "mode": "subscription",
+        "status": "complete",
+        "client_reference_id": profile.id,
+        "customer": "cus_test",
+        "subscription": subscription,
+    }
+    monkeypatch.setattr(
+        stripe.checkout.Session,
+        "retrieve",
+        lambda session_id, **kwargs: checkout_session,
+    )
+
+    result = BillingService.confirmar_checkout(profile.id, "cs_test")
+
+    assert result.subscription_tier == "pro"
+    assert result.subscription_status == "active"
+    assert result.monthly_quota_limit == 7500
+    assert result.stripe_subscription_id == "sub_test"
+
+
+def test_confirmar_checkout_nao_aceita_sessao_de_outro_usuario(monkeypatch):
+    profile = Profile(stripe_customer_id="cus_test")
+    profile.salvar()
+    monkeypatch.setattr(settings, "STRIPE_SECRET_KEY", "sk_test")
+    monkeypatch.setattr(
+        stripe.checkout.Session,
+        "retrieve",
+        lambda session_id, **kwargs: {
+            "mode": "subscription",
+            "status": "complete",
+            "client_reference_id": "outro-perfil",
+            "customer": "cus_test",
+            "subscription": None,
+        },
+    )
+
+    with pytest.raises(BillingError, match="Sessão de checkout não encontrada"):
+        BillingService.confirmar_checkout(profile.id, "cs_de_outro_usuario")
+
+    assert profile.subscription_tier == "basic"
+
+
+def test_confirmar_checkout_exige_usuario_autenticado(client):
+    resposta = client.get("/api/v1/billing/checkout-session/cs_test")
+
+    assert resposta.status_code == 401
+
+
 def test_webhook_stripe_atualiza_plano_e_cota(monkeypatch):
     profile = Profile()
     profile.quota_used = 200

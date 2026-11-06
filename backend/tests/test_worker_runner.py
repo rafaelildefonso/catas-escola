@@ -321,6 +321,30 @@ class TestRunnerUnit:
 
         assert result["s1"]["status_code"] == 200
 
+    @pytest.mark.asyncio
+    async def test_keeps_automation_id_separate_from_run_id(self, runner, mock_http):
+        plan = {
+            "name": "Separated IDs",
+            "steps": [
+                {
+                    "step_id": "s1",
+                    "module_id": "http.request",
+                    "params": {"url": "https://example.com", "method": "GET"},
+                }
+            ],
+        }
+
+        with patch("worker.runner._log_step") as log_step:
+            result = await runner.run_plan(
+                plan,
+                run_id="run-123",
+                automation_id="automation-123",
+            )
+
+        assert result["run_id"] == "run-123"
+        assert result["automation_id"] == "automation-123"
+        assert log_step.call_args.args[:3] == ("run-123", "automation-123", 0)
+
 
 class TestAutomationRunnerService:
     """Testa a integração do service layer com o runner."""
@@ -355,7 +379,7 @@ class TestAutomationRunnerService:
             )
 
             assert "id" in result
-            assert result["id"] == "direct-run_123"
+            assert result["id"] == "run_123"
 
     @pytest.mark.asyncio
     async def test_trigger_automation_from_webhook_returns_webhook_id(self):
@@ -374,6 +398,9 @@ class TestAutomationRunnerService:
             )
 
         assert result["id"].startswith("webhook-")
+        payload = mock_post.call_args.kwargs["json"]
+        assert payload["automation_id"] == "wh_123"
+        assert payload["run_id"] == result["id"]
 
     @pytest.mark.asyncio
     async def test_start_automation_calls_worker_http_and_returns_run_id(self):
@@ -402,9 +429,12 @@ class TestAutomationRunnerService:
             result = await AutomationRunnerService.start_automation("user_123", plan)
 
         assert "first_execution_run_id" in result
-        assert result["first_execution_run_id"].startswith("direct-")
+        assert result["first_execution_run_id"] == "user_123"
 
         mock_post.assert_called_once()
+        payload = mock_post.call_args.kwargs["json"]
+        assert payload["run_id"] == "user_123"
+        assert payload["automation_id"] is None
 
     @pytest.mark.asyncio
     async def test_start_automation_raises_when_worker_unreachable(self):

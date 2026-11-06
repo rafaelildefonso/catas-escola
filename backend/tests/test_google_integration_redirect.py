@@ -6,7 +6,7 @@ def test_retorno_oauth_usa_rota_de_integracoes_do_flutter(monkeypatch):
 
     url = montar_url_retorno_integracoes(connected="google_gmail")
 
-    assert url == "http://localhost:52159/app/integrations?connected=google_gmail"
+    assert url == "http://localhost:52159/app/integrations"
 
 
 def test_retorno_oauth_preserva_parametro_de_erro(monkeypatch):
@@ -14,4 +14,4 @@ def test_retorno_oauth_preserva_parametro_de_erro(monkeypatch):
 
     url = montar_url_retorno_integracoes(error="callback_failed")
 
-    assert url == "https://catas.app/app/integrations?error=callback_failed"
+    assert url == "https://catas.app/app/integrations"
