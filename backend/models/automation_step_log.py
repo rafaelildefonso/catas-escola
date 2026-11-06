@@ -23,7 +23,7 @@ class AutomationStepLog(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
-        db.UniqueConstraint("automation_id", "step_index", name="automation_step_logs_automation_step_unique"),
+        db.UniqueConstraint("run_id", "step_index", name="automation_step_logs_run_step_unique"),
     )
 
     def salvar(self):

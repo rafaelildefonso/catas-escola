@@ -19,11 +19,12 @@ from models.ia_memory import IaMemory
 from models.attachment import Attachment
 from models.notification import Notification
 from models.termo_aceite import TermoAceite
+from models.generated_report import GeneratedReport
 
 __all__ = [
     "User", "Profile", "ChatSession", "Message", "Automation", "AutomationRun",
     "AutomationStepLog", "AutomationGenerationLog", "ExecutionLog", "Integration",
     "MessageFeedback", "AiSuggestion", "PageContext", "BrowserSession",
     "PageAnalysisCache", "UserDevice", "UserWebhookConfig", "IaMemory",
-    "Attachment", "Notification", "TermoAceite",
+    "Attachment", "Notification", "TermoAceite", "GeneratedReport",
 ]
