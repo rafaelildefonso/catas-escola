@@ -188,13 +188,18 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final authProvider = context.read<AuthProvider>();
     final industry = authProvider.profile?.industry ?? 'other';
+    final loggedInEmail = authProvider.userEmail ?? 'meu e-mail cadastrado';
 
     String message =
         'CATAS: quero criar minha primeira automação de demonstração — um lembrete simples para começar.';
 
     if (industry == 'real_estate') {
       message =
-          'CATAS: Quero organizar meus leads do Zap Imóveis no Google Sheets e enviar um e-mail de boas-vindas automático.';
+          'CATAS: Todos os dias, às 9h, quero verificar os novos leads do Zap Imóveis. '
+          'Organize nome, telefone, e-mail e imóvel de interesse em uma planilha do Google Sheets. '
+          'Para cada novo lead, envie automaticamente um e-mail de boas-vindas para o e-mail informado pelo próprio lead, '
+          'com o assunto "Boas-vindas! Recebemos seu contato". '
+          'Quando precisar usar meu e-mail de contato, use $loggedInEmail.';
     } else if (industry == 'marketing') {
       message =
           'CATAS: Quero consolidar os dados das minhas campanhas em uma planilha do Google Sheets e gerar um relatório resumido com IA.';
@@ -860,7 +865,7 @@ class _ChatScreenState extends State<ChatScreen> {
       final text = _controller.text;
       final isEmpty = text.trim().isEmpty;
       if (isEmpty != _inputVazio) {
-        _inputVazio = isEmpty;
+        setState(() { _inputVazio = isEmpty; });
       }
       // Salva o rascunho no provider
       context.read<ChatProvider>().setMessageDraft(text);

@@ -266,14 +266,14 @@ class _PricingScreenState extends State<PricingScreen>
       features: fullFeatures
           ? [
               "Chatbot NLU Inteligente",
-              "Integração Google e Notion",
+              "Integração Google e e Gmail",
               "Suporte a anexos",
               "Resumos de textos e links",
               "Histórico de 30 dias",
             ]
           : [
               "Chatbot NLU",
-              "Google/Notion",
+              "Google e Gmail",
               "5 anexos/mês",
               "Resumos",
               "30 dias",
@@ -302,7 +302,6 @@ class _PricingScreenState extends State<PricingScreen>
               "Tudo que é gratuito",
               "Automações multi-step",
               "Anexos Ilimitados",
-              "Integração WhatsApp e Slack",
               "Histórico Ilimitado",
               "IA personalizada pelo histórico",
             ]
@@ -310,7 +309,6 @@ class _PricingScreenState extends State<PricingScreen>
               "Tudo do Basic",
               "Multi-step",
               "Anexos Ilimit.",
-              "WhatsApp/Slack",
               "Ilimitado",
               "Personalizado",
             ],
@@ -340,7 +338,6 @@ class _PricingScreenState extends State<PricingScreen>
       features: fullFeatures
           ? [
               "Tudo do plano Pro",
-              "Fluxos customizados n8n",
               "Acesso à API do CATAS",
               "Agentes Compartilhados",
               "Tokens extendidos",
@@ -348,7 +345,6 @@ class _PricingScreenState extends State<PricingScreen>
             ]
           : [
               "Tudo do Pro",
-              "Custom n8n",
               "API Access",
               "Compartilhados",
               "Tokens ext.",

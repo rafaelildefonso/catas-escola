@@ -14,6 +14,26 @@ class BillingRepository {
     return _createSession('portal', const {});
   }
 
+  Future<Map<String, dynamic>> confirmCheckout(String sessionId) async {
+    final token = TokenHolder().token;
+    if (token == null) throw Exception('Usuário não autenticado.');
+    final response = await http.get(
+      Uri.parse(
+        '${AppConfig.apiBaseUrl}/billing/checkout-session/${Uri.encodeComponent(sessionId)}',
+      ),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    final data = jsonDecode(utf8.decode(response.bodyBytes));
+    if (response.statusCode != 200) {
+      final detail = data is Map<String, dynamic> && data['detail'] is String
+          ? data['detail'] as String
+          : 'Não foi possível confirmar o pagamento.';
+      throw BillingConfirmationException(detail, response.statusCode);
+    }
+    if (data is Map<String, dynamic>) return data;
+    throw Exception('Resposta inválida do serviço de cobrança.');
+  }
+
   Future<String> _createSession(String path, Map<String, dynamic> body) async {
     final token = TokenHolder().token;
     if (token == null) throw Exception('Usuário não autenticado.');
@@ -44,4 +64,14 @@ class BillingRepository {
     }
     throw Exception('Resposta inválida do serviço de cobrança.');
   }
+}
+
+class BillingConfirmationException implements Exception {
+  final String message;
+  final int statusCode;
+
+  BillingConfirmationException(this.message, this.statusCode);
+
+  @override
+  String toString() => message;
 }

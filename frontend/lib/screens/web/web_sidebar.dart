@@ -73,9 +73,9 @@ class _WebSidebarState extends State<WebSidebar> {
           // Header
           Container(
             padding: EdgeInsets.fromLTRB(
-              _isCollapsed ? 11 : 16,
+              _isCollapsed ? 0 : 16,
               20,
-              _isCollapsed ? 11 : 16,
+              _isCollapsed ? 0 : 16,
               16,
             ),
             child: Column(
@@ -107,31 +107,37 @@ class _WebSidebarState extends State<WebSidebar> {
                           ),
                         ],
                       ),
-                    Tooltip(
-                      message: _isCollapsed ? 'Expandir menu' : 'Recolher menu',
-                      child: Semantics(
-                        button: true,
-                        label: _isCollapsed
-                            ? 'Expandir menu lateral'
-                            : 'Recolher menu lateral',
-                        child: SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: FilledButton(
-                            onPressed: () =>
-                                setState(() => _isCollapsed = !_isCollapsed),
-                            style: FilledButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              alignment: Alignment.center,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                    Flexible(
+                      child: Tooltip(
+                        message: _isCollapsed
+                            ? 'Expandir menu'
+                            : 'Recolher menu',
+                        child: Semantics(
+                          button: true,
+                          label: _isCollapsed
+                              ? 'Expandir menu lateral'
+                              : 'Recolher menu lateral',
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: FilledButton(
+                              onPressed: () =>
+                                  setState(() => _isCollapsed = !_isCollapsed),
+                              style: FilledButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                                alignment: Alignment.center,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                backgroundColor: theme.colorScheme.surface,
+                                foregroundColor: theme.colorScheme.onSurface,
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              backgroundColor: theme.colorScheme.surface,
-                              foregroundColor: theme.colorScheme.onSurface,
-                            ),
-                            child: Icon(
-                              _isCollapsed ? Icons.menu : Icons.menu_open,
-                              size: 18,
+                              child: Icon(
+                                _isCollapsed ? Icons.menu : Icons.menu_open,
+                                size: 18,
+                              ),
                             ),
                           ),
                         ),
@@ -161,6 +167,8 @@ class _WebSidebarState extends State<WebSidebar> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         child: SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
@@ -343,7 +351,7 @@ class _WebSidebarState extends State<WebSidebar> {
             child: InkWell(
               onTap: widget.onOpenSettings,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(_isCollapsed ? 0 : 16),
                 child: Row(
                   mainAxisAlignment: _isCollapsed
                       ? MainAxisAlignment.center
@@ -440,13 +448,19 @@ class _WebSidebarState extends State<WebSidebar> {
           },
           child: Container(
             constraints: const BoxConstraints(minHeight: 48),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: EdgeInsets.symmetric(
+              horizontal: _isCollapsed ? 0 : 20,
+              vertical: 12,
+            ),
             decoration: BoxDecoration(
               color: isSelected
                   ? theme.colorScheme.primary.withValues(alpha: 0.1)
                   : null,
             ),
             child: Row(
+              mainAxisAlignment: _isCollapsed
+                  ? MainAxisAlignment.center
+                  : MainAxisAlignment.start,
               children: [
                 Icon(
                   icon,

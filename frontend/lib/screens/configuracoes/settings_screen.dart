@@ -114,8 +114,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   fontWeight: FontWeight.bold,
                   color: auth.subscriptionTier == 'max'
                       ? (theme.brightness == Brightness.dark
-                          ? Colors.blue[400]
-                          : const Color(0xFF0D47A1))
+                            ? Colors.blue[400]
+                            : const Color(0xFF0D47A1))
                       : (auth.subscriptionTier == 'pro'
                             ? theme.colorScheme.primary
                             : Colors.grey),
@@ -235,6 +235,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 context.push(AppRoutes.settingsSubscription);
               },
             ),
+            _buildDivider(),
+            _buildTapTile(
+              icon: Icons.file_download_outlined,
+              title: 'Exportar dados',
+              onTap: () {
+                context.push(AppRoutes.settingsExport);
+              },
+            ),
           ],
         ),
 
@@ -273,13 +281,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildTapTile(
               icon: Icons.info_outline,
               title: l10n.settingsAbout,
-              onTap: () { if (kIsWeb) navigateTo('/about'); },
+              onTap: () {
+                if (kIsWeb) navigateTo('/about');
+              },
             ),
             _buildDivider(),
             _buildTapTile(
               icon: Icons.help_outline_rounded,
               title: l10n.settingsGetHelp,
-              onTap: () { if (kIsWeb) navigateTo('/contact'); },
+              onTap: () {
+                if (kIsWeb) navigateTo('/contact');
+              },
             ),
           ],
         ),
@@ -328,7 +340,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: theme.colorScheme.error,
-              side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.3)),
+              side: BorderSide(
+                color: theme.colorScheme.error.withValues(alpha: 0.3),
+              ),
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

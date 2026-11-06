@@ -1,81 +1,207 @@
-﻿<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CATAS – Automatize com Inteligência Artificial</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="/css/landing.css">
-<script src="/js/landing.js" defer></script>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070A13">
+  <meta name="description" content="O CATAS aprende com o jeito que você trabalha e transforma tarefas recorrentes em automações.">
+  <title>CATAS — Automatize o que se repete</title>
+  <link rel="icon" href="/web_assets/logo.png" type="image/png">
+  <link rel="stylesheet" href="/css/landing.css">
+  <script src="/js/landing.js" defer></script>
 </head>
 <body>
-
-<header>
-  <a href="/" class="logo">
-    <img src="/web_assets/logo.png" alt="CATAS" class="logo-img" id="logoImg" onerror="document.getElementById('logoImg').style.display='none';document.getElementById('logoFallback').style.display='flex'">
-    <div class="logo-icon" id="logoFallback">CA</div>
-    CATAS
-  </a>
-  <div class="auth-area" id="authArea">
-    <div class="user-menu" id="userMenu" style="display:none">
-      <a href="/app" class="btn-primary">Ir para o App</a>
-      <span class="user-email" id="userEmail"></span>
-      <img class="user-avatar" id="userAvatar" style="display:none" alt="Foto">
-      <div class="user-avatar-placeholder" id="userAvatarPlaceholder" style="display:none"></div>
-    </div>
-    <div id="guestMenu">
-      <a href="/app/login" class="btn-ghost">Entrar</a>
-      <a href="/app/login" class="btn-primary">Cadastrar</a>
-    </div>
-  </div>
-</header>
-
-<main>
-  <div class="hero">
-    <h1>Automatize com <span class="highlight">Inteligência Artificial</span></h1>
-    <p>Transforme suas intenções em automações poderosas usando apenas linguagem natural. Sem código, sem complicação.</p>
-    <div class="hero-actions">
-      <a href="/app" class="btn-hero">
-        <i data-lucide="zap" style="width: 20px; height: 20px;"></i>
-        Ir para o App
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <header class="header" id="topo">
+    <div class="shell header-inner">
+      <a class="brand" href="#topo" aria-label="CATAS, início">
+        <img src="/web_assets/catas-marca.png" alt="" width="34" height="26">
+        <span>CATAS</span>
       </a>
-      <a href="/about" class="btn-hero-secondary">
-        <i data-lucide="info" style="width: 18px; height: 18px;"></i>
-        Sobre o CATAS
+      <nav aria-label="Principal" class="nav">
+        <a href="#conceito">O produto</a>
+        <a href="#mecanismo">Como funciona</a>
+        <a href="/about">Sobre</a>
+        <a href="/contact">Contato</a>
+      </nav>
+      <div class="auth-area" aria-label="Acesso ao CATAS">
+        <div class="user-menu" id="userMenu" hidden>
+          <a class="header-link" href="/app">Ir para o App <span aria-hidden="true">↗</span></a>
+          <span class="user-email" id="userEmail"></span>
+          <img class="user-avatar" id="userAvatar" hidden alt="Foto do perfil">
+          <span class="user-avatar-placeholder" id="userAvatarPlaceholder" hidden aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="conteudo">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="shell hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow"><span aria-hidden="true"></span> AUTOMAÇÃO INTELIGENTE</p>
+          <h1 id="hero-title"><span><span>Automatize</span></span> <span><span>o que se repete<span class="hero-dot">.</span></span></span></h1>
+          <p>O CATAS aprende com o seu jeito de trabalhar e transforma tarefas recorrentes em fluxos automáticos.</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="/app">Ir para o App <span aria-hidden="true">↗</span></a>
+            <a class="button button-secondary" href="#demo">Ver demonstração <span aria-hidden="true">↓</span></a>
+          </div>
+        </div>
+
+        <figure class="hero-figure" aria-label="Exemplo de um fluxo que prepara um relatório toda segunda-feira">
+          <div class="hero-mat" aria-hidden="true">
+            <span class="mat-index mono">CATAS / 01</span>
+            <span class="mat-cross">+</span>
+          </div>
+          <div class="product-window" aria-hidden="true">
+            <div class="window-bar">
+              <div><img src="/web_assets/catas-marca.png" alt="" width="23" height="17"><b>CATAS</b></div>
+              <span class="mono">ESPAÇO DE TRABALHO</span>
+            </div>
+            <div class="window-body">
+              <div class="window-crumb mono">AUTOMAÇÕES <span>/</span> FLUXO 01</div>
+              <div class="window-title"><strong>Relatório semanal</strong><span class="window-status mono">ATIVO</span></div>
+              <div class="window-trigger"><span class="trigger-label mono">GATILHO</span><span>Toda segunda-feira · 09:00</span></div>
+              <ol class="window-steps">
+                <li><b>01</b><span>Reunir dados da semana</span><i></i></li>
+                <li><b>02</b><span>Preencher o modelo</span><i></i></li>
+                <li><b>03</b><span>Salvar relatório</span><i></i></li>
+              </ol>
+            </div>
+            <div class="window-foot mono"><span>3 AÇÕES NO FLUXO</span><span>01 / 01</span></div>
+          </div>
+          <div class="hero-stamp" aria-hidden="true"><span class="stamp-mark">↳</span><div><b>Fluxo automatizado</b><span>Relatório semanal</span></div><span class="stamp-check">✓</span></div>
+          <figcaption class="mono">FIG. 01 <span></span> EXEMPLO DE AUTOMAÇÃO</figcaption>
+        </figure>
+
+        <div class="hero-foot mono">
+          <a href="#conceito"><span aria-hidden="true">↓</span> EXPLORE O CATAS</a>
+          <span>OBSERVAR / APRENDER / AUTOMATIZAR</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="concept" id="conceito" aria-labelledby="concept-title">
+      <div class="shell">
+        <div class="section-rule mono" data-reveal><span><b>01</b> O PRODUTO</span><span>CATAS / AUTOMAÇÃO</span></div>
+        <div class="concept-intro">
+          <h2 class="section-title" id="concept-title" data-reveal>Seu jeito de trabalhar <em>vira um fluxo.</em></h2>
+          <p data-reveal>Toda rotina tem uma sequência. Quando as mesmas ações voltam a acontecer, o CATAS reconhece o padrão e aprende a repetir a tarefa por você.</p>
+        </div>
+        <div class="pattern" data-reveal>
+          <p class="pattern-caption mono"><span>EXEMPLO / 01</span><span>RELATÓRIO SEMANAL</span></p>
+          <div class="pattern-body">
+            <div class="pattern-label">
+              <p class="mono">TODA SEGUNDA</p>
+              <strong>A mesma<br>sequência.</strong>
+            </div>
+            <ol class="pattern-sequence">
+              <li><span class="mono">01</span> Reunir dados</li>
+              <li><span class="mono">02</span> Preencher modelo</li>
+              <li><span class="mono">03</span> Salvar relatório</li>
+            </ol>
+            <div class="pattern-end"><span aria-hidden="true">↳</span><b>Um fluxo<br> recorrente.</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mechanism" id="mecanismo" aria-labelledby="mechanism-title">
+      <div class="shell">
+        <div class="section-rule mono" data-reveal><span><b>02</b> COMO FUNCIONA</span><span>UM FLUXO, TRÊS ETAPAS</span></div>
+        <div class="mechanism-heading" data-reveal>
+          <h2 class="section-title" id="mechanism-title">Da primeira ação <em>à automação.</em></h2>
+        </div>
+        <div class="mechanism-grid">
+          <div class="mechanism-sticky" aria-hidden="true">
+            <div class="mechanism-frame" data-stage="0">
+              <div class="frame-bar mono"><span>EVOLUÇÃO DO FLUXO</span><span class="frame-stage">01 / 03</span></div>
+              <div class="frame-content">
+                <div class="frame-info"><span class="frame-number">01</span><div><span class="frame-label mono">REGISTRO</span><strong class="frame-title">Ações observadas</strong></div></div>
+                <div class="frame-track">
+                  <div><span>01</span><b>Dados</b></div>
+                  <div><span>02</span><b>Modelo</b></div>
+                  <div><span>03</span><b>Relatório</b></div>
+                </div>
+              </div>
+              <div class="frame-foot mono"><span class="frame-note">EXEMPLO / RELATÓRIO SEMANAL</span><span class="frame-progress"></span></div>
+            </div>
+          </div>
+          <div class="mechanism-steps">
+            <article class="mechanism-step" data-step="0">
+              <div data-reveal>
+                <p class="step-index mono">01 / OBSERVAR</p>
+                <h3>Você trabalha como de costume.</h3>
+                <p>Toda segunda, você reúne os dados, preenche o modelo e salva o relatório. O CATAS observa a ordem dessas ações.</p>
+              </div>
+            </article>
+            <article class="mechanism-step" data-step="1">
+              <div data-reveal>
+                <p class="step-index mono">02 / APRENDER</p>
+                <h3>O padrão ganha forma.</h3>
+                <p>Quando a sequência se repete, o CATAS identifica os passos em comum e organiza a tarefa em um fluxo.</p>
+              </div>
+            </article>
+            <article class="mechanism-step" data-step="2">
+              <div data-reveal>
+                <p class="step-index mono">03 / AUTOMATIZAR</p>
+                <h3>O fluxo assume a tarefa.</h3>
+                <p>No exemplo, o relatório seguinte é preparado automaticamente quando chega a próxima segunda.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="lab" id="demo" aria-labelledby="lab-title">
+      <div class="shell">
+        <div class="section-rule mono" data-reveal><span><b>03</b> DEMONSTRAÇÃO</span><span>AMBIENTE SIMULADO</span></div>
+        <div class="lab-intro">
+          <h2 class="section-title" id="lab-title" data-reveal>Veja um fluxo <em>em ação.</em></h2>
+          <p data-reveal>Escolha uma rotina e acompanhe a execução de cada etapa. Os exemplos usam dados fictícios.</p>
+        </div>
+
+        <div class="console" data-reveal>
+          <div class="console-top mono"><span>CATAS / SIMULADOR</span><span>DEMONSTRAÇÃO</span></div>
+          <fieldset class="scenarios">
+            <legend class="mono">ESCOLHA UMA ROTINA</legend>
+            <label class="scenario"><input type="radio" name="routine" value="report" checked><span><small>01</small> Relatório semanal</span></label>
+            <label class="scenario"><input type="radio" name="routine" value="files"><span><small>02</small> Organizar arquivos</span></label>
+            <label class="scenario"><input type="radio" name="routine" value="meeting"><span><small>03</small> Resumo de reunião</span></label>
+          </fieldset>
+          <div class="console-flow">
+            <div class="console-flow-title">
+              <div><p class="mono">SEQUÊNCIA DE AÇÕES</p><h3 id="routine-title">Relatório semanal</h3></div>
+              <span class="console-state mono" id="routine-state">PRONTO</span>
+            </div>
+            <ol class="routine-steps" id="routine-steps">
+              <li><span class="routine-num" aria-hidden="true">01</span><span class="routine-name">Reunir os dados da semana</span><span class="routine-status mono">AGUARDANDO</span></li>
+              <li><span class="routine-num" aria-hidden="true">02</span><span class="routine-name">Preencher o modelo</span><span class="routine-status mono">AGUARDANDO</span></li>
+              <li><span class="routine-num" aria-hidden="true">03</span><span class="routine-name">Salvar o relatório</span><span class="routine-status mono">AGUARDANDO</span></li>
+            </ol>
+            <div class="console-controls">
+              <button class="button button-primary" id="run-demo" type="button" disabled><span>Simular rotina</span><span aria-hidden="true">↗</span></button>
+              <p class="console-result" id="routine-result" role="status">Demonstração ilustrativa com dados fictícios.</p>
+            </div>
+            <noscript><p>Ative o JavaScript para executar a simulação.</p></noscript>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer-inner">
+      <a class="brand" href="#topo" aria-label="CATAS, início">
+        <img src="/web_assets/catas-marca.png" alt="" width="34" height="26"><span>CATAS</span>
       </a>
+      <p>Automação que aprende com a sua rotina.</p>
+      <nav class="footer-links" aria-label="Institucional">
+        <a href="/terms">Termos</a><a href="/consent">Consentimento</a><a href="/privacy">Privacidade</a><a href="/security">Segurança</a><a href="/refund">Reembolso</a><a href="/cookies">Cookies</a><a href="/about">Sobre</a><a href="/contact">Contato</a>
+      </nav>
+      <a class="mono" href="#topo">VOLTAR AO TOPO <span aria-hidden="true">↑</span></a>
     </div>
-    <div class="features">
-      <div class="feature-card">
-        <i data-lucide="message-square-text" style="width: 24px; height: 24px;"></i>
-        <h3>Linguagem Natural</h3>
-        <p>Descreva o que você quer e a IA cria a automação. Simples como conversar.</p>
-      </div>
-      <div class="feature-card">
-        <i data-lucide="zap" style="width: 24px; height: 24px;"></i>
-        <h3>Sem Código</h3>
-        <p>Automatize processos complexos sem escrever uma única linha de código.</p>
-      </div>
-      <div class="feature-card">
-        <i data-lucide="smartphone" style="width: 24px; height: 24px;"></i>
-        <h3>100% Mobile</h3>
-        <p>Gerencie suas automações de qualquer lugar, direto do seu smartphone.</p>
-      </div>
-    </div>
-  </div>
-</main>
-
-<footer>
-  <p>2026&copy; CATAS – Inteligência Artificial para Automação</p>
-  <div class="footer-links">
-    <a href="/terms">Termos</a>
-    <a href="/consent">Termo de Consentimento</a>
-    <a href="/privacy">Privacidade</a>
-    <a href="/security">Segurança</a>
-    <a href="/about">Sobre</a>
-    <a href="/contact">Contato</a>
-  </div>
-</footer>
-
+  </footer>
 </body>
 </html>

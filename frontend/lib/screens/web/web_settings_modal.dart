@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../../core/web_page_renderer.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/router.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/locale_provider.dart';
@@ -151,7 +153,8 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                                             style: GoogleFonts.inter(
                                               fontSize: 28,
                                               fontWeight: FontWeight.bold,
-                                              color: theme.colorScheme.onPrimary,
+                                              color:
+                                                  theme.colorScheme.onPrimary,
                                             ),
                                           ),
                                         )
@@ -184,11 +187,11 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                                     fontWeight: FontWeight.bold,
                                     color: auth.subscriptionTier == 'max'
                                         ? (theme.brightness == Brightness.dark
-                                            ? Colors.blue[400]!
-                                            : const Color(0xFF0D47A1))
+                                              ? Colors.blue[400]!
+                                              : const Color(0xFF0D47A1))
                                         : (auth.subscriptionTier == 'pro'
-                                            ? theme.colorScheme.primary
-                                            : Colors.grey),
+                                              ? theme.colorScheme.primary
+                                              : Colors.grey),
                                   ),
                                 ),
                                 const SizedBox(height: 12),
@@ -203,7 +206,9 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                                     Icons.star_outline_rounded,
                                     size: 18,
                                   ),
-                                  label: Text(AppLocalizations.of(context)!.viewPlans),
+                                  label: Text(
+                                    AppLocalizations.of(context)!.viewPlans,
+                                  ),
                                   style: FilledButton.styleFrom(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 20,
@@ -221,32 +226,55 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                           const SizedBox(height: 28),
 
                           // Preferences Section
-                          _buildSectionHeader(AppLocalizations.of(context)!.settingsPreferences),
+                          _buildSectionHeader(
+                            AppLocalizations.of(context)!.settingsPreferences,
+                          ),
                           const SizedBox(height: 12),
                           _buildSettingsCard(
                             children: [
                               _buildDropdownTile(
                                 icon: Icons.notifications_outlined,
-                                title: AppLocalizations.of(context)!.settingsNotifications,
-                                subtitle: AppLocalizations.of(context)!.settingsNotificationsSub,
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsNotifications,
+                                subtitle: AppLocalizations.of(
+                                  context,
+                                )!.settingsNotificationsSub,
                                 options: [
-                                  AppLocalizations.of(context)!.settingsNotifAll,
-                                  AppLocalizations.of(context)!.settingsNotifImportant,
-                                  AppLocalizations.of(context)!.settingsNotifNone,
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.settingsNotifAll,
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.settingsNotifImportant,
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.settingsNotifNone,
                                 ],
                                 value: _notificationsPreference == "Todas"
-                                    ? AppLocalizations.of(context)!.settingsNotifAll
+                                    ? AppLocalizations.of(
+                                        context,
+                                      )!.settingsNotifAll
                                     : _notificationsPreference == "Importantes"
-                                    ? AppLocalizations.of(context)!.settingsNotifImportant
-                                    : AppLocalizations.of(context)!.settingsNotifNone,
-                                onChanged: (val) =>
-                                    setState(() => _notificationsPreference = val),
+                                    ? AppLocalizations.of(
+                                        context,
+                                      )!.settingsNotifImportant
+                                    : AppLocalizations.of(
+                                        context,
+                                      )!.settingsNotifNone,
+                                onChanged: (val) => setState(
+                                  () => _notificationsPreference = val,
+                                ),
                               ),
                               _buildDivider(),
                               _buildDropdownTile(
                                 icon: Icons.light_mode_outlined,
-                                title: AppLocalizations.of(context)!.settingsAppearance,
-                                subtitle: AppLocalizations.of(context)!.settingsAppearanceSub,
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsAppearance,
+                                subtitle: AppLocalizations.of(
+                                  context,
+                                )!.settingsAppearanceSub,
                                 value: currentThemeString,
                                 options: [
                                   AppLocalizations.of(context)!.themeLight,
@@ -254,36 +282,59 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                                   AppLocalizations.of(context)!.themeSystem,
                                 ],
                                 onChanged: (val) {
-                                  if (val == AppLocalizations.of(context)!.themeLight) {
+                                  if (val ==
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.themeLight) {
                                     themeProvider.setThemeMode(ThemeMode.light);
-                                  } else if (val == AppLocalizations.of(context)!.themeDark) {
+                                  } else if (val ==
+                                      AppLocalizations.of(context)!.themeDark) {
                                     themeProvider.setThemeMode(ThemeMode.dark);
                                   } else {
-                                    themeProvider.setThemeMode(ThemeMode.system);
+                                    themeProvider.setThemeMode(
+                                      ThemeMode.system,
+                                    );
                                   }
                                 },
                               ),
                               _buildDivider(),
                               _buildDropdownTile(
                                 icon: Icons.language,
-                                title: AppLocalizations.of(context)!.settingsLanguage,
-                                subtitle: AppLocalizations.of(context)!.settingsLanguageSub,
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsLanguage,
+                                subtitle: AppLocalizations.of(
+                                  context,
+                                )!.settingsLanguageSub,
                                 value: currentLanguageLabel,
                                 options: [
                                   AppLocalizations.of(context)!.systemLanguage,
-                                  AppLocalizations.of(context)!.languagePortuguese,
+                                  AppLocalizations.of(
+                                    context,
+                                  )!.languagePortuguese,
                                   AppLocalizations.of(context)!.languageEnglish,
                                 ],
                                 onChanged: (val) {
                                   Locale? newLocale;
-                                  if (val == AppLocalizations.of(context)!.systemLanguage) {
+                                  if (val ==
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.systemLanguage) {
                                     newLocale = null;
-                                  } else if (val == AppLocalizations.of(context)!.languagePortuguese) {
+                                  } else if (val ==
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.languagePortuguese) {
                                     newLocale = const Locale('pt');
-                                  } else if (val == AppLocalizations.of(context)!.languageEnglish) {
+                                  } else if (val ==
+                                      AppLocalizations.of(
+                                        context,
+                                      )!.languageEnglish) {
                                     newLocale = const Locale('en');
                                   }
-                                  context.read<LocaleProvider>().setLocale(newLocale);
+                                  context.read<LocaleProvider>().setLocale(
+                                    newLocale,
+                                  );
                                 },
                               ),
                             ],
@@ -292,13 +343,19 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                           const SizedBox(height: 24),
 
                           // Account & Subscription Section
-                          _buildSectionHeader(AppLocalizations.of(context)!.settingsAccountSubsciption),
+                          _buildSectionHeader(
+                            AppLocalizations.of(
+                              context,
+                            )!.settingsAccountSubsciption,
+                          ),
                           const SizedBox(height: 12),
                           _buildSettingsCard(
                             children: [
                               _buildTapTile(
                                 icon: Icons.person_outline,
-                                title: AppLocalizations.of(context)!.settingsAccountConfig,
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsAccountConfig,
                                 onTap: () {
                                   _setView(_SettingsView.account);
                                 },
@@ -306,9 +363,21 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                               _buildDivider(),
                               _buildTapTile(
                                 icon: Icons.workspace_premium_outlined,
-                                title: AppLocalizations.of(context)!.settingsManageSub,
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsManageSub,
                                 onTap: () {
                                   _setView(_SettingsView.subscription);
+                                },
+                              ),
+                              _buildDivider(),
+                              _buildTapTile(
+                                icon: Icons.file_download_outlined,
+                                title: 'Exportar dados',
+                                onTap: () {
+                                  final router = GoRouter.of(context);
+                                  Navigator.of(context).pop();
+                                  router.go(AppRoutes.settingsExport);
                                 },
                               ),
                             ],
@@ -317,13 +386,17 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                           const SizedBox(height: 24),
 
                           // Connections Section
-                          _buildSectionHeader(AppLocalizations.of(context)!.settingsConnections),
+                          _buildSectionHeader(
+                            AppLocalizations.of(context)!.settingsConnections,
+                          ),
                           const SizedBox(height: 12),
                           _buildSettingsCard(
                             children: [
                               _buildTapTile(
                                 icon: Icons.route,
-                                title: AppLocalizations.of(context)!.settingsAutomations,
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsAutomations,
                                 onTap: () {
                                   Navigator.pop(context);
                                   context.read<NavigationProvider>().setPage(
@@ -334,7 +407,9 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                               _buildDivider(),
                               _buildTapTile(
                                 icon: Icons.device_hub_outlined,
-                                title: AppLocalizations.of(context)!.settingsIntegrations,
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsIntegrations,
                                 onTap: () {
                                   Navigator.pop(context);
                                   context.read<NavigationProvider>().setPage(
@@ -348,20 +423,30 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                           const SizedBox(height: 24),
 
                           // Info & Support Section
-                          _buildSectionHeader(AppLocalizations.of(context)!.settingsInfoSupport),
+                          _buildSectionHeader(
+                            AppLocalizations.of(context)!.settingsInfoSupport,
+                          ),
                           const SizedBox(height: 12),
                           _buildSettingsCard(
                             children: [
                               _buildTapTile(
                                 icon: Icons.info_outline,
-                                title: AppLocalizations.of(context)!.settingsAbout,
-                                onTap: () { if (kIsWeb) navigateTo('/about'); },
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsAbout,
+                                onTap: () {
+                                  if (kIsWeb) navigateTo('/about');
+                                },
                               ),
                               _buildDivider(),
                               _buildTapTile(
                                 icon: Icons.help_outline_rounded,
-                                title: AppLocalizations.of(context)!.settingsGetHelp,
-                                onTap: () { if (kIsWeb) navigateTo('/contact'); },
+                                title: AppLocalizations.of(
+                                  context,
+                                )!.settingsGetHelp,
+                                onTap: () {
+                                  if (kIsWeb) navigateTo('/contact');
+                                },
                               ),
                             ],
                           ),
@@ -375,8 +460,12 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                               onPressed: () async {
                                 final confirmed = await showCatasDialog<bool>(
                                   context: context,
-                                  title: AppLocalizations.of(context)!.logOutTitle,
-                                  message: AppLocalizations.of(context)!.logOutContent,
+                                  title: AppLocalizations.of(
+                                    context,
+                                  )!.logOutTitle,
+                                  message: AppLocalizations.of(
+                                    context,
+                                  )!.logOutContent,
                                   icon: Icon(
                                     Icons.logout,
                                     size: 48,
@@ -384,13 +473,19 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                                   ),
                                   actionsBuilder: (innerCtx) => [
                                     CatasDialogAction(
-                                      label: AppLocalizations.of(context)!.settingsCancel,
-                                      onPressed: () => Navigator.pop(innerCtx, false),
+                                      label: AppLocalizations.of(
+                                        context,
+                                      )!.settingsCancel,
+                                      onPressed: () =>
+                                          Navigator.pop(innerCtx, false),
                                       isSecondary: true,
                                     ),
                                     CatasDialogAction(
-                                      label: AppLocalizations.of(context)!.logOutAction,
-                                      onPressed: () => Navigator.pop(innerCtx, true),
+                                      label: AppLocalizations.of(
+                                        context,
+                                      )!.logOutAction,
+                                      onPressed: () =>
+                                          Navigator.pop(innerCtx, true),
                                     ),
                                   ],
                                 );
@@ -412,7 +507,9 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: theme.colorScheme.error,
                                 side: BorderSide(
-                                  color: theme.colorScheme.error.withValues(alpha: 0.3),
+                                  color: theme.colorScheme.error.withValues(
+                                    alpha: 0.3,
+                                  ),
                                 ),
                                 padding: const EdgeInsets.symmetric(
                                   vertical: 14,
@@ -434,7 +531,6 @@ class _WebSettingsModalState extends State<WebSettingsModal> {
       ),
     );
   }
-
 
   Widget _buildSectionHeader(String title) {
     return Text(

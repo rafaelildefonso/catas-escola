@@ -11,6 +11,7 @@ import 'package:catas/screens/web/web_main_layout.dart';
 import 'package:catas/screens/automacoes/automation_detail_screen.dart';
 import 'package:catas/screens/crud/crud_management_screen.dart';
 import 'package:catas/screens/relatorios/relatorio_screen.dart';
+import 'package:catas/screens/relatorios/reports_screen.dart';
 import 'package:catas/screens/main_layout.dart';
 // Demo screens
 import 'package:catas/screens/demo_report_screen.dart';
@@ -46,6 +47,7 @@ class AppRoutes {
   static const String settingsSubscription = '/app/settings/subscription';
   static const String settingsAbout = '/app/settings/about';
   static const String settingsHelp = '/app/settings/help';
+  static const String settingsExport = '/app/settings/export';
   static const String notifications = '/app/notifications';
   static const String automationDetail = '/app/automations/:runId';
   static const String crud = '/app/crud';
@@ -277,7 +279,7 @@ GoRouter createRouter(AuthProvider authProvider) {
             path: AppRoutes.relatorios,
             name: 'relatorios',
             pageBuilder: (context, state) => _buildPageWithTransition(
-              child: const RelatorioScreen(),
+              child: const ReportsScreen(),
               state: state,
             ),
           ),
@@ -325,6 +327,14 @@ GoRouter createRouter(AuthProvider authProvider) {
             name: 'settings',
             pageBuilder: (context, state) => _buildPageWithTransition(
               child: const SettingsScreen(),
+              state: state,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.settingsExport,
+            name: 'settings-export',
+            pageBuilder: (context, state) => _buildPageWithTransition(
+              child: const DataExportScreen(),
               state: state,
             ),
           ),
@@ -430,10 +440,10 @@ GoRouter createRouter(AuthProvider authProvider) {
         name: 'payment-success',
         parentNavigatorKey: navigatorKey,
         pageBuilder: (context, state) {
-          final plan =
-              state.uri.queryParameters['plan']?.toUpperCase() ?? 'PRO';
           return _buildPageWithTransition(
-            child: SubscriptionSuccessScreen(planName: plan),
+            child: SubscriptionSuccessScreen(
+              sessionId: state.uri.queryParameters['session_id'],
+            ),
             state: state,
           );
         },
@@ -441,7 +451,8 @@ GoRouter createRouter(AuthProvider authProvider) {
 
       // Páginas HTML: busca e substitui página (mantém URL limpa)
       GoRoute(
-        path: '/:page(terms|consent|privacy|security|about|contact|cookies|refund)',
+        path:
+            '/:page(terms|consent|privacy|security|about|contact|cookies|refund)',
         name: 'static-page',
         pageBuilder: (context, state) => _buildPageWithTransition(
           child: Builder(

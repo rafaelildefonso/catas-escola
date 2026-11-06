@@ -691,6 +691,7 @@ class ChatProvider extends ChangeNotifier {
   void activateIntegration(String provider) {
     if (!_activeIntegrations.contains(provider)) {
       _activeIntegrations.add(provider);
+      _saveDraftToStorage();
       notifyListeners();
     }
   }
@@ -1195,6 +1196,13 @@ class ChatProvider extends ChangeNotifier {
     String componentType,
     Map<String, dynamic> responseData,
   ) async {
+    // The server checks this state against its own list of OAuth connections.
+    // It is only used to decide whether a connected integration is enabled for
+    // the current chat; it can never make a disconnected account executable.
+    responseData = {
+      ...responseData,
+      'active_integrations': _activeIntegrations.toList(),
+    };
     final lastMessage = _messages.isNotEmpty ? _messages.last : null;
     final canContinue =
         lastMessage != null && lastMessage.continuationId != null;

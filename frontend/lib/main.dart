@@ -18,6 +18,7 @@ import 'providers/locale_provider.dart';
 import 'providers/automations_provider.dart';
 import 'providers/termo_aceite_provider.dart';
 import 'providers/relatorio_provider.dart';
+import 'providers/generated_reports_provider.dart';
 // Demo providers
 import 'providers/demo_automations_provider.dart';
 import 'providers/demo_notifications_provider.dart';
@@ -61,9 +62,13 @@ Future<void> main() async {
     if (!kIsWeb) {
       await Firebase.initializeApp();
       // Only set background handler on supported platforms
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+        _firebaseMessagingBackgroundHandler,
+      );
     } else {
-      debugPrint("Firebase: Skipping default initialization on Web (no options).");
+      debugPrint(
+        "Firebase: Skipping default initialization on Web (no options).",
+      );
       // If you need Firebase on Web, run 'flutterfire configure' or provide options here.
     }
   } catch (e) {
@@ -86,7 +91,9 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(localeProvider: localeProvider)),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(localeProvider: localeProvider),
+        ),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => CloudinaryProvider()),
@@ -94,21 +101,28 @@ Future<void> main() async {
         ChangeNotifierProvider(create: (_) => IntegrationsProvider()),
         ChangeNotifierProvider(create: (_) => NativeContextProvider()),
         ChangeNotifierProvider(create: (_) => RelatorioProvider()),
+        ChangeNotifierProvider(create: (_) => GeneratedReportsProvider()),
         ChangeNotifierProvider(create: (_) => TermoAceiteProvider()),
         // Always register base provider types, but use demo implementations when in demo mode
         ChangeNotifierProvider<NotificationsProvider>(
-          create: (_) => isDemoMode ? DemoNotificationsProvider() : NotificationsProvider(),
+          create: (_) => isDemoMode
+              ? DemoNotificationsProvider()
+              : NotificationsProvider(),
         ),
         ChangeNotifierProvider<AutomationsProvider>(
-          create: (_) => isDemoMode ? DemoAutomationsProvider() : AutomationsProvider(),
+          create: (_) =>
+              isDemoMode ? DemoAutomationsProvider() : AutomationsProvider(),
         ),
         // Demo-only: also register concrete types for direct access in chat_screen
         if (isDemoMode) ...[
           ChangeNotifierProvider<DemoNotificationsProvider>(
-            create: (context) => context.read<NotificationsProvider>() as DemoNotificationsProvider,
+            create: (context) =>
+                context.read<NotificationsProvider>()
+                    as DemoNotificationsProvider,
           ),
           ChangeNotifierProvider<DemoAutomationsProvider>(
-            create: (context) => context.read<AutomationsProvider>() as DemoAutomationsProvider,
+            create: (context) =>
+                context.read<AutomationsProvider>() as DemoAutomationsProvider,
           ),
           ChangeNotifierProvider(create: (_) => DemoAutoplayController()),
         ],
@@ -139,15 +153,12 @@ void _handleDeepLink(Uri uri) {
   if (uri.scheme == 'catas') {
     final context = navigatorKey.currentContext;
     if (context == null) return;
-    
     if (uri.host == 'payment-success') {
-      final uriPlan = uri.queryParameters['plan']?.toUpperCase() ?? 'PRO';
-      
       // Refresh the user profile so Flutter picks up the new plan tier
       // that the Stripe webhook just wrote to the database.
       context.read<AuthProvider>().refreshProfile().then((_) {
         if (!context.mounted) return;
-        context.go('${AppRoutes.paymentSuccess}?plan=$uriPlan');
+        context.go(AppRoutes.paymentSuccess);
       });
     } else if (uri.host == 'payment-cancel') {
       context.go(AppRoutes.chat);
@@ -178,9 +189,7 @@ class _MyAppState extends State<MyApp> {
     super.initState();
     _initNotifier = ValueNotifier<bool>(false);
     _serverStatusProvider = ServerStatusProvider();
-    _router = createRouter(
-      context.read<AuthProvider>(),
-    );
+    _router = createRouter(context.read<AuthProvider>());
   }
 
   Future<void> _initializeApp() async {
@@ -249,7 +258,9 @@ class _MyAppState extends State<MyApp> {
           if (!kIsWeb || Firebase.apps.isNotEmpty) {
             context.read<NotificationsProvider>().initFCM();
           } else {
-            debugPrint("Skipping FCM init on Web because Firebase is not configured.");
+            debugPrint(
+              "Skipping FCM init on Web because Firebase is not configured.",
+            );
           }
         }
       });

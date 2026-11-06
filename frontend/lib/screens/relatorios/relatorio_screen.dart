@@ -7,14 +7,14 @@ import '../../components/relatorios/report_export_menu.dart';
 
 /// Tela de Relatórios — consome os endpoints de relatório/busca da API
 /// (funcionalidades além do CRUD básico implementadas via procedures).
-class RelatorioScreen extends StatefulWidget {
-  const RelatorioScreen({super.key});
+class DataExportScreen extends StatefulWidget {
+  const DataExportScreen({super.key});
 
   @override
-  State<RelatorioScreen> createState() => _RelatorioScreenState();
+  State<DataExportScreen> createState() => _DataExportScreenState();
 }
 
-class _RelatorioScreenState extends State<RelatorioScreen>
+class _DataExportScreenState extends State<DataExportScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   final TextEditingController _buscaController = TextEditingController();
@@ -82,6 +82,25 @@ class _RelatorioScreenState extends State<RelatorioScreen>
         constraints: const BoxConstraints(maxWidth: 1100),
         child: Column(
           children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 20, 16, 2),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Exportar dados',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Baixe dados de automações e conversas em CSV, Excel ou PDF.',
+                ),
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
               child: TabBar(
