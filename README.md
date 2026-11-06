@@ -143,7 +143,7 @@ API: http://localhost:8000 | Health: http://localhost:8000/health
 ```bash
 cd backend
 venv\Scripts\activate
-python -m worker.server
+python -m worker.entrypoint
 ```
 
 Worker: http://localhost:8001
