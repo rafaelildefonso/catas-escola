@@ -77,10 +77,9 @@ class _DataExportScreenState extends State<DataExportScreen>
     final auth = context.watch<AuthProvider>();
     final userId = auth.userId;
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100),
-        child: Column(
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
           children: [
             const Padding(
               padding: EdgeInsets.fromLTRB(16, 20, 16, 2),
@@ -128,7 +127,6 @@ class _DataExportScreenState extends State<DataExportScreen>
             ),
           ],
         ),
-      ),
     );
   }
 

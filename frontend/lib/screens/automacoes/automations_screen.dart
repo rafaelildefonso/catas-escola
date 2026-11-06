@@ -122,10 +122,9 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
     final provider = context.watch<AutomationsProvider>();
     final userTier = auth.subscriptionTier ?? 'free';
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: Column(
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
           children: [
             _buildPromptsCtaBanner(),
             Expanded(
@@ -143,7 +142,6 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 
