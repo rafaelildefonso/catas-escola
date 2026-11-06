@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -15,6 +16,9 @@ class LinkPreviewComponent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final url = data['url'] as String? ?? '';
+    final uri = Uri.tryParse(url);
+    final canOpen =
+        uri != null && (uri.scheme == 'https' || uri.scheme == 'http');
     final title = data['title'] as String? ?? 'Link Externo';
     final description = data['description'] as String? ?? url;
     final iconType = data['icon'] as String? ?? 'link';
@@ -22,12 +26,13 @@ class LinkPreviewComponent extends StatelessWidget {
     return Opacity(
       opacity: isEnabled ? 1.0 : 0.6,
       child: InkWell(
-        onTap: () async {
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri);
-          }
-        },
+        onTap: !isEnabled || !canOpen
+            ? null
+            : () async {
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                }
+              },
         borderRadius: BorderRadius.circular(16),
         child: Container(
           width: double.infinity,
@@ -37,7 +42,9 @@ class LinkPreviewComponent extends StatelessWidget {
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
+              color: Theme.of(
+                context,
+              ).colorScheme.outline.withValues(alpha: 0.1),
             ),
           ),
           child: Row(
@@ -46,7 +53,9 @@ class LinkPreviewComponent extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -82,12 +91,32 @@ class LinkPreviewComponent extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Icon(
-                Icons.open_in_new_rounded,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-              ),
+              if (canOpen) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: 'Copiar link',
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: url));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Link copiado.')),
+                      );
+                    }
+                  },
+                  icon: Icon(
+                    Icons.copy_outlined,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                Icon(
+                  Icons.open_in_new_rounded,
+                  size: 16,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ],
             ],
           ),
         ),
@@ -97,12 +126,18 @@ class LinkPreviewComponent extends StatelessWidget {
 
   IconData _getIcon(String type) {
     switch (type) {
-      case 'sheets': return Icons.table_chart_rounded;
-      case 'doc': return Icons.description_rounded;
-      case 'drive': return Icons.add_to_drive_rounded;
-      case 'gmail': return Icons.mail_rounded;
-      case 'calendar': return Icons.event_rounded;
-      default: return Icons.link_rounded;
+      case 'sheets':
+        return Icons.table_chart_rounded;
+      case 'doc':
+        return Icons.description_rounded;
+      case 'drive':
+        return Icons.add_to_drive_rounded;
+      case 'gmail':
+        return Icons.mail_rounded;
+      case 'calendar':
+        return Icons.event_rounded;
+      default:
+        return Icons.link_rounded;
     }
   }
 }

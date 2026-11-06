@@ -20,6 +20,7 @@ class AutomationProgressComponent extends StatelessWidget {
     'google_calendar.create_event': LogoId.googleCalendar,
     'google_drive.create_folder': LogoId.googleDrive,
     'google_sheets.append_row': LogoId.googleSheets,
+    'google_sheets.create_spreadsheet': LogoId.googleSheets,
     'google_drive.upload_file': LogoId.googleDrive,
     'gmail.send_email': LogoId.googleGmail,
     'gmail.create_draft': LogoId.googleGmail,
@@ -38,6 +39,7 @@ class AutomationProgressComponent extends StatelessWidget {
         final steps = chatProv.automationSteps;
         final phase = chatProv.automationPhase;
         final isCompleted = phase == 'completed';
+        final isFailed = phase == 'failed' || phase == 'canceled';
 
         return Container(
           width: double.infinity,
@@ -63,7 +65,13 @@ class AutomationProgressComponent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context, phase, isCompleted),
+              _buildHeader(
+                context,
+                phase,
+                isCompleted,
+                isFailed,
+                chatProv.automationError,
+              ),
               const Divider(height: 1),
               if (steps.isEmpty)
                 _buildLoading(context)
@@ -104,7 +112,13 @@ class AutomationProgressComponent extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, String phase, bool isCompleted) {
+  Widget _buildHeader(
+    BuildContext context,
+    String phase,
+    bool isCompleted,
+    bool isFailed,
+    String? error,
+  ) {
     final cs = Theme.of(context).colorScheme;
 
     String title;
@@ -148,6 +162,18 @@ class AutomationProgressComponent extends StatelessWidget {
           ),
         );
         break;
+      case 'running':
+        title = 'Executando automação';
+        subtitle = 'Aguardando a resposta da integração.';
+        icon = SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(cs.primary),
+          ),
+        );
+        break;
       case 'testingTrigger':
         title = 'Testando automação';
         subtitle = 'Ativando gatilho da automação...';
@@ -172,6 +198,20 @@ class AutomationProgressComponent extends StatelessWidget {
           child: const Icon(Icons.check_rounded, size: 14, color: Colors.green),
         );
         break;
+      case 'failed':
+      case 'canceled':
+        title = 'Não foi possível concluir';
+        subtitle = error ?? 'A execução falhou. Tente novamente.';
+        icon = Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            color: cs.error.withValues(alpha: 0.12),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.close_rounded, size: 14, color: cs.error),
+        );
+        break;
       default:
         title = 'Iniciando...';
         subtitle = '';
@@ -185,6 +225,10 @@ class AutomationProgressComponent extends StatelessWidget {
             ),
           ),
         );
+    }
+
+    if (phase == 'completed') {
+      subtitle = 'A execução terminou com sucesso.';
     }
 
     return Padding(
@@ -211,7 +255,11 @@ class AutomationProgressComponent extends StatelessWidget {
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: phase == 'completed' ? Colors.green : cs.primary,
+                    color: isCompleted
+                        ? Colors.green
+                        : isFailed
+                        ? cs.error
+                        : cs.primary,
                   ),
                 ),
               ],
@@ -258,12 +306,17 @@ class AutomationProgressComponent extends StatelessWidget {
 
     switch (status) {
       case 'verifying':
+      case 'running':
         iconColor = Colors.blue;
         showSpinner = true;
         break;
       case 'verified':
+      case 'success':
         iconColor = Colors.green;
         showCheck = true;
+        break;
+      case 'error':
+        iconColor = cs.error;
         break;
       default:
         iconColor = cs.onSurfaceVariant.withValues(alpha: 0.4);
@@ -353,6 +406,12 @@ class AutomationProgressComponent extends StatelessWidget {
                       Icons.check_circle_rounded,
                       size: 16,
                       color: Colors.green,
+                    ),
+                  if (status == 'error')
+                    Icon(
+                      Icons.error_outline_rounded,
+                      size: 16,
+                      color: cs.error,
                     ),
                 ],
               ),
