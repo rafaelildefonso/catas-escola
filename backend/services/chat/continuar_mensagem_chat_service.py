@@ -14,6 +14,7 @@ from services.chat.obter_sessao_chat_service import ObterSessaoChatService
 from services.chat.obter_historico_chat_service import ObterHistoricoChatService
 from services.chat.salvar_mensagem_chat_service import SalvarMensagemChatService
 from services.chat.atualizar_mensagem_chat_service import AtualizarMensagemChatService
+from services.chat.integration_access_service import IntegrationAccessService
 from services.automacao.iniciar_automacao_assincrona_service import IniciarAutomacaoAssincronaService
 from services.automacao.registrar_automation_run_service import RegistrarAutomationRunService
 
@@ -59,8 +60,7 @@ class ContinuarMensagemChatService:
         history = ObterHistoricoChatService.executar(session_id, user_id, limite=500)
 
         user_integrations = ContinuarMensagemChatService._integracoes_do_usuario(user_id)
-        if not user_integrations and response_data.get("active_integrations"):
-            user_integrations = response_data["active_integrations"]
+        active_integrations = response_data.get("active_integrations", [])
 
         ai_response = ContinuarMensagemChatService._resolver_resposta(
             user_id=user_id,
@@ -71,6 +71,7 @@ class ContinuarMensagemChatService:
             continuation_id=continuation_id,
             model=model,
             user_integrations=user_integrations,
+            active_integrations=active_integrations,
         )
 
         original_msg = next((m for m in reversed(history) if m.get("id") == continuation_id), None)
@@ -135,7 +136,7 @@ class ContinuarMensagemChatService:
             return []
 
     @staticmethod
-    def _analisar(user_id, text, history, model, user_integrations):
+    def _analisar(user_id, text, history, model, user_integrations, active_integrations):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         return loop.run_until_complete(
@@ -145,13 +146,13 @@ class ContinuarMensagemChatService:
                 history=history,
                 model_requested=model,
                 user_integrations=user_integrations,
-                active_integrations=user_integrations,
+                active_integrations=active_integrations,
             )
         )
 
     @staticmethod
     def _resolver_resposta(user_id, component_type, response_data, internal_msg, history,
-                           continuation_id, model, user_integrations):
+                           continuation_id, model, user_integrations, active_integrations):
         if component_type == "action_approval" and response_data.get("approved"):
             original_msg_for_plan = next(
                 (m for m in reversed(history) if m.get("id") == continuation_id), None
@@ -162,6 +163,19 @@ class ContinuarMensagemChatService:
 
             logger.debug("plan_from_history: %s (type=%s)", plan_from_history, type(plan_from_history).__name__)
             if plan_from_history is not None:
+                blocked = IntegrationAccessService.blocked_response(
+                    plan_from_history,
+                    original_msg_for_plan.get("metadata", {}).get("intent"),
+                    user_integrations,
+                    active_integrations,
+                )
+                if blocked:
+                    return {
+                        **blocked,
+                        "credits_consumed": 0,
+                        "intent": original_msg_for_plan.get("metadata", {}).get("intent", "action"),
+                        "entities": original_msg_for_plan.get("metadata", {}).get("entities", {}),
+                    }
                 return {
                     "response_text": "Ação confirmada! Executando agora...",
                     "action_triggered": True,
@@ -179,6 +193,7 @@ class ContinuarMensagemChatService:
             history=history,
             model=model,
             user_integrations=user_integrations,
+            active_integrations=active_integrations,
         )
 
     @staticmethod

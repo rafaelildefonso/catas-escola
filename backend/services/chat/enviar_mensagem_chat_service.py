@@ -24,6 +24,7 @@ from services.chat.montar_plano_onboarding_service import MontarPlanoOnboardingS
 from services.chat.obter_historico_chat_service import ObterHistoricoChatService
 from services.chat.renomear_sessao_chat_service import RenomearSessaoChatService
 from services.chat.salvar_mensagem_chat_service import SalvarMensagemChatService
+from services.chat.integration_access_service import IntegrationAccessService
 from services.ia.ai_service import AIService
 from services.profile.verificar_quota_service import VerificarQuotaService
 
@@ -66,7 +67,12 @@ class EnviarMensagemChatService:
             permitido, erro, profile = VerificarQuotaService.executar(user_id, model_requested=model)
             if not permitido:
                 raise ErroPermissao(erro)
-            if (profile.get("subscription_tier") or "basic").lower() == "basic" and not conversation_id and not is_onboarding_message and not automation_request:
+            if not EnviarMensagemChatService._pode_iniciar_conversa_livre(
+                profile,
+                conversation_id,
+                is_onboarding_message,
+                automation_request,
+            ):
                 raise ErroPermissao("Conversa livre disponível apenas para assinantes.")
         else:
             profile = {
@@ -140,9 +146,6 @@ class EnviarMensagemChatService:
             user_integrations = [i["provider"] for i in integracoes if i.get("is_connected")]
         except Exception:
             pass
-        if not user_integrations and active_integrations:
-            user_integrations = active_integrations
-
         demo_ativado = os.getenv("DEMO_ONBOARDING_ENABLED", "true").lower() == "true"
         if demo_ativado:
             resposta_demo = EnviarMensagemChatService._tentar_fluxo_demo_onboarding(
@@ -201,11 +204,29 @@ class EnviarMensagemChatService:
             new_title=new_title,
             is_onboarding_session=is_onboarding_session,
             ai_result=ai_result,
+            user_integrations=user_integrations,
+            active_integrations=active_integrations or [],
         )
 
     # ------------------------------------------------------------------
     # Validação e helpers privados
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _pode_iniciar_conversa_livre(
+        profile: dict,
+        conversation_id: str | None,
+        is_onboarding_message: bool,
+        automation_request: bool,
+    ) -> bool:
+        """O Basic é um plano assinado; somente o tier gratuito é bloqueado."""
+        tier = (profile.get("subscription_tier") or "basic").lower()
+        return (
+            tier != "free"
+            or bool(conversation_id)
+            or is_onboarding_message
+            or automation_request
+        )
 
     @staticmethod
     def _validar(dados: dict):
@@ -456,11 +477,30 @@ class EnviarMensagemChatService:
         }
         missing_providers = sorted(required_providers - connected_providers)
         if missing_providers:
-            names = ", ".join(provider.replace("google_", "Google ").replace("_", " ") for provider in missing_providers)
-            texto = f"Para criar essa automação, conecte {names} em Integrações e depois me envie o pedido novamente."
-            assistant_message = salvar_msg(session_id, texto, {"source": "automation_pipeline", "pipeline_status": "needs_integration"})
-            return {"id": assistant_message.get("id"), "text": texto, "session_id": session_id,
-                    "session_title": new_title if is_new_session else None}
+            blocked = IntegrationAccessService.blocked_response(
+                plan_data,
+                None,
+                connected_providers,
+                connected_providers,
+            )
+            texto = blocked["response_text"]
+            components = blocked["components"]
+            assistant_message = salvar_msg(session_id, texto, {
+                "source": "automation_pipeline",
+                "pipeline_status": "needs_integration",
+                "status": "requires_action",
+                "components": components,
+                "action_triggered": False,
+            })
+            return {
+                "id": assistant_message.get("id"),
+                "text": texto,
+                "components": components,
+                "status": "requires_action",
+                "actionTriggered": False,
+                "session_id": session_id,
+                "session_title": new_title if is_new_session else None,
+            }
         try:
             automation = CriarAutomationService.executar({
                 "name": plan_data.get("name") or pipeline_result.get("objetivo") or "Nova automação",
@@ -518,7 +558,20 @@ class EnviarMensagemChatService:
 
     @staticmethod
     def _fluxo_padrao(user_id, message, session_id, is_new_session, new_title,
-                      is_onboarding_session, ai_result):
+                      is_onboarding_session, ai_result, user_integrations,
+                      active_integrations):
+        # This check is deliberately server-side.  A client-side toggle is not
+        # proof that OAuth exists, and an LLM response is never permission to
+        # claim that an external action happened.
+        blocked = IntegrationAccessService.blocked_response(
+            ai_result.get("action_details"),
+            ai_result.get("intent"),
+            user_integrations,
+            active_integrations,
+        )
+        if blocked:
+            ai_result = {**ai_result, **blocked}
+
         assistant_message = None
         try:
             assistant_message = SalvarMensagemChatService.executar(
@@ -532,6 +585,7 @@ class EnviarMensagemChatService:
                     "intent": ai_result.get("intent", "conversation"),
                     "entities": ai_result.get("entities", {}),
                     "source": "gemini_standard",
+                    "status": ai_result.get("status", "idle"),
                 },
             )
         except Exception:
@@ -575,6 +629,7 @@ class EnviarMensagemChatService:
             "actionDetails": ai_result.get("action_details"),
             "automation_id": automation_id_val,
             "components": ai_result.get("components", []),
+            "status": ai_result.get("status", "idle"),
             "session_id": session_id,
             "session_title": new_title if is_new_session else None,
             "continuation_id": (

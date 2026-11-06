@@ -29,5 +29,11 @@ def montar_mensagem_interna(component_type: str, response_data: dict) -> str:
         "date_time_picker": f"[DATA_HORA_SELECIONADA] {response_data.get('iso_date')}",
         "multiple_choice": f"[ESCOLHA] {response_data.get('selected_option')}",
         "text_input": f"[TEXTO_INPUT] {response_data.get('text')}",
+        "integration_connect": (
+            "[INTEGRAÇÃO ATIVADA] "
+            f"{response_data.get('provider', '')}"
+            if response_data.get("activated")
+            else f"[INTEGRAÇÃO CONECTADA] {response_data.get('provider', '')}"
+        ),
     }
     return mapa.get(component_type, f"[RESPOSTA_COMPONENTE] {json.dumps(response_data)}")
