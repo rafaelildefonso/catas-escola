@@ -3,6 +3,23 @@ import os
 
 load_dotenv()
 
+
+def _default_frontend_url() -> str:
+    """Retorna um destino seguro para o ambiente em execução.
+
+    Em desenvolvimento o app Flutter Web normalmente escolhe uma porta local.
+    O backend ainda pode usar o ``Origin`` validado da requisição para essa
+    porta (ver BillingService), mas este fallback cobre clientes sem Origin.
+    """
+    if os.getenv("ENVIRONMENT", "development").lower() == "development":
+        return "http://localhost:52159"
+    return "https://catas.app"
+
+
+def _frontend_url_from_env() -> str:
+    return os.getenv("FRONTEND_URL", _default_frontend_url()).rstrip("/")
+
+
 class Settings:
     TOKENS_PER_CREDIT: int = 2000
     FLAT_RATE_COST: int = 1
@@ -36,19 +53,21 @@ class Settings:
     BASIC_PLAN_ID: str = os.getenv("BASIC_PLAN_ID", "")
     PRO_PLAN_ID: str = os.getenv("PRO_PLAN_ID", "")
     MAX_PLAN_ID: str = os.getenv("MAX_PLAN_ID", "")
-    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "https://catas.app").rstrip("/")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+    FRONTEND_URL: str = _frontend_url_from_env()
+    STRIPE_SUCCESS_URL_CONFIGURED: bool = bool(os.getenv("STRIPE_SUCCESS_URL"))
+    STRIPE_CANCEL_URL_CONFIGURED: bool = bool(os.getenv("STRIPE_CANCEL_URL"))
     STRIPE_SUCCESS_URL: str = os.getenv(
         "STRIPE_SUCCESS_URL",
-        f"{os.getenv('FRONTEND_URL', 'https://catas.app').rstrip('/')}/?billing=success",
+        f"{_frontend_url_from_env()}/app/payment-success?billing=success",
     )
     STRIPE_CANCEL_URL: str = os.getenv(
         "STRIPE_CANCEL_URL",
-        f"{os.getenv('FRONTEND_URL', 'https://catas.app').rstrip('/')}/?billing=cancelled",
+        f"{_frontend_url_from_env()}/?billing=cancelled",
     )
 
     APP_DEEP_LINK_SCHEME: str = os.getenv("APP_DEEP_LINK_SCHEME", "catas")
     ENCRYPTION_KEY: str = os.getenv("ENCRYPTION_KEY", "")
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     ATTACHMENTS_MAX_SIZE_BYTES: int = int(os.getenv("ATTACHMENTS_MAX_SIZE_BYTES", "10485760"))
     WORKER_URL: str = os.getenv("WORKER_URL", "http://localhost:8001")
     WORKER_SHARED_SECRET: str = os.getenv("WORKER_SHARED_SECRET", "")

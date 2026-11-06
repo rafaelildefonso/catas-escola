@@ -429,7 +429,7 @@ CREATE TABLE IF NOT EXISTS automation_step_logs (
     run_id VARCHAR(36) NULL,
     user_id VARCHAR(36) NULL,
     PRIMARY KEY (id),
-    UNIQUE KEY automation_step_logs_automation_step_unique (automation_id, step_index),
+    UNIQUE KEY automation_step_logs_run_step_unique (run_id, step_index),
     KEY idx_automation_step_logs_run (run_id),
     KEY idx_automation_step_logs_user (user_id),
     CONSTRAINT fk_automation_step_logs_run FOREIGN KEY (run_id) REFERENCES automation_runs(id) ON DELETE SET NULL,
