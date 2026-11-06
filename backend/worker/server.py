@@ -17,13 +17,19 @@ worker_app = Flask(__name__)
 logger = logging.getLogger("worker.server")
 
 
-async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str], trigger_payload=None):
+async def _run_execution(
+    run_id: str,
+    automation_id: Optional[str],
+    plan: dict,
+    user_id: Optional[str],
+    trigger_payload=None,
+):
     from worker.runner import AutomationRunner
     from worker.repositorio_dados import atualizar_status_run
 
     logger.info(
         "📥 [Worker] Executando automação %s (user=%s, steps=%s)",
-        automation_id, user_id,
+        run_id, user_id,
         [s.get("module_id") for s in plan.get("steps", [])],
     )
 
@@ -31,23 +37,26 @@ async def _run_execution(automation_id: str, plan: dict, user_id: Optional[str],
         runner = AutomationRunner()
         result_context = await runner.run_plan(
             plan,
-            run_id=automation_id,
+            run_id=run_id,
+            automation_id=automation_id,
             user_id=user_id,
             trigger_payload=trigger_payload,
         )
 
-        atualizar_status_run(
-            automation_id,
+        status_updated = atualizar_status_run(
+            run_id,
             "completed",
             result_metadata={"run_context": result_context},
         )
-        logger.info("✅ [Worker] Automação %s concluída com sucesso.", automation_id)
+        if status_updated is False:
+            raise RuntimeError(f"Execução {run_id} não encontrada para atualizar o status")
+        logger.info("✅ [Worker] Execução %s concluída com sucesso.", run_id)
 
     except Exception as e:
-        logger.error("❌ [Worker] Falha na automação %s: %s", automation_id, traceback.format_exc())
+        logger.error("❌ [Worker] Falha na execução %s: %s", run_id, traceback.format_exc())
         try:
             atualizar_status_run(
-                automation_id,
+                run_id,
                 "failed",
                 error_details={"message": str(e), "traceback": traceback.format_exc()},
             )
@@ -60,10 +69,18 @@ def health():
     return jsonify({"status": "ok"})
 
 
-def _run_in_thread(automation_id: str, plan: dict, user_id: Optional[str], trigger_payload=None):
+def _run_in_thread(
+    run_id: str,
+    automation_id: Optional[str],
+    plan: dict,
+    user_id: Optional[str],
+    trigger_payload=None,
+):
     loop = asyncio.new_event_loop()
     try:
-        loop.run_until_complete(_run_execution(automation_id, plan, user_id, trigger_payload))
+        loop.run_until_complete(
+            _run_execution(run_id, automation_id, plan, user_id, trigger_payload)
+        )
     finally:
         loop.close()
 
@@ -76,22 +93,26 @@ def execute():
     if secret and not hmac.compare_digest(request.headers.get("X-Worker-Secret", ""), secret):
         return jsonify({"detail": "Não autorizado"}), 401
     data = request.get_json()
-    automation_id = data["automation_id"]
+    run_id = data.get("run_id")
+    if not run_id:
+        return jsonify({"detail": "run_id é obrigatório"}), 400
+
+    automation_id = data.get("automation_id")
     plan = data["plan"]
     user_id = data.get("user_id")
 
     t = threading.Thread(
         target=_run_in_thread,
-        args=(automation_id, plan, user_id, data.get("trigger_payload")),
+        args=(run_id, automation_id, plan, user_id, data.get("trigger_payload")),
         daemon=True,
     )
     t.start()
 
     logger.info(
-        "📤 [Worker] Requisição aceita para automação %s. Executando em background.",
-        automation_id,
+        "📤 [Worker] Requisição aceita para execução %s. Executando em background.",
+        run_id,
     )
-    return jsonify({"status": "accepted", "automation_id": automation_id}), 202
+    return jsonify({"status": "accepted", "run_id": run_id, "automation_id": automation_id}), 202
 
 
 if __name__ == "__main__":

@@ -10,10 +10,26 @@ import worker.modules  # noqa: F401  # Registra todos os @register_module no cat
 logger = logging.getLogger(__name__)
 
 
-def _log_step(automation_id: str, step_index: int, module_id: str, status: str, user_id: str = None, result: dict = None):
+def _log_step(
+    run_id: str,
+    automation_id: str,
+    step_index: int,
+    module_id: str,
+    status: str,
+    user_id: str = None,
+    result: dict = None,
+):
     try:
         from worker.repositorio_dados import registrar_passo_execucao
-        registrar_passo_execucao(automation_id, step_index, module_id, status, user_id=user_id, result=result)
+        registrar_passo_execucao(
+            run_id,
+            step_index,
+            module_id,
+            status,
+            user_id=user_id,
+            result=result,
+            automation_id=automation_id,
+        )
     except Exception as e:
         logger.warning(f"âš ï¸ Falha ao logar step {step_index} ({module_id}): {e}")
 
@@ -30,6 +46,7 @@ class AutomationRunner:
         trigger_payload: dict = None,
         user_id: str = None,
         run_id: str = None,
+        automation_id: str = None,
         timeout: int = 300,
     ) -> dict:
         """
@@ -60,7 +77,8 @@ class AutomationRunner:
             run_context["user_id"] = user_id
             run_context["trigger"]["user_id"] = user_id
 
-        run_context["automation_id"] = run_id
+        run_context["run_id"] = run_id
+        run_context["automation_id"] = automation_id or run_id
 
         log_prefix = f"[run_id={run_id}]" if run_id else ""
             
@@ -81,7 +99,8 @@ class AutomationRunner:
         return run_context
 
     async def _execute_steps(self, steps: List[Union[AutomationStep, FlowConditionStep]], run_context: Dict[str, Any], log_prefix: str = ""):
-        automation_id = run_context.get("automation_id")
+        run_id = run_context.get("run_id")
+        automation_id = run_context.get("automation_id") or run_id
         user_id = run_context.get("user_id")
 
         for step_index, step in enumerate(steps):
@@ -137,6 +156,8 @@ class AutomationRunner:
 
                 if run_context.get("user_id"):
                     resolved_params["user_id"] = run_context["user_id"]
+                resolved_params["run_id"] = run_id
+                resolved_params["automation_id"] = automation_id
 
                 func = get_module_function(step.module_id)
                 if not func:
@@ -145,21 +166,21 @@ class AutomationRunner:
                     )
 
                 # Log: running
-                if automation_id:
-                    _log_step(automation_id, step_index, step.module_id, "running", user_id=user_id)
+                if run_id:
+                    _log_step(run_id, automation_id, step_index, step.module_id, "running", user_id=user_id)
 
                 try:
                     result = await func(resolved_params)
                 except Exception as e:
                     logger.error(f"{log_prefix} âŒ Erro crítico no passo '{step.step_id}': {e}")
-                    if automation_id:
-                        _log_step(automation_id, step_index, step.module_id, "error", user_id=user_id, result={"error": str(e)})
+                    if run_id:
+                        _log_step(run_id, automation_id, step_index, step.module_id, "error", user_id=user_id, result={"error": str(e)})
                     raise
 
                 run_context[step.step_id] = result
 
                 # Log: success
-                if automation_id:
-                    _log_step(automation_id, step_index, step.module_id, "success", user_id=user_id, result=result)
+                if run_id:
+                    _log_step(run_id, automation_id, step_index, step.module_id, "success", user_id=user_id, result=result)
 
                 logger.info(f"{log_prefix} 💾 Passo '{step.step_id}' concluído com sucesso.")
