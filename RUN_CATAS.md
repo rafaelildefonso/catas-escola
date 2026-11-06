@@ -21,7 +21,7 @@ Validar: http://localhost:8000/health → `{"status": "ok"}`
 
 > O `.env` do backend já deve existir em `backend/.env` (ver `enviroments_setup.txt` na raiz para gerar).
 
-## 2. Worker (FastAPI)
+## 2. Worker
 
 O Worker é necessário para executar automações.
 
@@ -35,11 +35,26 @@ Validar: http://localhost:8001/health → `{"status": "ok"}`
 
 ---
 
-## 3. Frontend
+## 3. Agendador de automações
+
+O agendador é obrigatório para automações recorrentes, como "todo dia às 11:38". Ele consulta as execuções vencidas a cada 15 segundos e as encaminha ao worker.
+
+Em um terceiro terminal:
+
+```powershell
+cd backend
+.\venv\Scripts\activate
+python -m services.automation.scheduler
+```
+
+O processo permanece em execução e não expõe uma porta HTTP. Mantenha este terminal aberto enquanto quiser que os agendamentos sejam executados.
+
+---
+
+## 4. Frontend
 
 ```powershell
 cd frontend
-flutter pub get
 flutter run -d chrome --web-port 52159
 ```
 
@@ -85,6 +100,7 @@ Get-NetTCPConnection -LocalPort 8000 -State Listen | Select-Object -ExpandProper
 # worker (porta 8001)
 Get-NetTCPConnection -LocalPort 8001 -State Listen | Select-Object -ExpandProperty OwningProcess | ForEach-Object { Stop-Process -Id $_ }
 
+# scheduler não usa porta: no terminal dele, pressione Ctrl+C
 ```
 
 ## Troubleshooting
@@ -96,6 +112,7 @@ Get-NetTCPConnection -LocalPort 8001 -State Listen | Select-Object -ExpandProper
 | App não abre após `Installing...` | `flutter run` travado em janela oculta. Use o fallback `am start` + `flutter attach` acima |
 | Erro de conexão do app no emulador | Confira se o backend está na mesma porta do `--dart-define` e se `/health` responde |
 | Worker não conecta | Verifique se `WORKER_URL` está configurado corretamente no `.env` |
+| A automação recorrente não dispara | Inicie `python -m services.automation.scheduler` em um terceiro terminal. API e worker, sozinhos, não executam agendamentos. |
 | Erro de porta no Docker | Verifique se as portas 8000 e 8001 não estão em uso |
 
 ---
@@ -105,10 +122,11 @@ Get-NetTCPConnection -LocalPort 8001 -State Listen | Select-Object -ExpandProper
 ```
 1. Iniciar Backend (port 8000)
 2. Iniciar Worker (port 8001)
-3. Iniciar Flutter (emulador ou Chrome)
-4. Fazer login no app
-5. Enviar mensagem no chat
-6. IA processa e gera plano
-7. Worker executa automação
-8. Resultado exibido no app
+3. Iniciar Scheduler (automações recorrentes)
+4. Iniciar Flutter (emulador ou Chrome)
+5. Fazer login no app
+6. Enviar mensagem no chat
+7. IA processa e gera plano
+8. Worker executa automação
+9. Resultado exibido no app
 ```

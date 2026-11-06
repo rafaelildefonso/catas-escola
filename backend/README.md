@@ -128,7 +128,10 @@ pip install -r requirements.txt
 python run.py
 
 # Worker (automacoes)
-python -m worker.server
+python -m worker.entrypoint
+
+# Scheduler (obrigatorio para automacoes recorrentes)
+python -m services.automation.scheduler
 ```
 
 ## Testar
