@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import logging
+from urllib.parse import urlsplit, urlunsplit
 
 import stripe
 
@@ -28,7 +29,9 @@ class BillingError(Exception):
 
 class BillingService:
     @staticmethod
-    def criar_checkout(profile_id: str, email: str, tier: str) -> str:
+    def criar_checkout(
+        profile_id: str, email: str, tier: str, request_origin: str | None = None
+    ) -> str:
         BillingService._exigir_chave()
         price_id = _plan_price_ids().get(tier)
         if not price_id:
@@ -60,8 +63,12 @@ class BillingService:
             mode="subscription",
             customer=profile.stripe_customer_id,
             line_items=[{"price": price_id, "quantity": 1}],
-            success_url=settings.STRIPE_SUCCESS_URL,
-            cancel_url=settings.STRIPE_CANCEL_URL,
+            success_url=BillingService._checkout_return_url(
+                "success", request_origin
+            ),
+            cancel_url=BillingService._checkout_return_url(
+                "cancelled", request_origin
+            ),
             client_reference_id=profile.id,
             metadata={"profile_id": profile.id, "plan_tier": tier},
             subscription_data={
@@ -71,6 +78,64 @@ class BillingService:
         if not session.url:
             raise BillingError("O Stripe não retornou a URL do checkout.", 502)
         return session.url
+
+    @staticmethod
+    def _checkout_return_url(status: str, request_origin: str | None) -> str:
+        """Monta a URL de retorno sem aceitar redirecionamentos arbitrários.
+
+        A URL configurada explicitamente tem precedência. Para Flutter Web em
+        desenvolvimento, aceita-se somente uma origem HTTP(S) local válida;
+        assim o Checkout volta à porta que está executando o app, mas um
+        cabeçalho Origin malicioso não vira um open redirect em produção.
+        """
+        explicitly_configured = (
+            settings.STRIPE_SUCCESS_URL_CONFIGURED
+            if status == "success"
+            else settings.STRIPE_CANCEL_URL_CONFIGURED
+        )
+        base_url = (
+            settings.STRIPE_SUCCESS_URL
+            if status == "success"
+            else settings.STRIPE_CANCEL_URL
+        )
+        if (
+            not explicitly_configured
+            and settings.ENVIRONMENT.lower() == "development"
+        ):
+            local_origin = BillingService._local_origin(request_origin)
+            if local_origin:
+                if status == "success":
+                    base_url = f"{local_origin}/app/payment-success?billing=success"
+                else:
+                    base_url = f"{local_origin}/?billing=cancelled"
+
+        if status == "success":
+            separator = "&" if "?" in base_url else "?"
+            # O placeholder é substituído pelo Stripe no redirecionamento e é
+            # apenas usado pelo cliente para correlacionar a tela de sucesso.
+            return f"{base_url}{separator}session_id={{CHECKOUT_SESSION_ID}}"
+        return base_url
+
+    @staticmethod
+    def _local_origin(origin: str | None) -> str | None:
+        if not origin:
+            return None
+        parsed = urlsplit(origin)
+        try:
+            parsed.port
+        except ValueError:
+            return None
+        if (
+            parsed.scheme not in {"http", "https"}
+            or parsed.username
+            or parsed.password
+            or parsed.path not in {"", "/"}
+            or parsed.query
+            or parsed.fragment
+            or parsed.hostname not in {"localhost", "127.0.0.1", "::1"}
+        ):
+            return None
+        return urlunsplit((parsed.scheme, parsed.netloc, "", "", ""))
 
     @staticmethod
     def criar_portal(profile_id: str) -> str:
@@ -87,6 +152,56 @@ class BillingService:
         if not session.url:
             raise BillingError("O Stripe não retornou a URL do portal.", 502)
         return session.url
+
+    @staticmethod
+    def confirmar_checkout(profile_id: str, session_id: str) -> Profile:
+        """Confirma o retorno do Checkout para o dono autenticado da sessão.
+
+        A URL de sucesso não concede acesso. Este método consulta o Stripe e
+        exige que a sessão pertença ao mesmo perfil antes de sincronizar o
+        plano; o webhook continua sendo a fonte assíncrona de reconciliação.
+        """
+        BillingService._exigir_chave()
+        profile = BillingService._obter_profile(profile_id)
+        stripe.api_key = settings.STRIPE_SECRET_KEY
+        session = stripe.checkout.Session.retrieve(
+            session_id, expand=["subscription"]
+        )
+
+        if (
+            session.get("mode") != "subscription"
+            or session.get("client_reference_id") != profile.id
+            or session.get("customer") != profile.stripe_customer_id
+        ):
+            raise BillingError("Sessão de checkout não encontrada.", 404)
+        if session.get("status") != "complete":
+            raise BillingError("O pagamento ainda está sendo confirmado.", 409)
+
+        subscription = session.get("subscription")
+        if not subscription:
+            raise BillingError("Assinatura ainda não está disponível.", 409)
+        if isinstance(subscription, str):
+            subscription = stripe.Subscription.retrieve(subscription)
+        if subscription.get("customer") != profile.stripe_customer_id:
+            raise BillingError("Sessão de checkout não encontrada.", 404)
+
+        profile.stripe_subscription_id = subscription.get("id")
+        profile.subscription_status = subscription.get("status") or "incomplete"
+        period_end = subscription.get("current_period_end")
+        profile.stripe_current_period_end = (
+            datetime.fromtimestamp(period_end, timezone.utc) if period_end else None
+        )
+
+        if profile.subscription_status not in {"active", "trialing"}:
+            db.session.commit()
+            raise BillingError("O pagamento ainda está sendo confirmado.", 409)
+
+        tier = BillingService._tier_da_assinatura(subscription)
+        if not tier:
+            raise BillingError("O plano da assinatura não foi reconhecido.", 409)
+        BillingService._aplicar_plano(profile, tier)
+        db.session.commit()
+        return profile
 
     @staticmethod
     def processar_webhook(payload: bytes, assinatura: str | None):
@@ -130,7 +245,15 @@ class BillingService:
         subscription_id = objeto.get("subscription")
         if subscription_id:
             profile.stripe_subscription_id = subscription_id
-        if profile.subscription_status not in {"active", "trialing", "past_due"}:
+        payment_status = objeto.get("payment_status")
+        checkout_tier = (objeto.get("metadata") or {}).get("plan_tier")
+        if (
+            payment_status in {"paid", "no_payment_required"}
+            and checkout_tier in PLAN_LIMITS
+        ):
+            BillingService._aplicar_plano(profile, checkout_tier)
+            profile.subscription_status = "active"
+        elif profile.subscription_status not in {"active", "trialing", "past_due"}:
             profile.subscription_status = "incomplete"
         db.session.commit()
 
