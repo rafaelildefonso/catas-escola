@@ -1,7 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from urllib.parse import urlencode
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from models.integration import Integration
@@ -37,7 +36,10 @@ def _frontend_url() -> str:
 
 
 def montar_url_retorno_integracoes(**params: str) -> str:
-    return f"{_frontend_url()}/app/integrations?{urlencode(params)}"
+    # O callback OAuth deve sempre voltar para a tela de integrações.
+    # Os parâmetros de status na query string faziam o Flutter Web abrir
+    # uma rota que não renderizava corretamente após o retorno do Google.
+    return f"{_frontend_url()}/app/integrations"
 
 
 def gerar_auth_url(user_id: str, provider: str) -> Optional[str]:
