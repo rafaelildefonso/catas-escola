@@ -9,3 +9,4 @@ import worker.modules.gmail_modules  # noqa: F401
 import worker.modules.google_calendar_modules  # noqa: F401
 import worker.modules.google_sheets_modules  # noqa: F401
 import worker.modules.google_drive_modules  # noqa: F401
+import worker.modules.report_modules  # noqa: F401

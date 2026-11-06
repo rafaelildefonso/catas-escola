@@ -28,27 +28,43 @@ def obter_app():
 
 
 def registrar_passo_execucao(
-    automation_id: str,
+    run_id: str,
     step_index: int,
     module_id: str,
     status: str,
     user_id: str = None,
     result: Optional[Dict] = None,
     intent: str = None,
+    automation_id: str = None,
 ) -> None:
-    """Cria ou atualiza o log de um passo da automação (upsert por automation_id + step_index)."""
+    """Cria ou atualiza um step pelo par estável (run_id, step_index)."""
+    automation_id = automation_id or run_id
     with obter_app().app_context():
         from models.automation_step_log import AutomationStepLog
 
         registro = (
             AutomationStepLog.query
             .filter(
-                AutomationStepLog.automation_id == automation_id,
+                AutomationStepLog.run_id == run_id,
                 AutomationStepLog.step_index == step_index,
             )
             .first()
         )
+        # Reaproveita logs criados pelo contrato antigo, que gravava a run
+        # na coluna automation_id e deixava run_id nulo.
+        if not registro:
+            registro = (
+                AutomationStepLog.query
+                .filter(
+                    AutomationStepLog.automation_id == automation_id,
+                    AutomationStepLog.run_id.is_(None),
+                    AutomationStepLog.step_index == step_index,
+                )
+                .first()
+            )
         if registro:
+            registro.run_id = run_id
+            registro.automation_id = automation_id
             registro.atualizar(module_id=module_id, status=status)
             if user_id:
                 registro.user_id = user_id
@@ -61,6 +77,7 @@ def registrar_passo_execucao(
         else:
             registro = AutomationStepLog(
                 automation_id=automation_id,
+                run_id=run_id,
                 step_index=step_index,
                 module_id=module_id,
                 status=status,
@@ -78,7 +95,7 @@ def atualizar_status_run(
     result_metadata: Optional[Dict] = None,
     error_details: Optional[Dict] = None,
     steps_summary: Optional[Dict] = None,
-) -> None:
+) -> bool:
     """Atualiza o status de uma execução; grava finished_at em status terminais."""
     with obter_app().app_context():
         from models.automation_run import AutomationRun
@@ -86,9 +103,9 @@ def atualizar_status_run(
         run = AutomationRun.buscar_por_id(run_id)
         if not run:
             logger.warning("Run %s não encontrada ao atualizar status.", run_id)
-            return
+            return False
         if run.status in ("completed", "failed", "canceled"):
-            return
+            return True
 
         campos = {"status": status}
         if status in ("completed", "failed", "canceled"):
@@ -107,6 +124,29 @@ def atualizar_status_run(
                 NotificationService.notify_run(run_id, status)
             except Exception:
                 logger.exception("Falha ao notificar execução %s", run_id)
+        return True
+
+
+def salvar_relatorio_gerado(
+    *, user_id: str, automation_id: str | None, automation_run_id: str | None,
+    title: str, summary: str, source_name: str, metrics: Dict, pdf_content: bytes,
+) -> str:
+    """Persiste o arquivo produzido pelo worker no banco da API."""
+    with obter_app().app_context():
+        from models.generated_report import GeneratedReport
+
+        report = GeneratedReport(
+            user_id=user_id,
+            automation_id=automation_id,
+            automation_run_id=automation_run_id,
+            title=title,
+            summary=summary,
+            source_name=source_name,
+            metrics=metrics,
+            pdf_content=pdf_content,
+        )
+        report.salvar()
+        return report.id
 
 
 def obter_integracao(user_id: str, provider: str) -> Optional[Dict]:
