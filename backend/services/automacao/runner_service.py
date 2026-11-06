@@ -21,11 +21,12 @@ class AutomationRunnerService:
     @classmethod
     async def start_automation(
         cls,
-        automation_id: str,
+        run_id: str,
         plan: dict,
         user_id: str = None,
+        automation_id: str = None,
     ):
-        logger.info("🚀 Disparando execução para run_id: %s", automation_id)
+        logger.info("🚀 Disparando execução para run_id: %s", run_id)
 
         try:
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -33,25 +34,26 @@ class AutomationRunnerService:
                     f"{WORKER_URL}/execute",
                     json={
                         "automation_id": automation_id,
+                        "run_id": run_id,
                         "plan": plan,
                         "user_id": user_id,
                     },
                     headers={"X-Worker-Secret": WORKER_SHARED_SECRET},
                 )
                 if resp.status_code != 202:
-                    raise RuntimeError(f"Worker rejeitou execução {automation_id}: HTTP {resp.status_code}")
-                logger.info("Worker aceitou execução %s", automation_id)
+                    raise RuntimeError(f"Worker rejeitou execução {run_id}: HTTP {resp.status_code}")
+                logger.info("Worker aceitou execução %s", run_id)
 
         except Exception as e:
             logger.error(
                 "❌ Worker não disponível (%s). A automação %s NÃO será executada.",
-                e, automation_id,
+                e, run_id,
             )
             raise
 
         return {
-            "id": f"direct-{automation_id}",
-            "first_execution_run_id": f"direct-{automation_id}",
+            "id": run_id,
+            "first_execution_run_id": run_id,
         }
 
     @classmethod
@@ -73,7 +75,8 @@ class AutomationRunnerService:
                 resp = await client.post(
                     f"{WORKER_URL}/execute",
                     json={
-                        "automation_id": unique_run_id,
+                        "automation_id": automation_id,
+                        "run_id": unique_run_id,
                         "plan": plan,
                         "user_id": user_id,
                     },

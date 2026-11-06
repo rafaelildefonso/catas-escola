@@ -10,20 +10,26 @@ class IniciarAutomacaoAssincronaService:
     """
 
     @staticmethod
-    def executar(automation_id: str, plan: dict, user_id: str = None):
+    def executar(run_id: str, plan: dict, user_id: str = None, automation_id: str = None):
         from flask import current_app
         app = current_app._get_current_object()
 
         thread = threading.Thread(
             target=IniciarAutomacaoAssincronaService._executar_em_thread,
-            args=(app, automation_id, plan, user_id),
+            args=(app, run_id, plan, user_id, automation_id),
             daemon=True,
         )
         thread.start()
-        return automation_id
+        return run_id
 
     @staticmethod
-    def _executar_em_thread(app, automation_id: str, plan: dict, user_id: str = None):
+    def _executar_em_thread(
+        app,
+        run_id: str,
+        plan: dict,
+        user_id: str = None,
+        automation_id: str = None,
+    ):
         try:
             with app.app_context():
                 from services.automacao.runner_service import AutomationRunnerService
@@ -31,11 +37,16 @@ class IniciarAutomacaoAssincronaService:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 result = loop.run_until_complete(
-                    AutomationRunnerService.start_automation(automation_id, plan, user_id=user_id)
+                    AutomationRunnerService.start_automation(
+                        run_id,
+                        plan,
+                        user_id=user_id,
+                        automation_id=automation_id,
+                    )
                 )
 
                 from models.automation_run import AutomationRun
-                run = AutomationRun.buscar_por_id(automation_id)
+                run = AutomationRun.buscar_por_id(run_id)
                 if run:
                     run.atualizar(
                         execution_id=result["id"],
@@ -46,7 +57,7 @@ class IniciarAutomacaoAssincronaService:
             try:
                 with app.app_context():
                     from models.automation_run import AutomationRun
-                    run = AutomationRun.buscar_por_id(automation_id)
+                    run = AutomationRun.buscar_por_id(run_id)
                     if run:
                         run.atualizar(
                             status="failed",

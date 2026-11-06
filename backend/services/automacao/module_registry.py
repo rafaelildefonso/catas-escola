@@ -153,6 +153,19 @@ MODULE_REGISTRY: Dict[str, ModuleSpec] = {
         output_keys=["folder_id", "folder_name", "web_link"]
     ),
 
+    # Reports
+    "report.generate_pdf": ModuleSpec(
+        module_id="report.generate_pdf",
+        name="Gerar relatório em PDF",
+        description=(
+            "Organiza dados de uma planilha, calcula indicadores, cria um gráfico e "
+            "salva o PDF na página Relatórios do CATAS"
+        ),
+        category="reports",
+        required_params=["title", "data"],
+        output_keys=["report_id", "title", "format", "rows_analyzed"],
+    ),
+
     # Flow
     "flow.wait": ModuleSpec(
         module_id="flow.wait",

@@ -45,7 +45,22 @@ class ScopedAutomationResources:
     @staticmethod
     def list_logs(user_id, run_id):
         ScopedAutomationResources.get_run(user_id, run_id)
-        logs = AutomationStepLog.query.filter_by(automation_id=run_id).order_by(AutomationStepLog.step_index).all()
+        from sqlalchemy import or_, and_
+
+        logs = (
+            AutomationStepLog.query
+            .filter(
+                or_(
+                    AutomationStepLog.run_id == run_id,
+                    and_(
+                        AutomationStepLog.run_id.is_(None),
+                        AutomationStepLog.automation_id == run_id,
+                    ),
+                )
+            )
+            .order_by(AutomationStepLog.step_index)
+            .all()
+        )
         return [item.to_dict() for item in logs]
 
     @staticmethod

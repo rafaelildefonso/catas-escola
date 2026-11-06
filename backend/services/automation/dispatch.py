@@ -43,7 +43,10 @@ def dispatch_automation(automation_id: str, user_id: str, run_type: str, trigger
             response = client.post(
                 f"{settings.WORKER_URL.rstrip('/')}/execute",
                 json={
-                    "automation_id": run_id,
+                    # Os IDs têm semânticas diferentes: automation_id identifica
+                    # o fluxo salvo e run_id identifica esta execução.
+                    "automation_id": automation.id,
+                    "run_id": run_id,
                     "plan": plan,
                     "user_id": user_id,
                     "trigger_payload": trigger_payload or {},

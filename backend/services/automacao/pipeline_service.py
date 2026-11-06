@@ -370,6 +370,9 @@ Retorne APENAS JSON: {"valido": true/false, "motivo": "explicação curta"}"""
         system = (
             f"Escolha os módulos necessários do catálogo abaixo para cumprir o objetivo.\nCatálogo:\n{catalogo}\nRetorne JSON: "
             + '{"nodulos": ["id1", "id2"]}'
+            + "\nPara relatórios recorrentes a partir de Google Planilhas, selecione "
+            + "google_sheets.get_values, ai.transform_data e então report.generate_pdf. "
+            + "O último módulo gera o PDF, os indicadores e o salva na página Relatórios do usuário."
         )
         contexto = json.dumps(estado.interpretacao, ensure_ascii=False)
         resposta = await self.chamar_ia(
@@ -453,7 +456,11 @@ Retorne APENAS JSON: {"valido": true/false, "motivo": "explicação curta"}"""
            use schedule/interval_minutes ou cron/cron_expression em UTC, nunca manual.
         6. Preencha os parâmetros obrigatórios de cada módulo com dados fornecidos
            pelo usuário. Não invente e-mails, IDs ou horários.
-        7. Retorne APENAS o JSON.
+        7. Em um relatório de planilha, organize os passos nesta ordem: leitura da
+           planilha, ai.transform_data para analisar os números e report.generate_pdf.
+           No PDF, use data='{{step_real_da_planilha.values}}' e summary com o texto
+           da análise da IA. Informe um título claro e, quando disponível, source_name.
+        8. Retorne APENAS o JSON.
         """
 
         payload = json.dumps(
