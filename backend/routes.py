@@ -16,6 +16,7 @@ from controllers.page_analysis_cache_controller import PageAnalysisCacheControll
 from controllers.user_webhook_config_controller import UserWebhookConfigController
 from controllers.ia_memory_controller import IaMemoryController
 from controllers.relatorio_controller import RelatorioController
+from controllers.relatorios_gerados_controller import RelatoriosGeradosController
 from controllers.billing_controller import BillingController
 from controllers.attachment_controller import AttachmentController
 from controllers.notification_controller import NotificationController
@@ -178,11 +179,20 @@ def registrar_rotas(app):
     _rota(app, "/api/v1/relatorios/chat", ["GET"], RelatorioController.relatorio_chat, "relatorio.chat")
     _rota(app, "/api/v1/relatorios/mensagens/busca", ["GET"], RelatorioController.buscar_mensagens, "relatorio.mensagens.busca")
     _rota(app, "/api/v1/relatorios/export", ["GET"], RelatorioController.exportar, "relatorio.exportar")
+    _rota(app, "/api/v1/relatorios/gerados", ["GET"], RelatoriosGeradosController.listar, "relatorios_gerados.listar")
+    _rota(app, "/api/v1/relatorios/gerados/<report_id>/download", ["GET"], RelatoriosGeradosController.baixar, "relatorios_gerados.baixar")
 
     # Billing: endpoints autenticados e webhook público validado pela assinatura Stripe
     _rota(app, "/api/v1/billing/checkout", ["POST"], BillingController.checkout, "billing.checkout")
     _rota(app, "/api/v1/billing/portal", ["POST"], BillingController.portal, "billing.portal")
     _rota(app, "/api/v1/billing/status", ["GET"], BillingController.status, "billing.status")
+    _rota(
+        app,
+        "/api/v1/billing/checkout-session/<session_id>",
+        ["GET"],
+        BillingController.confirmar_checkout,
+        "billing.confirmar_checkout",
+    )
     _rota(app, "/api/v1/billing/webhook", ["POST"], BillingController.webhook, "billing.webhook")
 
     # Upload e gerenciamento privado de anexos

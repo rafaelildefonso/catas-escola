@@ -22,6 +22,7 @@ class BillingController:
                 g.current_user["id"],
                 g.current_user.get("email", ""),
                 tier,
+                request.headers.get("Origin"),
             )
             return jsonify({"url": url}), 200
         except BillingError as erro:
@@ -60,6 +61,23 @@ class BillingController:
                 else None
             ),
         }), 200
+
+    @staticmethod
+    @login_required
+    def confirmar_checkout(session_id):
+        try:
+            profile = BillingService.confirmar_checkout(
+                g.current_user["id"], session_id
+            )
+            return jsonify({
+                "subscription_tier": profile.subscription_tier,
+                "subscription_status": profile.subscription_status,
+            }), 200
+        except BillingError as erro:
+            return jsonify({"detail": str(erro)}), erro.status_code
+        except stripe.StripeError:
+            logger.exception("Falha ao confirmar sessão de checkout Stripe.")
+            return jsonify({"detail": "Não foi possível confirmar o pagamento."}), 502
 
     @staticmethod
     def webhook():
