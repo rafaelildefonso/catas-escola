@@ -15,6 +15,7 @@ class IntegrationAccessService:
         "email_draft": "google_gmail",
         "calendar_create_event": "google_calendar",
         "task_create": "google_sheets",
+        "spreadsheet_create": "google_sheets",
     }
 
     _DISPLAY_NAMES = {

@@ -71,6 +71,21 @@ class PayloadBuilder:
                     ]]
                 }
             })
+
+        elif intent == "spreadsheet_create":
+            title = (entities.get("title") or "").strip()
+            headers = entities.get("headers") or []
+            header_colors = entities.get("header_colors") or []
+            name = f"Criar planilha: {title}" if title else "Criar planilha"
+            steps.append({
+                "module_id": "google_sheets.create_spreadsheet",
+                "params": {
+                    "title": title,
+                    "sheet_title": entities.get("sheet_title") or "Tarefas",
+                    "headers": headers,
+                    "header_colors": header_colors,
+                },
+            })
             
         return {
             "name": name,

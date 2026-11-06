@@ -14,13 +14,14 @@ class IntentClassifier:
         You must classify the intent into ONE of the following precise categories:
         1. "calendar_create_event": User wants to schedule a meeting, event, or reminder on a specific date/time.
         2. "task_create": User wants to add a new task to their to-do list (Notion/Todoist).
-        3. "email_draft": User wants to draft or send an email to someone.
-        4. "meta_automation": User wants to create, modify, manage, understand, or discuss complex automation flows, integrations, or high-level agents (pipeline).
-        5. "conversation": The user is just chatting, asking general questions, greeting, or not making a clear actionable request.
+        3. "spreadsheet_create": User wants to create a new Google Sheets spreadsheet or a spreadsheet template. This is NOT task_create, even when the spreadsheet is for tasks.
+        4. "email_draft": User wants to draft or send an email to someone.
+        5. "meta_automation": User wants to create, modify, manage, understand, or discuss complex automation flows, integrations, or high-level agents (pipeline).
+        6. "conversation": The user is just chatting, asking general questions, greeting, or not making a clear actionable request.
         
         Strictly output a valid JSON object matching the following schema:
         {
-            "intent": "calendar_create_event" | "task_create" | "email_draft" | "meta_automation" | "conversation"
+            "intent": "calendar_create_event" | "task_create" | "spreadsheet_create" | "email_draft" | "meta_automation" | "conversation"
         }
         """
         
@@ -43,7 +44,7 @@ class IntentClassifier:
                 
                 intent = result.get("intent", "conversation")
                 
-                if intent not in ["calendar_create_event", "task_create", "email_draft", "meta_automation", "conversation"]:
+                if intent not in ["calendar_create_event", "task_create", "spreadsheet_create", "email_draft", "meta_automation", "conversation"]:
                     intent = "conversation"
                 
                 return {"intent": intent}

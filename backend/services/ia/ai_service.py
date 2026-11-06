@@ -1,5 +1,6 @@
 ﻿import traceback
 import json
+import re
 from typing import TypedDict, Any
 from core.config import settings
 from core.errors import sanitize_error
@@ -20,6 +21,140 @@ class AIService:
         self.entity_extractor = EntityExtractor()
         self.payload_builder = PayloadBuilder()
 
+    @staticmethod
+    def _history_sheet_entities(history: list) -> dict:
+        for message in reversed(history or []):
+            metadata = message.get("metadata") or {}
+            if metadata.get("intent") == "spreadsheet_create":
+                entities = metadata.get("entities") or {}
+                if isinstance(entities, dict):
+                    return dict(entities)
+        return {}
+
+    @classmethod
+    def _is_spreadsheet_creation_request(cls, text: str, history: list) -> bool:
+        normalized = (text or "").casefold()
+        creates_sheet = (
+            "planilha" in normalized
+            or "google sheets" in normalized
+            or "google planilhas" in normalized
+        ) and any(word in normalized for word in ("crie", "criar", "monte", "montar", "modelo", "template"))
+        if creates_sheet:
+            return True
+        for message in reversed(history or []):
+            metadata = message.get("metadata") or {}
+            if message.get("role") == "assistant":
+                return bool(
+                    metadata.get("intent") == "spreadsheet_create"
+                    and metadata.get("status") == "requires_action"
+                    and normalized
+                )
+        return bool(
+            normalized.startswith(("[texto_input]", "[resposta de texto]"))
+            and cls._history_sheet_entities(history)
+        )
+
+    @classmethod
+    def _extract_spreadsheet_entities(cls, text: str, history: list) -> dict:
+        entities = cls._history_sheet_entities(history)
+        entities.setdefault("headers", [])
+        entities.setdefault("header_colors", [])
+        entities.setdefault("sheet_title", "Tarefas")
+
+        raw_text = (text or "").strip()
+        normalized = raw_text.casefold()
+        quoted = [value.strip() for value in re.findall(r'["“]([^"”]+)["”]', raw_text) if value.strip()]
+
+        if "coluna" in normalized or "cabeç" in normalized or "header" in normalized:
+            if quoted:
+                entities["headers"] = quoted
+            elif ":" in raw_text:
+                values = raw_text.split(":", 1)[1].split(",")
+                entities["headers"] = [value.strip() for value in values if value.strip()]
+
+        response_prefix = re.match(r"^\[(?:texto_input|resposta de texto)\]\s*(.*)$", raw_text, re.IGNORECASE)
+        if response_prefix and response_prefix.group(1).strip():
+            entities["title"] = response_prefix.group(1).strip().strip('"“”')
+        elif len(quoted) == 1 and not any(term in normalized for term in ("coluna", "cabeç", "header")):
+            entities["title"] = quoted[0]
+        else:
+            title_match = re.search(
+                r"(?:chamad[ao]?|nome(?:ada)?|planilha)\s+(?:de\s+)?[\"“]?([^\"”\n,]+)",
+                raw_text,
+                re.IGNORECASE,
+            )
+            if title_match and not any(term in normalized for term in ("coluna", "cabeç", "header")):
+                entities["title"] = title_match.group(1).strip().strip('"“”')
+
+        if entities.get("headers") and (
+            "cor diferente" in normalized or "cores diferentes" in normalized or "colorid" in normalized
+        ):
+            palette = ["#FDE68A", "#BFDBFE", "#BBF7D0", "#E9D5FF", "#FBCFE8"]
+            entities["header_colors"] = [
+                palette[index % len(palette)] for index, _ in enumerate(entities["headers"])
+            ]
+        return entities
+
+    @staticmethod
+    def _spreadsheet_response(entities: dict, action_details: dict, user_integrations, active_integrations) -> dict:
+        from services.chat.integration_access_service import IntegrationAccessService
+
+        blocked = IntegrationAccessService.blocked_response(
+            action_details, "spreadsheet_create", user_integrations, active_integrations
+        )
+        if blocked:
+            return {**blocked, "intent": "spreadsheet_create", "entities": entities, "credits_consumed": 0}
+
+        title = str(entities.get("title") or "").strip()
+        if not title:
+            return {
+                "id": None,
+                "response_text": "Qual nome você gostaria de dar à nova planilha?",
+                "action_triggered": False,
+                "action_details": {},
+                "components": [{
+                    "type": "text_input",
+                    "label": "Nome da planilha",
+                    "placeholder": "Ex.: Planilha de tarefas",
+                    "multiline": False,
+                    "field_id": "spreadsheet_title",
+                    "value": "",
+                    "readonly": False,
+                }],
+                "status": "requires_action",
+                "credits_consumed": 0,
+                "intent": "spreadsheet_create",
+                "entities": entities,
+            }
+
+        headers = [str(header) for header in entities.get("headers", []) if str(header).strip()]
+        return {
+            "id": None,
+            "response_text": f"Vou criar a planilha **{title}**. Confirme para eu criar no Google Planilhas.",
+            "action_triggered": False,
+            "action_details": action_details,
+            "components": [
+                {
+                    "type": "sheets_table_preview",
+                    "title": title,
+                    "headers": headers,
+                    "rows": [],
+                },
+                {
+                    "type": "action_approval",
+                    "action": "create_spreadsheet",
+                    "title": "Criar planilha no Google Planilhas",
+                    "description": f"Criar a planilha \"{title}\"" + (" com os cabeçalhos mostrados." if headers else "."),
+                    "danger_level": "low",
+                    "readonly": False,
+                },
+            ],
+            "status": "requires_action",
+            "credits_consumed": 0,
+            "intent": "spreadsheet_create",
+            "entities": entities,
+        }
+
     async def analyze_message(self, text: str, user_id: str = None, history: list = [], attachment_urls: list = [], model_requested: str = "CATAS Basic", user_integrations: list = [], active_integrations: list = [], user_tools: list = []):
         # Select configuration based on tier
         config_str = settings.MODEL_TIER_BASIC
@@ -33,6 +168,12 @@ class AIService:
             classification = await self.intent_classifier.classify_intent(text, history)
             intent = classification.get("intent", "conversation")
 
+            # A planilha é uma ação própria. Sem esta regra, "planilha de
+            # tarefas" era tratada como task_create e usava "primary" como se
+            # fosse o ID de uma planilha existente.
+            if self._is_spreadsheet_creation_request(text, history):
+                intent = "spreadsheet_create"
+
             # Component responses start with '['
             is_component_response = any(text.startswith(prefix) for prefix in [
                 '[APROVADO]', '[RECUSADO]', '[CONTATOS SELECIONADOS]', 
@@ -40,7 +181,7 @@ class AIService:
                 '[RESPOSTA DE TEXTO]', '[DATA/HORA SELECIONADA]',
                 '[CONTEÚDO EDITADO/CONFIRMADO]', '[CHECKLIST ATUALIZADO]',
                 '[RESPOSTA DO COMPONENTE]', '[INTEGRAÇÃO ATIVADA]',
-                '[INTEGRAÇÃO CONECTADA]'
+                '[INTEGRAÇÃO CONECTADA]', '[TEXTO_INPUT]'
             ])
 
             # Inherit intent from history if it's a component response
@@ -86,7 +227,9 @@ class AIService:
 
             # 2. Extract entities if it's an action
             entities = {}
-            if intent != "conversation":
+            if intent == "spreadsheet_create":
+                entities = self._extract_spreadsheet_entities(text, history)
+            elif intent != "conversation":
                 if is_component_response:
                     # Inherit entities from history so we don't lose context
                     for msg in reversed(history):
@@ -153,6 +296,11 @@ class AIService:
                 print(f"[AIService] Intent: {intent} | Entities: {entities}")
                 action_details = self.payload_builder.build_payload(intent, entities)
                 print(f"[AIService] Final Plan: {json.dumps(action_details)}")
+
+            if intent == "spreadsheet_create":
+                return self._spreadsheet_response(
+                    entities, action_details, user_integrations, active_integrations
+                )
 
             # 4. Generate response using standardized AI call
             components_schema_prompt = UIComponentLibrary.get_components_schema()
