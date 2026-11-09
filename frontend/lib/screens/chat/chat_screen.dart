@@ -1085,9 +1085,11 @@ class _ChatScreenState extends State<ChatScreen> {
               link: _mentionLayerLink,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-                color: Colors.transparent, // Floating feel
+                                 color: Colors.transparent, // Floating feel
+
+                alignment: Alignment.center,
                 child: SizedBox(
-                  width: double.infinity,
+                  width: MediaQuery.of(context).size.width * 0.5,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Theme.of(
@@ -1896,17 +1898,20 @@ class _ChatScreenState extends State<ChatScreen> {
             duration: const Duration(milliseconds: 300),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  spacing: 12,
-                  children: [
-                    ..._shuffledPrompts.map(
-                      (item) =>
-                          _buildPromptSuggestions(item.prompt, item.logos),
-                    ),
-                    _buildSeeMorePromptsChip(),
-                  ],
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.5,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    spacing: 12,
+                    children: [
+                      ..._shuffledPrompts.map(
+                        (item) =>
+                            _buildPromptSuggestions(item.prompt, item.logos),
+                      ),
+                      _buildSeeMorePromptsChip(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1916,7 +1921,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildPromptChips() {
-    return AnimatedOpacity(
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.5,
+      child: AnimatedOpacity(
       opacity: _inputVazio ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 300),
       child: Padding(
@@ -1945,7 +1952,8 @@ class _ChatScreenState extends State<ChatScreen> {
           },
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildPromptSuggestions(String prompt, List<LogoId> integrations) {
