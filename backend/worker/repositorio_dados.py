@@ -17,13 +17,48 @@ _lock = threading.Lock()
 
 
 def obter_app():
-    """Cria (uma única vez) a aplicação Flask para acesso aos Models."""
+    """Cria (uma única vez) a aplicação Flask para acesso aos Models.
+    Também garante que o índice correto da tabela ``automation_step_logs``
+    esteja presente quando o banco for SQLite.
+    """
     global _flask_app
     if _flask_app is None:
         with _lock:
             if _flask_app is None:
                 from application import create_app
                 _flask_app = create_app()
+                # Garantir índice correto (executa apenas uma vez)
+                try:
+                    from extensions import db
+                    from sqlalchemy import inspect, text
+                    # Operações que dependem do engine precisam de um app_context
+                    with _flask_app.app_context():
+                        if db.engine.dialect.name == "sqlite":
+                            step_log_indexes = {
+                                i["name"]
+                                for i in inspect(db.engine).get_indexes("automation_step_logs")
+                            }
+                            step_log_indexes.update(
+                                i["name"]
+                                for i in inspect(db.engine).get_unique_constraints("automation_step_logs")
+                                if i.get("name")
+                            )
+                            if "automation_step_logs_automation_step_unique" in step_log_indexes:
+                                db.session.execute(
+                                    text("DROP INDEX IF EXISTS automation_step_logs_automation_step_unique")
+                                )
+                            if "automation_step_logs_run_step_unique" not in step_log_indexes:
+                                db.session.execute(
+                                    text(
+                                        "CREATE UNIQUE INDEX IF NOT EXISTS automation_step_logs_run_step_unique "
+                                        "ON automation_step_logs (run_id, step_index)"
+                                    )
+                                )
+                            db.session.commit()
+                except Exception as e:
+                    # Não impede a aplicação de iniciar; registra apenas.
+                    logger = logging.getLogger("worker.repositorio")
+                    logger.warning("Falha ao garantir índices de automation_step_logs: %s", e)
     return _flask_app
 
 
@@ -37,45 +72,53 @@ def registrar_passo_execucao(
     intent: str = None,
     automation_id: str = None,
 ) -> None:
-    """Cria ou atualiza um step pelo par estável (run_id, step_index)."""
+    """Cria ou atualiza um step pelo par estável (run_id, step_index).
+
+    Utiliza um *upsert* robusto para evitar ``IntegrityError`` quando
+    múltiplas tentativas concorrentes (por exemplo, retries de módulos) tentam
+    gravar o mesmo passo ao mesmo tempo.
+    """
     automation_id = automation_id or run_id
     with obter_app().app_context():
         from models.automation_step_log import AutomationStepLog
-
-        registro = (
-            AutomationStepLog.query
-            .filter(
-                AutomationStepLog.run_id == run_id,
-                AutomationStepLog.step_index == step_index,
-            )
-            .first()
-        )
-        # Reaproveita logs criados pelo contrato antigo, que gravava a run
-        # na coluna automation_id e deixava run_id nulo.
-        if not registro:
+        from extensions import db
+        from sqlalchemy.exc import IntegrityError
+        try:
+            # Busca registro existente (pelo novo par run_id/step_index)
             registro = (
                 AutomationStepLog.query
                 .filter(
-                    AutomationStepLog.automation_id == automation_id,
-                    AutomationStepLog.run_id.is_(None),
+                    AutomationStepLog.run_id == run_id,
                     AutomationStepLog.step_index == step_index,
                 )
                 .first()
             )
-        if registro:
-            registro.run_id = run_id
-            registro.automation_id = automation_id
-            registro.atualizar(module_id=module_id, status=status)
-            if user_id:
-                registro.user_id = user_id
-            if result is not None:
-                registro.result = result
-            if intent:
-                registro.intent = intent
-            from extensions import db
-            db.session.commit()
-        else:
-            registro = AutomationStepLog(
+            # Compatibilidade com logs criados antes da migração (run_id null)
+            if not registro:
+                registro = (
+                    AutomationStepLog.query
+                    .filter(
+                        AutomationStepLog.automation_id == automation_id,
+                        AutomationStepLog.run_id.is_(None),
+                        AutomationStepLog.step_index == step_index,
+                    )
+                    .first()
+                )
+            if registro:
+                # Atualiza campos existentes
+                registro.run_id = run_id
+                registro.automation_id = automation_id
+                registro.atualizar(module_id=module_id, status=status)
+                if user_id:
+                    registro.user_id = user_id
+                if result is not None:
+                    registro.result = result
+                if intent:
+                    registro.intent = intent
+                db.session.commit()
+                return
+            # Caso não exista, cria novo registro
+            novo = AutomationStepLog(
                 automation_id=automation_id,
                 run_id=run_id,
                 step_index=step_index,
@@ -85,9 +128,28 @@ def registrar_passo_execucao(
                 result=result,
                 intent=intent,
             )
-            registro.salvar()
-
-
+            novo.salvar()
+        except IntegrityError:
+            # Possível corrida concorrente – tenta recuperar e atualizar novamente
+            db.session.rollback()
+            registro = (
+                AutomationStepLog.query
+                .filter(
+                    AutomationStepLog.run_id == run_id,
+                    AutomationStepLog.step_index == step_index,
+                )
+                .first()
+            )
+            if registro:
+                registro.atualizar(module_id=module_id, status=status)
+                if result is not None:
+                    registro.result = result
+                if intent:
+                    registro.intent = intent
+                db.session.commit()
+            else:
+                # Se ainda não houver registro, relança para sinalizar erro real
+                raise
 def atualizar_status_run(
     run_id: str,
     status: str,

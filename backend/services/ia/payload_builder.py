@@ -55,6 +55,19 @@ class PayloadBuilder:
                     "attendees": entities.get("attendees", [])
                 }
             })
+            # Se houver informações de e‑mail (destinatário, assunto ou corpo), adiciona passo de envio
+            email_recipient = entities.get("recipient") or entities.get("to")
+            email_subject = entities.get("subject")
+            email_body = entities.get("body_topic") or entities.get("body")
+            if email_recipient or email_subject or email_body:
+                steps.append({
+                    "module_id": "gmail.send_email",
+                    "params": {
+                        "to": email_recipient,
+                        "subject": email_subject or "Sem Assunto",
+                        "body": email_body or ""
+                    }
+                })
             
         elif intent == "task_create":
             name = "Criar Tarefa"

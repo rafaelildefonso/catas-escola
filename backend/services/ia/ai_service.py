@@ -448,12 +448,18 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
             
             # Use AIBase for a standardized call
             # Format history for AIBase
+            # Prepare o histórico formatado para o AIBase.
+            # Limitamos o tamanho para evitar exceções 400 (excesso de tokens).
             formatted_history = []
             if history:
                 for msg in history:
                     role = "user" if msg.get("role") == "user" or msg.get("isUser") else "assistant"
                     content = msg.get("content") or msg.get("text") or ""
                     formatted_history.append({"role": role, "content": content})
+            # Mantém apenas as últimas N mensagens (janela de contexto). 20 costuma ficar dentro do limite.
+            MAX_HISTORY_MESSAGES = 20
+            if len(formatted_history) > MAX_HISTORY_MESSAGES:
+                formatted_history = formatted_history[-MAX_HISTORY_MESSAGES:]
 
             response_data = await AIBase.call_ai(
                 config_str=config_str,
@@ -508,23 +514,94 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
                 components = blocked["components"]
                 action_details = blocked["action_details"]
 
-            # SINCRONIZAR BODY DO EMAIL: Copiar body_preview do componente para action_details
-            if components and action_details.get("steps"):
+            # SINCRONIZAR DADOS DO COMPONENTE PARA O PLANO DE AUTOMAÇÃO
+            # Quando a IA retorna componentes de preview (ex.: preview_email_draft,
+            # preview_calendar_event), os dados precisam virar passos reais no plano.
+            if components and action_details.get("steps") is not None:
+                # --- EMAIL ---
                 for comp in components:
                     if comp.get("type") == "preview_email_draft":
                         email_body = comp.get("body_preview") or comp.get("body", "")
                         email_to = comp.get("to")
                         email_subject = comp.get("subject")
 
-                        for step in action_details["steps"]:
-                            if step.get("module_id") == "gmail.send_email":
-                                if email_body:
-                                    step["params"]["body"] = email_body
-                                if email_to:
-                                    step["params"]["to"] = email_to[0] if isinstance(email_to, list) else email_to
-                                if email_subject:
-                                    step["params"]["subject"] = email_subject
-                        print(f"[AIService] Body do email sincronizado do preview_email_draft")
+                        # Procura passo de e-mail existente no plano
+                        email_step = next(
+                            (s for s in action_details["steps"] if s.get("module_id") == "gmail.send_email"),
+                            None,
+                        )
+                        if email_step:
+                            if email_body:
+                                email_step["params"]["body"] = email_body
+                            if email_to:
+                                email_step["params"]["to"] = email_to[0] if isinstance(email_to, list) else email_to
+                            if email_subject:
+                                email_step["params"]["subject"] = email_subject
+                            print(f"[AIService] Body do email sincronizado do preview_email_draft")
+                        else:
+                            # O plano não tem passo de e-mail: cria a partir do componente
+                            action_details["steps"].append({
+                                "module_id": "gmail.send_email",
+                                "params": {
+                                    "to": email_to[0] if isinstance(email_to, list) else email_to,
+                                    "subject": email_subject or "Sem Assunto",
+                                    "body": email_body or "",
+                                },
+                                "step_id": f"step_{len(action_details['steps']) + 1}",
+                            })
+                            print(f"[AIService] Passo gmail.send_email adicionado a partir do preview_email_draft")
+                        break
+
+                # --- CALENDÁRIO (caso espelhado) ---
+                for comp in components:
+                    if comp.get("type") == "preview_calendar_event":
+                        # Procura passo de calendário existente no plano
+                        cal_step = next(
+                            (s for s in action_details["steps"]
+                             if s.get("module_id") == "google_calendar.create_event"),
+                            None,
+                        )
+                        if cal_step:
+                            # Preenche campos ausentes com dados do componente
+                            params = cal_step["params"]
+                            if not params.get("summary"):
+                                params["summary"] = comp.get("title", "Novo Evento")
+                            if not params.get("start") and comp.get("date"):
+                                params["start"] = f"{comp['date']}T{comp.get('time', '09:00')}:00"
+                            if comp.get("attendees") and not params.get("attendees"):
+                                params["attendees"] = comp["attendees"]
+                            # Garante end quando não informado: 1h depois do início
+                            if not params.get("end") and params.get("start"):
+                                try:
+                                    from datetime import datetime as _dt, timedelta as _td
+                                    _s = _dt.fromisoformat(str(params["start"]).replace("Z", "+00:00"))
+                                    params["end"] = (_s + _td(hours=1)).isoformat()
+                                except (ValueError, TypeError):
+                                    params["end"] = params["start"]
+                        else:
+                            evt_date = comp.get("date")
+                            evt_time = comp.get("time", "09:00")
+                            start_str = f"{evt_date}T{evt_time}:00" if evt_date else None
+                            end_str = None
+                            if start_str:
+                                try:
+                                    from datetime import datetime as _dt, timedelta as _td
+                                    _s = _dt.fromisoformat(start_str.replace("Z", "+00:00"))
+                                    end_str = (_s + _td(hours=1)).isoformat()
+                                except (ValueError, TypeError):
+                                    end_str = start_str
+                            action_details["steps"].append({
+                                "module_id": "google_calendar.create_event",
+                                "params": {
+                                    "summary": comp.get("title", "Novo Evento"),
+                                    "start": start_str,
+                                    "end": end_str,
+                                    "description": comp.get("description", ""),
+                                    "attendees": comp.get("attendees", []),
+                                },
+                                "step_id": f"step_{len(action_details['steps']) + 1}",
+                            })
+                            print(f"[AIService] Passo google_calendar.create_event adicionado a partir do preview_calendar_event")
                         break
 
             # FALLBACK: Se não veio preview_email_draft mas temos entities com body_topic, preencher direto
