@@ -1,6 +1,6 @@
 # Controle de Acesso por Tabela (pós-migração MySQL)
 
-> **NOTA**: O projeto migrou de PostgreSQL/Supabase para **MySQL 8.0+**.
+> **NOTA**: O projeto migrou de PostgreSQL para **MySQL 8.0+**.
 > O MySQL não possui Row Level Security (RLS). A matriz abaixo registra o
 > comportamento **equivalente implementado na camada de aplicação (backend)**.
 

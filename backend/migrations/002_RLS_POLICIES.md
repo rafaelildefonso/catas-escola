@@ -1,7 +1,7 @@
 # Controle de Acesso (RLS) - Chat Schema
 
 > **NOTA IMPORTANTE**: Este documento descreve o esquema **antigo** de Row Level
-> Security do PostgreSQL/Supabase. O projeto foi migrado para **MySQL 8.0+**,
+> Security do PostgreSQL. O projeto foi migrado para **MySQL 8.0+**,
 > que **não possui RLS**. O controle de acesso agora é feito **na camada de
 > aplicação (backend)**: toda query filtra por `WHERE user_id = ?` usando o
 > usuário autenticado. Mantemos este documento apenas como registro histórico

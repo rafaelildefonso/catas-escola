@@ -52,7 +52,7 @@ O CATAS (Context Aware Task Automation System) é uma plataforma SaaS de automa�
 │  └─────────────────────────────────────────────────────────────┘   │
 │                              │                                      │
 │  ┌─────────────────────────────────────────────────────────────┐   │
-│  │              PostgreSQL (Supabase) / SQLite (dev)           │   │
+│  │              PostgreSQL / SQLite (dev)           │   │
 │  └─────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────┘
                               │
@@ -285,7 +285,7 @@ O Worker mantém um catálogo de módulos disponíveis:
 
 ### 4.1 Esquema Principal
 
-O banco utiliza PostgreSQL (Supabase) em produção e SQLite para desenvolvimento/testes.
+O banco utiliza PostgreSQL em produção e SQLite para desenvolvimento/testes.
 
 #### Entidades Principais (18 models)
 
@@ -371,7 +371,7 @@ services:
 
 | Ambiente | Stack | URL |
 |----------|-------|-----|
-| **Produção** | Render + Supabase | https://catas-ai.vercel.app |
+| **Produção** | Render | https://catas-ai.vercel.app |
 | **Staging** | Render | https://staging.catas-ai.vercel.app |
 | **Desenvolvimento** | Local | localhost:8000 |
 
@@ -394,7 +394,7 @@ services:
 | ORM | SQLAlchemy | 2.0+ |
 | Worker | FastAPI | latest |
 | Server | Gunicorn | 21.0+ |
-| Database | PostgreSQL (Supabase) | - |
+| Database | Postgresql | - |
 | Auth | Firebase Admin SDK | - |
 | IA | Groq, Gemini, OpenAI | - |
 | Pagamentos | Stripe | - |
@@ -472,7 +472,7 @@ services:
 |------------|-----------|
 | **API Flask** | Gunicorn com 4 workers |
 | **Worker FastAPI** | Instâncias independentes |
-| **Banco de Dados** | Supabase (PostgreSQL gerenciado) |
+| **Banco de Dados** | PostgreSQL gerenciado |
 | **Cache** | SQLite (dev) / Redis (produção futuro) |
 | **Frontend** | CDN via Vercel |
 

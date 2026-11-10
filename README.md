@@ -114,7 +114,6 @@ Agente de Automação Inteligente baseado em Linguagem Natural que **executa aç
 
 ### Pré-requisitos
 - Python 3.11+
-- Conta Supabase + credenciais de API
 - Firebase Auth (para autenticação)
 - Stripe (para pagamentos)
 
@@ -339,8 +338,8 @@ flutter test
 | **App** | https://catas-ai.vercel.app | Flutter Web |
 | **API** | https://catas-ai.onrender.com/api/v1 | Flask + Gunicorn |
 | **Worker** | https://catas-ai.onrender.com | FastAPI |
-| **Database** | Supabase | PostgreSQL |
-| **Auth** | Firebase | Auth |
+| **Database** |  | PostgreSQL |
+| **Auth** | Firebase | FCM |
 | **Pagamentos** | Stripe | Billing |
 
 ### CI/CD

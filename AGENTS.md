@@ -205,7 +205,6 @@ docker-compose up -d
 
 See `.env.example` for all required variables:
 
-- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 - `DATABASE_URL` (PostgreSQL or SQLite)
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 - `FIREBASE_ADMIN_SDK_JSON_PATH`
@@ -241,7 +240,7 @@ PostgreSQL/SQLite
 
 ## Database
 
-- **Production:** PostgreSQL via Supabase
+- **Production:** PostgreSQL
 - **Development/Testing:** SQLite
 - **Migrations:** SQL files in `backend/migrations/`
 - **Procedures:** PostgreSQL functions for complex queries

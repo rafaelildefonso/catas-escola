@@ -24,7 +24,7 @@ API Flask (porta 8000)
   rotas → controllers → services → models/repositories
       │                         │
       │                         ├──────────────► Banco SQL
-      │                         │                PostgreSQL/Supabase em produção
+      │                         │                PostgreSQL em produção
       │                         │                SQLite no desenvolvimento local
       │                         │
       ├──► provedores de IA: Groq, Gemini e OpenAI
@@ -59,7 +59,7 @@ Scheduler separado (a cada 15 s) ──► dispara automações vencidas
 |---|---|
 | Frontend | Flutter/Dart, Material 3, Provider, GoRouter, Dio e `http`. |
 | Backend | Python 3.11, Flask, Flask-SQLAlchemy, Pydantic, Gunicorn. |
-| Banco | SQLAlchemy; SQLite em desenvolvimento e PostgreSQL/Supabase como destino de produção. |
+| Banco | SQLAlchemy; SQLite em desenvolvimento e PostgreSQL como destino de produção. |
 | IA | Groq, Gemini e OpenAI, selecionados por plano/configuração. |
 | Automação | `asyncio`, `httpx`, Jinja2 e registro de módulos Python. |
 | Autenticação e push | JWT próprio; Firebase Admin/FCM é inicializado quando configurado. |
@@ -353,7 +353,7 @@ Para um pedido como “gere um relatório semanal das vendas da minha planilha�
 
 ## 10. Banco de dados: entidades e relações
 
-O desenvolvimento local usa `backend/instance/catas_dev.db` quando `DATABASE_URL` não é definido. A produção é orientada a PostgreSQL/Supabase. As migrations e procedimentos ficam em `backend/migrations/`; use o conjunto compatível com o banco escolhido.
+O desenvolvimento local usa `backend/instance/catas_dev.db` quando `DATABASE_URL` não é definido. A produção é orientada a PostgreSQL. As migrations e procedimentos ficam em `backend/migrations/`; use o conjunto compatível com o banco escolhido.
 
 | Tabela/modelo | Papel e relações principais |
 |---|---|
@@ -530,7 +530,7 @@ Estas observações são importantes para a equipe responder com precisão e pri
 1. **O código atual do worker usa Flask, não FastAPI.** `backend/worker/server.py` importa e cria `Flask`. README e documentos antigos ainda o chamam de FastAPI/uvicorn.
 2. **A fonte de verdade das rotas é `backend/routes.py`.** Alguns arquivos em `docs/` citam rotas antigas, como `/payments/*`, `/execute/action` e endpoints de webhook diferentes. As rotas atuais de cobrança são `/api/v1/billing/*`.
 3. **O caminho real do frontend é `frontend/`.** Algumas documentações antigas chamam a pasta de `app_flutter/`.
-4. **Banco:** SQLite é o fallback local da API; a produção é orientada a PostgreSQL/Supabase. A equipe deve escolher e documentar uma configuração oficial para a banca, especialmente nas migrations.
+4. **Banco:** SQLite é o fallback local da API; a produção é orientada a PostgreSQL. A equipe deve escolher e documentar uma configuração oficial para a banca, especialmente nas migrations.
 5. **Infraestrutura de containers foi removida.** Não há `Dockerfile`, `Dockerfile.worker` ou `docker-compose.yml` no estado atual. A demonstração deve seguir a execução local, salvo se a equipe recriar e testar a infraestrutura.
 6. **`core/config.py` exige `OPENAI_API_KEY` na inicialização**, mesmo que os defaults de modelos usem Groq/Gemini. Para iniciar sem erro, a chave precisa estar definida ou essa validação precisa ser alinhada à estratégia escolhida.
 7. **Webhook de usuário:** existe modelo/configuração e suporte no runner, mas não há rota pública de recebimento registrada no estado atual. Não apresentem como fluxo totalmente disponível sem validar/implementar esse endpoint.

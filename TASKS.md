@@ -54,7 +54,7 @@
 
 ---
 
-## 1.2 Database Schema (PostgreSQL/Supabase)
+## 1.2 Database Schema (PostgreSQL)
 
 ### Core Tables
 - [x] <~60m> Criar schema `profiles` (usuário, quota, assinatura Stripe)

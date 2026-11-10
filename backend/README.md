@@ -103,7 +103,6 @@ HTTP GET /api/v1/relatorios/automacoes?status=success&busca=...
 
 - A exportação aceita `tipo=automacoes|chat` e `format=csv|xlsx|pdf`. A exportação de automações aplica os filtros atuais e percorre todas as páginas até 10.000 registros.
 - Configure `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` e os Price IDs em `BASIC_PLAN_ID`, `PRO_PLAN_ID` e `MAX_PLAN_ID`. Registre `/api/v1/billing/webhook` no Stripe para `checkout.session.completed`, `customer.subscription.*` e `invoice.*`.
-- Configure `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` para ativar uploads. Os arquivos são guardados em bucket privado, com links assinados temporários, limite de 10 MB e autorização por usuário. A migration `019_billing_and_attachments.sql` cria as colunas de billing e os metadados de anexos.
 - `FRONTEND_URL` controla o retorno do portal Stripe; `STRIPE_SUCCESS_URL` e `STRIPE_CANCEL_URL` podem sobrescrever os destinos do Checkout.
 
 ## Pre-requisitos

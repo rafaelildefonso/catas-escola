@@ -33,7 +33,7 @@ Este projeto utiliza estritamente tecnologias escaláveis que atendem tanto ao e
 | **Backend API**     | **Python (FastAPI)**            | API Gateway, Gestão de Sessão, Orquestração de Agentes.             |
 | **AI Intelligence** | **Gemini (Basic) / Claude (Pro)** | Router → Planner → Validator → Solver (Arquitetura Maestro).        |
 | **Orquestração**    | **Temporal.io**                 | Motor de execução de workflows e atividades com retry automático.   |
-| **Banco de Dados**  | **PostgreSQL (Supabase)**       | Histórico de conversas, Memória Semântica (Vector), Logs e Cotas.   |
+| **Banco de Dados**  | **Postgresql**       | Histórico de conversas, Memória Semântica (Vector), Logs e Cotas.   |
 | **Monitoramento**   | **Sentry / PostHog**            | Rastreamento de erros e analytics de comportamento do usuário.      |
 
 ---
@@ -260,10 +260,6 @@ ENVIRONMENT=development|production
 **APP FLUTTER:**
 
 ```env
-# === SUPABASE ===
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-
 # === TEST ===
 DEMO_MODE=true|false
 

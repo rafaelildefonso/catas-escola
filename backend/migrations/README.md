@@ -77,7 +77,7 @@ AND TABLE_NAME IN ('users', 'profiles', 'chat_sessions', 'messages', 'automation
 
 ## 🔒 Controle de Acesso
 
-O MySQL não possui Row Level Security (RLS) como o PostgreSQL/Supabase.
+O MySQL não possui Row Level Security (RLS) como o PostgreSQL.
 O controle de acesso é feito **na camada de aplicação (backend)**:
 todas as queries de filtro por dono usam `WHERE user_id = ?`, validado
 pelo token de autenticação do usuário logado.

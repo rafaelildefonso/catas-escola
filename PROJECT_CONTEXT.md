@@ -25,7 +25,7 @@ Demonstrar a aplicação de **Modelos de Linguagem (LLMs)** como o "Cérebro" de
 | **Frontend** | Flutter (Dart) | 3.10.8+ | App multiplataforma (Android/iOS/Web/Desktop) |
 | **Backend API** | Flask + SQLAlchemy | 3.0+ / 2.0+ | API REST, autenticação, pipeline de IA |
 | **Worker** | FastAPI + uvicorn | latest | Execução de automações em background |
-| **Database** | PostgreSQL (Supabase) | - | Dados em produção |
+| **Database** | Postgresql | - | Dados em produção |
 | **Database Dev** | SQLite | - | Desenvolvimento e testes |
 | **Auth** | Firebase Auth + JWT | - | Autenticação de usuários |
 | **IA** | Groq, Gemini, OpenAI | - | Pipeline multi-agente |
@@ -71,7 +71,7 @@ Demonstrar a aplicação de **Modelos de Linguagem (LLMs)** como o "Cérebro" de
 │    └───────────────────────────────────────────────────────┘   │
 │                            │                                    │
 │    ┌───────────────────────────────────────────────────────┐   │
-│    │         PostgreSQL (Supabase) / SQLite (dev)          │   │
+│    │         Postgresql / SQLite (dev)          │   │
 │    └───────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
                             │
@@ -318,9 +318,6 @@ Cada entidade possui 5 endpoints REST:
 ### Backend (.env)
 
 ```env
-# === SUPABASE ===
-SUPABASE_URL=
-SUPABASE_SERVICE_ROLE_KEY=
 
 # === DATABASE ===
 DATABASE_URL=
@@ -361,9 +358,6 @@ WORKER_URL=http://catas_worker:8001
 ### Frontend (.env)
 
 ```env
-# === SUPABASE ===
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
 
 # === API ===
 API_BASE_URL=http://localhost:8000
@@ -437,7 +431,7 @@ python -m pytest tests/test_auth_user.py -v
 
 - **Backend:** Render (https://catas-ai.onrender.com)
 - **Frontend:** Vercel (https://catas-ai.vercel.app)
-- **Database:** Supabase (PostgreSQL)
+- **Database:** PostgreSQL
 - **Auth:** Firebase Auth
 - **Pagamentos:** Stripe
 

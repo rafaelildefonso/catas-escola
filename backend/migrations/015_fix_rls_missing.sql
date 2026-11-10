@@ -2,7 +2,7 @@
 -- MIGRATION 015: Fix RLS (MySQL)
 -- =========================================================
 -- O original criava políticas RLS para user_memory e chat_history.
--- RLS é recurso exclusivo do PostgreSQL/Supabase.
+-- RLS é recurso exclusivo do PostgreSQL.
 -- No MySQL o controle de acesso é feito na aplicação (backend).
 
 -- Apenas garantimos que as tabelas existam e tenham índices.

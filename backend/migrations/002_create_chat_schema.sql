@@ -84,6 +84,6 @@ CREATE INDEX idx_automation_logs_created_at ON automation_logs(created_at DESC);
 
 -- ============================================
 -- NOTA: RLS (Row Level Security) é recurso do
--- PostgreSQL/Supabase. No MySQL, o controle de
+-- PostgreSQL. No MySQL, o controle de
 -- acesso é feito na camada de aplicação (backend).
 -- ============================================

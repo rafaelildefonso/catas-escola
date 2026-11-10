@@ -244,7 +244,7 @@ Mostrar `backend/models/automation.py` ou `backend/models/message.py` como evid�
 |---|---|
 | Frontend | Flutter, Dart, Provider, GoRouter e Dio. |
 | API | Python, Flask e SQLAlchemy. |
-| Banco | PostgreSQL/Supabase em produção e SQLite no desenvolvimento. |
+| Banco | PostgreSQL em produção e SQLite no desenvolvimento. |
 | IA | Groq, Gemini e OpenAI. |
 | Integrações | Google OAuth, Gmail, Calendar, Drive e Sheets. |
 | Serviços extras | Stripe, Firebase, Docker, Pytest e Flutter Test. |
