@@ -9,6 +9,7 @@ def utcnow():
 
 
 class AutomationRun(db.Model):
+    # Histórico de cada execução de automação, separado da sua definição.
     __tablename__ = "automation_runs"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

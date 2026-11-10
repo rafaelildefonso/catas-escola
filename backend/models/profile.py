@@ -9,6 +9,7 @@ def utcnow():
 
 
 class Profile(db.Model):
+    # Perfil da aplicação, com dados de uso e vínculo à conta autenticada.
     __tablename__ = "profiles"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

@@ -8,6 +8,7 @@ def utcnow():
 
 
 class PageAnalysisCache(db.Model):
+    # Cache persistente de análises de páginas para evitar processamento repetido.
     __tablename__ = "page_analysis_cache"
 
     url_hash = db.Column(db.String, primary_key=True)

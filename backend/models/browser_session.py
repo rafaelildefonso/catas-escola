@@ -9,6 +9,7 @@ def utcnow():
 
 
 class BrowserSession(db.Model):
+    # Sessão de navegação usada para rastrear atividade recente do usuário.
     __tablename__ = "browser_sessions"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

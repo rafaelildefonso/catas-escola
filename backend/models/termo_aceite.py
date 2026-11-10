@@ -11,6 +11,7 @@ def utcnow():
 
 
 class TermoAceite(db.Model):
+    # Evidência do aceite de uma versão específica de termo pelo usuário.
     __tablename__ = "termos_aceite"
 
     VERSAO_ATUAL = "1.0"

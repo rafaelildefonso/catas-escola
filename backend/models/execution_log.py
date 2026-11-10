@@ -9,6 +9,7 @@ def utcnow():
 
 
 class ExecutionLog(db.Model):
+    # Log de alto nível de uma execução para diagnóstico e auditoria.
     __tablename__ = "execution_logs"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

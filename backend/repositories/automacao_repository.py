@@ -1,6 +1,7 @@
 ﻿from repositories.base import executar_linha, executar_procedure, nome_dialeto
 
 # Colunas aceitas para ordenação (whitelist — evita injeção via ORDER BY dinâmico)
+# Mapeia chaves públicas para expressões SQL conhecidas; evita interpolar entrada do usuário no ORDER BY.
 _ORDENACOES = {
     "created_at": "ar.created_at",
     "updated_at": "ar.updated_at",
@@ -27,9 +28,11 @@ def listar_runs_filtrados(
 
     Retorna {"items": [...], "total": int}.
     """
+    # Normaliza filtros recebidos e substitui qualquer ordenação desconhecida pelo campo seguro padrão.
     busca = (busca or "").strip() or None
     ordem = ordem if ordem in _ORDENACOES else "created_at"
 
+    # Em produção, a consulta fica encapsulada em procedure; SQLite usa o fallback abaixo para desenvolvimento.
     if nome_dialeto() in ("postgresql", "mysql"):
         linhas = executar_procedure(
             "fn_relatorio_automacoes",
@@ -44,9 +47,11 @@ def listar_runs_filtrados(
         )
         return _agrupar(linhas)
 
+    # A condição de posse é obrigatória para que um usuário nunca consulte execuções de outro.
     clausulas = ["ar.user_id = :user_id"]
     params = {"user_id": user_id}
 
+    # Cada filtro só é incluído quando informado, preservando parâmetros vinculados contra injeção SQL.
     if status:
         clausulas.append("ar.status = :status")
         params["status"] = status
@@ -67,6 +72,7 @@ def listar_runs_filtrados(
     params["limite"] = limite
     params["deslocamento"] = deslocamento
 
+    # Primeiro calcula o total para a paginação; depois busca somente o recorte solicitado pelo cliente.
     total_rows = executar_linha(
         f"""SELECT COUNT(*) AS total
             FROM automation_runs ar
@@ -92,6 +98,7 @@ def listar_runs_filtrados(
 
 
 def _agrupar(linhas: list) -> dict:
+    # A procedure repete o total em cada linha; a resposta da API o separa da coleção de itens.
     if not linhas:
         return {"items": [], "total": 0}
     total = linhas[0].get("total") or 0
@@ -101,6 +108,7 @@ def _agrupar(linhas: list) -> dict:
 
 def _dtou(data: str | None):
     """Converte string ISO de data/hora (ou None) para as procedures."""
+    # Valores vazios viram NULL; o ajuste final preserva a interpretação ISO pelas procedures.
     if not data or data in ("null", "None"):
         return None
     return data.replace(" 23:59:59", "T23:59:59")

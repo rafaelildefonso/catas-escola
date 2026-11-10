@@ -9,6 +9,7 @@ def utcnow():
 
 
 class AutomationStepLog(db.Model):
+    # Resultado individual de cada passo de uma execução de automação.
     __tablename__ = "automation_step_logs"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

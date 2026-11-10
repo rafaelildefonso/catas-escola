@@ -15,6 +15,7 @@ def nome_dialeto() -> str:
 
 def executar_procedure(nome: str, **parametros) -> list:
     """Chama procedure do banco (MySQL): CALL nome(args)."""
+    # Os parâmetros são vinculados pelo SQLAlchemy; somente os nomes das procedures são definidos pelo código.
     cols = ", ".join(f":{k}" for k in parametros)
     stmt = text(f"CALL {nome}({cols})")
     return executar(stmt, parametros)
@@ -27,6 +28,7 @@ def executar_linha(sql: str, **parametros) -> list:
 
 def executar(stmt, parametros: dict) -> list:
     """Executa comando e devolve lista com dicts normalizados."""
+    # Executa na sessão da requisição e transforma RowMapping em dicionários independentes.
     rows = db.session.execute(stmt, parametros).fetchall()
     return [normalizar_linha(r._mapping) for r in rows]
 
@@ -41,6 +43,7 @@ def normalizar_linha(mapping) -> dict:
 
 
 def _valor(value):
+    # Converte datas com fuso para UTC sem fuso, formato esperado pelos consumidores da API.
     if isinstance(value, (datetime, date)):
         if isinstance(value, datetime) and value.tzinfo is not None:
             value = value.astimezone(timezone.utc).replace(tzinfo=None)

@@ -9,6 +9,7 @@ def utcnow():
 
 
 class AiSuggestion(db.Model):
+    # Registro de uma sugestão produzida pela IA para um usuário e, opcionalmente, uma página.
     __tablename__ = "ai_suggestions"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

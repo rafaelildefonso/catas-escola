@@ -9,6 +9,7 @@ def utcnow():
 
 
 class PageContext(db.Model):
+    # Contexto capturado de uma página para uso posterior pela IA.
     __tablename__ = "page_contexts"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

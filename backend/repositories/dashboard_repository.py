@@ -14,6 +14,7 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
     MySQL:      delega para a função fn_dashboard_estatisticas.
     SQLite:     consulta inline equivalente (dev/teste).
     """
+    # Nos bancos de produção, a função SQL concentra a agregação e reduz a transferência de dados.
     if nome_dialeto() == "postgresql":
         value = db.session.execute(
             text("SELECT public.fn_dashboard_estatisticas(:user_id, :dias)"),
@@ -34,9 +35,11 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
             return json.loads(value) or {}
         return {}
 
+    # SQLite não possui a função de produção; o período é calculado em UTC para o fallback local.
     corte = (datetime.now(timezone.utc) - timedelta(days=dias)).strftime("%Y-%m-%d %H:%M:%S")
     params = {"user_id": user_id, "corte": corte}
 
+    # Indicadores das automações: volume, taxa de conclusão e tempo médio das execuções encerradas.
     total_execucoes = _agregado(
         "SELECT COUNT(*) AS total FROM automation_runs WHERE user_id = :user_id AND created_at >= :corte",
         params,
@@ -55,6 +58,7 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
         "seg",
     )
 
+    # Séries agrupadas alimentam gráficos por status e por dia, sempre isolados pelo user_id.
     por_status = executar_linha(
         "SELECT status, COUNT(*) AS total FROM automation_runs WHERE user_id = :user_id AND created_at >= :corte GROUP BY status",
         **params,
@@ -63,11 +67,13 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
         "SELECT date(created_at) AS dia, COUNT(*) AS total FROM automation_runs WHERE user_id = :user_id AND created_at >= :corte GROUP BY date(created_at) ORDER BY dia",
         **params,
     )
+    # Mostra quais provedores o usuário conectou com maior frequência, limitado aos cinco primeiros.
     top_integracoes = executar_linha(
         "SELECT provider, COUNT(*) AS total FROM integrations WHERE user_id = :user_id GROUP BY provider ORDER BY total DESC LIMIT 5",
         user_id=user_id,
     )
 
+    # Métricas de chat completam o painel com o número de conversas e mensagens do proprietário.
     total_sessoes = _agregado(
         "SELECT COUNT(*) AS total FROM chat_sessions WHERE user_id = :user_id",
         {"user_id": user_id},
@@ -94,6 +100,7 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
 
 
 def _agregado(sql_inline: str, params: dict, coluna: str):
+    # Centraliza leituras escalares e devolve zero quando a consulta não produz nenhuma linha.
     rows = executar_linha(sql_inline, **params)
     if not rows:
         return 0
@@ -102,6 +109,7 @@ def _agregado(sql_inline: str, params: dict, coluna: str):
 
 def _sql_duracao_media() -> str:
     """Expressão de duração média por dialeto (MySQL usa TIMESTAMPDIFF)."""
+    # Cada banco mede a diferença entre timestamps com funções diferentes; ambos retornam segundos.
     if nome_dialeto() == "mysql":
         return (
             "SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE "

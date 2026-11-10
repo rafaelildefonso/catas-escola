@@ -9,6 +9,7 @@ def utcnow():
 
 
 class UserWebhookConfig(db.Model):
+    # Configuração de endpoint webhook associado a uma automação do usuário.
     __tablename__ = "user_webhook_configs"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

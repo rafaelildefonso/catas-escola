@@ -11,6 +11,7 @@ def utcnow():
 
 
 class GeneratedReport(db.Model):
+    # Registro de relatórios gerados, com parâmetros e conteúdo armazenados em JSON.
     """PDF criado por uma automação e disponibilizado na biblioteca do usuário."""
 
     __tablename__ = "generated_reports"

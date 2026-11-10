@@ -9,6 +9,7 @@ def utcnow():
 
 
 class ChatSession(db.Model):
+    # Conversa de chat pertencente a um perfil e agrupadora das suas mensagens.
     __tablename__ = "chat_sessions"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

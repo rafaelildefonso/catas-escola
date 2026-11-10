@@ -9,6 +9,7 @@ def utcnow():
 
 
 class Integration(db.Model):
+    # Estado e credenciais de conexão de um provedor externo por usuário.
     __tablename__ = "integrations"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
