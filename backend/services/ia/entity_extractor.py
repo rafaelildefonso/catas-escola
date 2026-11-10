@@ -121,6 +121,16 @@ Return ONLY JSON: {"date": "...", "time": "...", "title": "...", "description": 
             
             Return JSON format: {"task_name": "...", "due_date": "...", "priority": "...", "value": "..."}
             """
+        elif intent == "spreadsheet_create":
+            system_prompt += """
+            Extract the spreadsheet template requested by the user.
+            - title: spreadsheet name, or null when the user has not chosen one.
+            - headers: list of column names, preserving their order; use [] if none were mentioned.
+            - header_colors: optional list of hex colors, one per header; use [] when colors were not specified.
+            - sheet_title: name of the tab inside the spreadsheet, defaulting to "Tarefas" when it is not mentioned.
+
+            Return JSON format: {"title": "...", "headers": ["..."], "header_colors": ["#RRGGBB"], "sheet_title": "..."}
+            """
         elif intent == "email_draft":
             system_prompt += """
             Extract the following fields. If a field is not mentioned, return null.
@@ -179,7 +189,8 @@ Return ONLY JSON: {"date": "...", "time": "...", "title": "...", "description": 
                 allowed_fields = {
                     "calendar_create_event": ["date", "time", "title", "description", "attendees"],
                     "email_draft": ["subject", "recipient", "body_topic"],
-                    "task_create": ["task_name", "due_date", "priority", "value"]
+                    "task_create": ["task_name", "due_date", "priority", "value"],
+                    "spreadsheet_create": ["title", "headers", "header_colors", "sheet_title"],
                 }
                 if intent in allowed_fields:
                     filtered = {k: v for k, v in result.items() if k in allowed_fields[intent]}

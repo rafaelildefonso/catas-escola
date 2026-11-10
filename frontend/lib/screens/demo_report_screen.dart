@@ -34,10 +34,9 @@ class DemoReportScreen extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Column(
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(context),
@@ -51,7 +50,6 @@ class DemoReportScreen extends StatelessWidget {
                 _buildCategoryBreakdown(context),
                 const SizedBox(height: 48),
               ],
-            ),
           ),
         ),
       ),

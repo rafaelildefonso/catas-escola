@@ -138,7 +138,7 @@ python run.py
 
 API: http://localhost:8000 | Health: http://localhost:8000/health
 
-### 3. Rodar o Worker (opcional, para automações)
+### 3. Rodar o Worker (necessário para automações)
 
 ```bash
 cd backend
@@ -148,7 +148,19 @@ python -m worker.entrypoint
 
 Worker: http://localhost:8001
 
-### 4. Rodar o Flutter App
+### 4. Rodar o agendador (necessário para automações recorrentes)
+
+Em um terceiro terminal, com o ambiente virtual ativado:
+
+```bash
+cd backend
+venv\Scripts\activate
+python -m services.automation.scheduler
+```
+
+O agendador verifica execuções vencidas a cada 15 segundos e as envia ao worker. Sem ele, ações manuais funcionam, mas automações diárias ou recorrentes não disparam.
+
+### 5. Rodar o Flutter App
 
 ```bash
 cd frontend

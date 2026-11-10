@@ -99,10 +99,9 @@ class _PricingScreenState extends State<PricingScreen>
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1200),
-            child: Column(
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
@@ -243,7 +242,6 @@ class _PricingScreenState extends State<PricingScreen>
                   ),
                 ),
               ],
-            ),
           ),
         ),
       ),

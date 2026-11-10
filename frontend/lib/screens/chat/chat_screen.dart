@@ -1008,9 +1008,8 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(
                 child: Stack(
                   children: [
-                    Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 900),
+                    SizedBox(
+                      width: double.infinity,
                         child: messages.isEmpty
                             ? (isLoading
                                   ? _buildHistorySkeleton()
@@ -1075,7 +1074,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                   );
                                 },
                               ),
-                      ),
                     ),
                   ],
                 ),
@@ -1087,10 +1085,11 @@ class _ChatScreenState extends State<ChatScreen> {
               link: _mentionLayerLink,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-                color: Colors.transparent, // Floating feel
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 800),
+                                 color: Colors.transparent, // Floating feel
+
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width * 0.5,
                     child: Container(
                       decoration: BoxDecoration(
                         color: Theme.of(
@@ -1538,7 +1537,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                     ),
-                  ),
                 ),
               ),
             ),
@@ -1900,17 +1898,20 @@ class _ChatScreenState extends State<ChatScreen> {
             duration: const Duration(milliseconds: 300),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  spacing: 12,
-                  children: [
-                    ..._shuffledPrompts.map(
-                      (item) =>
-                          _buildPromptSuggestions(item.prompt, item.logos),
-                    ),
-                    _buildSeeMorePromptsChip(),
-                  ],
+              child: SizedBox(
+                width: MediaQuery.of(context).size.width * 0.5,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    spacing: 12,
+                    children: [
+                      ..._shuffledPrompts.map(
+                        (item) =>
+                            _buildPromptSuggestions(item.prompt, item.logos),
+                      ),
+                      _buildSeeMorePromptsChip(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -1920,7 +1921,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildPromptChips() {
-    return AnimatedOpacity(
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.5,
+      child: AnimatedOpacity(
       opacity: _inputVazio ? 1.0 : 0.0,
       duration: const Duration(milliseconds: 300),
       child: Padding(
@@ -1928,8 +1931,8 @@ class _ChatScreenState extends State<ChatScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final width = constraints.maxWidth.isFinite
-                ? constraints.maxWidth.clamp(0.0, 800.0)
-                : 800.0;
+                ? constraints.maxWidth
+                : double.infinity;
             return SizedBox(
               width: width,
               child: SingleChildScrollView(
@@ -1949,7 +1952,8 @@ class _ChatScreenState extends State<ChatScreen> {
           },
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildPromptSuggestions(String prompt, List<LogoId> integrations) {
@@ -2150,11 +2154,9 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     } else {
       // AI Message (Left aligned, No bubble, Full width feel)
-      return Align(
-        alignment: Alignment.center,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 800),
-          child: Padding(
+      return SizedBox(
+        width: double.infinity,
+        child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -2538,7 +2540,6 @@ class _ChatScreenState extends State<ChatScreen> {
               ],
             ),
           ),
-        ),
       );
     }
   }

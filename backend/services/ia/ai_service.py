@@ -1,5 +1,6 @@
 ﻿import traceback
 import json
+import re
 from typing import TypedDict, Any
 from core.config import settings
 from core.errors import sanitize_error
@@ -20,6 +21,140 @@ class AIService:
         self.entity_extractor = EntityExtractor()
         self.payload_builder = PayloadBuilder()
 
+    @staticmethod
+    def _history_sheet_entities(history: list) -> dict:
+        for message in reversed(history or []):
+            metadata = message.get("metadata") or {}
+            if metadata.get("intent") == "spreadsheet_create":
+                entities = metadata.get("entities") or {}
+                if isinstance(entities, dict):
+                    return dict(entities)
+        return {}
+
+    @classmethod
+    def _is_spreadsheet_creation_request(cls, text: str, history: list) -> bool:
+        normalized = (text or "").casefold()
+        creates_sheet = (
+            "planilha" in normalized
+            or "google sheets" in normalized
+            or "google planilhas" in normalized
+        ) and any(word in normalized for word in ("crie", "criar", "monte", "montar", "modelo", "template"))
+        if creates_sheet:
+            return True
+        for message in reversed(history or []):
+            metadata = message.get("metadata") or {}
+            if message.get("role") == "assistant":
+                return bool(
+                    metadata.get("intent") == "spreadsheet_create"
+                    and metadata.get("status") == "requires_action"
+                    and normalized
+                )
+        return bool(
+            normalized.startswith(("[texto_input]", "[resposta de texto]"))
+            and cls._history_sheet_entities(history)
+        )
+
+    @classmethod
+    def _extract_spreadsheet_entities(cls, text: str, history: list) -> dict:
+        entities = cls._history_sheet_entities(history)
+        entities.setdefault("headers", [])
+        entities.setdefault("header_colors", [])
+        entities.setdefault("sheet_title", "Tarefas")
+
+        raw_text = (text or "").strip()
+        normalized = raw_text.casefold()
+        quoted = [value.strip() for value in re.findall(r'["“]([^"”]+)["”]', raw_text) if value.strip()]
+
+        if "coluna" in normalized or "cabeç" in normalized or "header" in normalized:
+            if quoted:
+                entities["headers"] = quoted
+            elif ":" in raw_text:
+                values = raw_text.split(":", 1)[1].split(",")
+                entities["headers"] = [value.strip() for value in values if value.strip()]
+
+        response_prefix = re.match(r"^\[(?:texto_input|resposta de texto)\]\s*(.*)$", raw_text, re.IGNORECASE)
+        if response_prefix and response_prefix.group(1).strip():
+            entities["title"] = response_prefix.group(1).strip().strip('"“”')
+        elif len(quoted) == 1 and not any(term in normalized for term in ("coluna", "cabeç", "header")):
+            entities["title"] = quoted[0]
+        else:
+            title_match = re.search(
+                r"(?:chamad[ao]?|nome(?:ada)?|planilha)\s+(?:de\s+)?[\"“]?([^\"”\n,]+)",
+                raw_text,
+                re.IGNORECASE,
+            )
+            if title_match and not any(term in normalized for term in ("coluna", "cabeç", "header")):
+                entities["title"] = title_match.group(1).strip().strip('"“”')
+
+        if entities.get("headers") and (
+            "cor diferente" in normalized or "cores diferentes" in normalized or "colorid" in normalized
+        ):
+            palette = ["#FDE68A", "#BFDBFE", "#BBF7D0", "#E9D5FF", "#FBCFE8"]
+            entities["header_colors"] = [
+                palette[index % len(palette)] for index, _ in enumerate(entities["headers"])
+            ]
+        return entities
+
+    @staticmethod
+    def _spreadsheet_response(entities: dict, action_details: dict, user_integrations, active_integrations) -> dict:
+        from services.chat.integration_access_service import IntegrationAccessService
+
+        blocked = IntegrationAccessService.blocked_response(
+            action_details, "spreadsheet_create", user_integrations, active_integrations
+        )
+        if blocked:
+            return {**blocked, "intent": "spreadsheet_create", "entities": entities, "credits_consumed": 0}
+
+        title = str(entities.get("title") or "").strip()
+        if not title:
+            return {
+                "id": None,
+                "response_text": "Qual nome você gostaria de dar à nova planilha?",
+                "action_triggered": False,
+                "action_details": {},
+                "components": [{
+                    "type": "text_input",
+                    "label": "Nome da planilha",
+                    "placeholder": "Ex.: Planilha de tarefas",
+                    "multiline": False,
+                    "field_id": "spreadsheet_title",
+                    "value": "",
+                    "readonly": False,
+                }],
+                "status": "requires_action",
+                "credits_consumed": 0,
+                "intent": "spreadsheet_create",
+                "entities": entities,
+            }
+
+        headers = [str(header) for header in entities.get("headers", []) if str(header).strip()]
+        return {
+            "id": None,
+            "response_text": f"Vou criar a planilha **{title}**. Confirme para eu criar no Google Planilhas.",
+            "action_triggered": False,
+            "action_details": action_details,
+            "components": [
+                {
+                    "type": "sheets_table_preview",
+                    "title": title,
+                    "headers": headers,
+                    "rows": [],
+                },
+                {
+                    "type": "action_approval",
+                    "action": "create_spreadsheet",
+                    "title": "Criar planilha no Google Planilhas",
+                    "description": f"Criar a planilha \"{title}\"" + (" com os cabeçalhos mostrados." if headers else "."),
+                    "danger_level": "low",
+                    "readonly": False,
+                },
+            ],
+            "status": "requires_action",
+            "credits_consumed": 0,
+            "intent": "spreadsheet_create",
+            "entities": entities,
+        }
+
     async def analyze_message(self, text: str, user_id: str = None, history: list = [], attachment_urls: list = [], model_requested: str = "CATAS Basic", user_integrations: list = [], active_integrations: list = [], user_tools: list = []):
         # Select configuration based on tier
         config_str = settings.MODEL_TIER_BASIC
@@ -33,6 +168,12 @@ class AIService:
             classification = await self.intent_classifier.classify_intent(text, history)
             intent = classification.get("intent", "conversation")
 
+            # A planilha é uma ação própria. Sem esta regra, "planilha de
+            # tarefas" era tratada como task_create e usava "primary" como se
+            # fosse o ID de uma planilha existente.
+            if self._is_spreadsheet_creation_request(text, history):
+                intent = "spreadsheet_create"
+
             # Component responses start with '['
             is_component_response = any(text.startswith(prefix) for prefix in [
                 '[APROVADO]', '[RECUSADO]', '[CONTATOS SELECIONADOS]', 
@@ -40,7 +181,7 @@ class AIService:
                 '[RESPOSTA DE TEXTO]', '[DATA/HORA SELECIONADA]',
                 '[CONTEÚDO EDITADO/CONFIRMADO]', '[CHECKLIST ATUALIZADO]',
                 '[RESPOSTA DO COMPONENTE]', '[INTEGRAÇÃO ATIVADA]',
-                '[INTEGRAÇÃO CONECTADA]'
+                '[INTEGRAÇÃO CONECTADA]', '[TEXTO_INPUT]'
             ])
 
             # Inherit intent from history if it's a component response
@@ -86,7 +227,9 @@ class AIService:
 
             # 2. Extract entities if it's an action
             entities = {}
-            if intent != "conversation":
+            if intent == "spreadsheet_create":
+                entities = self._extract_spreadsheet_entities(text, history)
+            elif intent != "conversation":
                 if is_component_response:
                     # Inherit entities from history so we don't lose context
                     for msg in reversed(history):
@@ -153,6 +296,11 @@ class AIService:
                 print(f"[AIService] Intent: {intent} | Entities: {entities}")
                 action_details = self.payload_builder.build_payload(intent, entities)
                 print(f"[AIService] Final Plan: {json.dumps(action_details)}")
+
+            if intent == "spreadsheet_create":
+                return self._spreadsheet_response(
+                    entities, action_details, user_integrations, active_integrations
+                )
 
             # 4. Generate response using standardized AI call
             components_schema_prompt = UIComponentLibrary.get_components_schema()
@@ -300,12 +448,18 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
             
             # Use AIBase for a standardized call
             # Format history for AIBase
+            # Prepare o histórico formatado para o AIBase.
+            # Limitamos o tamanho para evitar exceções 400 (excesso de tokens).
             formatted_history = []
             if history:
                 for msg in history:
                     role = "user" if msg.get("role") == "user" or msg.get("isUser") else "assistant"
                     content = msg.get("content") or msg.get("text") or ""
                     formatted_history.append({"role": role, "content": content})
+            # Mantém apenas as últimas N mensagens (janela de contexto). 20 costuma ficar dentro do limite.
+            MAX_HISTORY_MESSAGES = 20
+            if len(formatted_history) > MAX_HISTORY_MESSAGES:
+                formatted_history = formatted_history[-MAX_HISTORY_MESSAGES:]
 
             response_data = await AIBase.call_ai(
                 config_str=config_str,
@@ -360,23 +514,94 @@ STEP 0 - INTEGRATION VALIDATION (CRITICAL - MUST DO BEFORE ANYTHING ELSE):
                 components = blocked["components"]
                 action_details = blocked["action_details"]
 
-            # SINCRONIZAR BODY DO EMAIL: Copiar body_preview do componente para action_details
-            if components and action_details.get("steps"):
+            # SINCRONIZAR DADOS DO COMPONENTE PARA O PLANO DE AUTOMAÇÃO
+            # Quando a IA retorna componentes de preview (ex.: preview_email_draft,
+            # preview_calendar_event), os dados precisam virar passos reais no plano.
+            if components and action_details.get("steps") is not None:
+                # --- EMAIL ---
                 for comp in components:
                     if comp.get("type") == "preview_email_draft":
                         email_body = comp.get("body_preview") or comp.get("body", "")
                         email_to = comp.get("to")
                         email_subject = comp.get("subject")
 
-                        for step in action_details["steps"]:
-                            if step.get("module_id") == "gmail.send_email":
-                                if email_body:
-                                    step["params"]["body"] = email_body
-                                if email_to:
-                                    step["params"]["to"] = email_to[0] if isinstance(email_to, list) else email_to
-                                if email_subject:
-                                    step["params"]["subject"] = email_subject
-                        print(f"[AIService] Body do email sincronizado do preview_email_draft")
+                        # Procura passo de e-mail existente no plano
+                        email_step = next(
+                            (s for s in action_details["steps"] if s.get("module_id") == "gmail.send_email"),
+                            None,
+                        )
+                        if email_step:
+                            if email_body:
+                                email_step["params"]["body"] = email_body
+                            if email_to:
+                                email_step["params"]["to"] = email_to[0] if isinstance(email_to, list) else email_to
+                            if email_subject:
+                                email_step["params"]["subject"] = email_subject
+                            print(f"[AIService] Body do email sincronizado do preview_email_draft")
+                        else:
+                            # O plano não tem passo de e-mail: cria a partir do componente
+                            action_details["steps"].append({
+                                "module_id": "gmail.send_email",
+                                "params": {
+                                    "to": email_to[0] if isinstance(email_to, list) else email_to,
+                                    "subject": email_subject or "Sem Assunto",
+                                    "body": email_body or "",
+                                },
+                                "step_id": f"step_{len(action_details['steps']) + 1}",
+                            })
+                            print(f"[AIService] Passo gmail.send_email adicionado a partir do preview_email_draft")
+                        break
+
+                # --- CALENDÁRIO (caso espelhado) ---
+                for comp in components:
+                    if comp.get("type") == "preview_calendar_event":
+                        # Procura passo de calendário existente no plano
+                        cal_step = next(
+                            (s for s in action_details["steps"]
+                             if s.get("module_id") == "google_calendar.create_event"),
+                            None,
+                        )
+                        if cal_step:
+                            # Preenche campos ausentes com dados do componente
+                            params = cal_step["params"]
+                            if not params.get("summary"):
+                                params["summary"] = comp.get("title", "Novo Evento")
+                            if not params.get("start") and comp.get("date"):
+                                params["start"] = f"{comp['date']}T{comp.get('time', '09:00')}:00"
+                            if comp.get("attendees") and not params.get("attendees"):
+                                params["attendees"] = comp["attendees"]
+                            # Garante end quando não informado: 1h depois do início
+                            if not params.get("end") and params.get("start"):
+                                try:
+                                    from datetime import datetime as _dt, timedelta as _td
+                                    _s = _dt.fromisoformat(str(params["start"]).replace("Z", "+00:00"))
+                                    params["end"] = (_s + _td(hours=1)).isoformat()
+                                except (ValueError, TypeError):
+                                    params["end"] = params["start"]
+                        else:
+                            evt_date = comp.get("date")
+                            evt_time = comp.get("time", "09:00")
+                            start_str = f"{evt_date}T{evt_time}:00" if evt_date else None
+                            end_str = None
+                            if start_str:
+                                try:
+                                    from datetime import datetime as _dt, timedelta as _td
+                                    _s = _dt.fromisoformat(start_str.replace("Z", "+00:00"))
+                                    end_str = (_s + _td(hours=1)).isoformat()
+                                except (ValueError, TypeError):
+                                    end_str = start_str
+                            action_details["steps"].append({
+                                "module_id": "google_calendar.create_event",
+                                "params": {
+                                    "summary": comp.get("title", "Novo Evento"),
+                                    "start": start_str,
+                                    "end": end_str,
+                                    "description": comp.get("description", ""),
+                                    "attendees": comp.get("attendees", []),
+                                },
+                                "step_id": f"step_{len(action_details['steps']) + 1}",
+                            })
+                            print(f"[AIService] Passo google_calendar.create_event adicionado a partir do preview_calendar_event")
                         break
 
             # FALLBACK: Se não veio preview_email_draft mas temos entities com body_topic, preencher direto

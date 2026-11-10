@@ -190,10 +190,9 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       });
     }
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1200),
-        child: Column(
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
           children: [
             // Abas de categoria
             Container(
@@ -286,7 +285,6 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
             ),
           ],
         ),
-      ),
     );
   }
 

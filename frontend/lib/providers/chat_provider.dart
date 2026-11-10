@@ -22,7 +22,7 @@ import 'package:provider/provider.dart';
 
 class MessageChunk {
   final String text;
-  final List<dynamic>? components;
+  List<dynamic>? components;
   final String status; // "idle", "requires_action", "completed"
   final DateTime timestamp;
 
@@ -149,6 +149,8 @@ class ChatProvider extends ChangeNotifier {
 
   String _automationPhase = 'none';
   String get automationPhase => _automationPhase;
+  String? _automationError;
+  String? get automationError => _automationError;
 
   static const String _kDraftKey = 'chat_message_draft';
   static const String _kWebSearchKey = 'chat_web_search_enabled';
@@ -389,9 +391,21 @@ class ChatProvider extends ChangeNotifier {
   void _subscribeToAutomation(
     String automationId, {
     List<Map<String, dynamic>>? demoSteps,
+    Message? targetMessage,
   }) {
     _unsubscribeFromAutomation();
     _automationSteps = [];
+    _automationPhase = 'running';
+    _automationError = null;
+    _setAutomationMessageComponents(targetMessage, [
+      {
+        'type': 'automation_progress',
+        'data': {
+          'automation_id': automationId,
+          'title': 'Execução em andamento',
+        },
+      },
+    ]);
 
     // Em modo demo, simular steps localmente
     if (_isDemoMode && demoSteps != null && demoSteps.isNotEmpty) {
@@ -417,6 +431,31 @@ class ChatProvider extends ChangeNotifier {
         return;
       }
       try {
+        final runResponse = await http.get(
+          Uri.parse('${AppConfig.apiBaseUrl}/automation-runs/$automationId'),
+          headers: {"Authorization": "Bearer ${TokenHolder().token ?? ""}"},
+        );
+        if (runResponse.statusCode == 200) {
+          final run = Map<String, dynamic>.from(
+            jsonDecode(runResponse.body) as Map,
+          );
+          final status = run['status'] as String? ?? 'running';
+          _automationPhase = status;
+          if (status == 'completed' ||
+              status == 'failed' ||
+              status == 'canceled') {
+            _automationError = (run['error_details'] as Map?)?['message']
+                ?.toString();
+            _setAutomationMessageComponents(
+              targetMessage,
+              _terminalAutomationComponents(automationId, run),
+            );
+            _automationPollingTimer?.cancel();
+            _automationPollingTimer = null;
+            _automationPollingStartedAt = null;
+          }
+        }
+
         final response = await http.get(
           Uri.parse(
             '${AppConfig.apiBaseUrl}/automation-step-logs?run_id=$automationId',
@@ -517,6 +556,87 @@ class ChatProvider extends ChangeNotifier {
         debugPrint("⚠️ Erro no polling de automação: $e");
       }
     });
+  }
+
+  void _setAutomationMessageComponents(
+    Message? message,
+    List<dynamic> components,
+  ) {
+    if (message == null) return;
+    message.components = components;
+    if (message.chunks.isNotEmpty) {
+      message.chunks.last.components = components;
+    }
+    message.status = _automationPhase;
+    notifyListeners();
+  }
+
+  List<dynamic> _terminalAutomationComponents(
+    String automationId,
+    Map<String, dynamic> run,
+  ) {
+    final status = run['status']?.toString() ?? 'failed';
+    final isSuccess = status == 'completed';
+    final context = ((run['result_metadata'] as Map?)?['run_context']);
+    final spreadsheetUrl = _findSpreadsheetUrl(context);
+    final error = _automationError ?? 'Não foi possível concluir esta ação.';
+
+    final components = <dynamic>[
+      {
+        'type': 'automation_progress',
+        'data': {
+          'automation_id': automationId,
+          'title': 'Resultado da execução',
+        },
+      },
+      {
+        'type': 'automation_result',
+        'data': {
+          'success': isSuccess,
+          'title': isSuccess ? 'Ação concluída' : 'Ação não concluída',
+          'summary': isSuccess ? 'A execução terminou com sucesso.' : error,
+        },
+      },
+    ];
+    if (isSuccess && spreadsheetUrl != null) {
+      components.add({
+        'type': 'link_preview',
+        'data': {
+          'url': spreadsheetUrl,
+          'title': 'Abrir planilha',
+          'description': 'A planilha foi criada no Google Planilhas.',
+          'icon': 'sheets',
+        },
+      });
+    }
+    if (!isSuccess) {
+      components.add({
+        'type': 'alert_banner',
+        'data': {
+          'level': 'error',
+          'title': 'Não foi possível concluir',
+          'message': error,
+        },
+      });
+    }
+    return components;
+  }
+
+  String? _findSpreadsheetUrl(dynamic value) {
+    if (value is Map) {
+      final url = value['spreadsheet_url'];
+      if (url is String && Uri.tryParse(url)?.hasScheme == true) return url;
+      for (final child in value.values) {
+        final found = _findSpreadsheetUrl(child);
+        if (found != null) return found;
+      }
+    } else if (value is List) {
+      for (final child in value) {
+        final found = _findSpreadsheetUrl(child);
+        if (found != null) return found;
+      }
+    }
+    return null;
   }
 
   static const Map<String, String> _moduleLabels = {
@@ -1138,7 +1258,11 @@ class ChatProvider extends ChangeNotifier {
             } catch (_) {}
           }
         }
-        _subscribeToAutomation(automationId, demoSteps: demoSteps);
+        _subscribeToAutomation(
+          automationId,
+          demoSteps: demoSteps,
+          targetMessage: assistantMessage,
+        );
       }
 
       if (_currentSessionId != null) {
@@ -1369,7 +1493,10 @@ class ChatProvider extends ChangeNotifier {
 
       if (originalMessage.actionTriggered == true &&
           _currentAutomationId != null) {
-        _subscribeToAutomation(_currentAutomationId!);
+        _subscribeToAutomation(
+          _currentAutomationId!,
+          targetMessage: originalMessage,
+        );
         _thinkingStage = ThinkingStage.reasoning;
       } else {
         _thinkingStage = ThinkingStage.idle;
