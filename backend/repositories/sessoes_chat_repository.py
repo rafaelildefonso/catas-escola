@@ -34,6 +34,7 @@ def atualizar_sessao(session_id: str, user_id: str, **campos) -> dict | None:
     if not campos:
         return buscar_sessao_do_usuario(session_id, user_id)
 
+    # Os valores são parametrizados; os nomes de campos devem vir somente de serviços confiáveis.
     sets = ", ".join(f"{k} = :{k}" for k in campos)
     params = {"session_id": session_id, "user_id": user_id, **campos}
     db.session.execute(
@@ -69,6 +70,7 @@ def listar_mensagens_da_sessao(session_id: str, limite: int = 100, deslocamento:
         limite=limite,
         deslocamento=deslocamento,
     )
+    # Alguns dialetos retornam JSON como texto, por isso o campo é normalizado após a consulta.
     for r in rows:
         meta = r.get("metadata")
         if isinstance(meta, str):

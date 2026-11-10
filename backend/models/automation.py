@@ -9,6 +9,7 @@ def utcnow():
 
 
 class Automation(db.Model):
+    # Definição persistida de uma automação, incluindo gatilho e passos em JSON.
     __tablename__ = "automations"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

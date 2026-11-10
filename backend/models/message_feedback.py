@@ -9,6 +9,7 @@ def utcnow():
 
 
 class MessageFeedback(db.Model):
+    # Avaliação do usuário sobre uma mensagem, usada para análises de qualidade.
     __tablename__ = "message_feedback"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

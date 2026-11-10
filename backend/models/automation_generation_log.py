@@ -9,6 +9,7 @@ def utcnow():
 
 
 class AutomationGenerationLog(db.Model):
+    # Auditoria da geração de um plano de automação pela IA.
     __tablename__ = "automation_generation_logs"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

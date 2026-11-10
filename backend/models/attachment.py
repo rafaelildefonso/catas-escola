@@ -9,6 +9,7 @@ def utcnow():
 
 
 class Attachment(db.Model):
+    # Metadados de arquivo enviado; o conteúdo permanece no armazenamento indicado por storage_path.
     __tablename__ = "attachments"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

@@ -9,6 +9,7 @@ def utcnow():
 
 
 class IaMemory(db.Model):
+    # Memória persistente da IA, associada ao usuário e opcionalmente a uma sessão.
     __tablename__ = "ia_memory"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))

@@ -14,6 +14,7 @@ def relatorio_chat(user_id: str, dias: int = 30) -> dict:
     MySQL:      delega para a função fn_relatorio_chat.
     SQLite:     consulta inline equivalente (dev/teste).
     """
+    # A função do banco devolve os cálculos já agregados em produção, evitando múltiplas consultas no app.
     if nome_dialeto() == "postgresql":
         value = db.session.execute(
             text("SELECT public.fn_relatorio_chat(:user_id, :dias)"),
@@ -34,11 +35,13 @@ def relatorio_chat(user_id: str, dias: int = 30) -> dict:
             return json.loads(value) or {}
         return {}
 
+    # O fallback SQLite reutiliza esta base JOIN para garantir que apenas mensagens do usuário entrem no painel.
     corte = (datetime.now(timezone.utc) - timedelta(days=dias)).strftime("%Y-%m-%d %H:%M:%S")
     base = """FROM messages m JOIN chat_sessions cs ON cs.id = m.session_id
               WHERE cs.user_id = :user_id AND m.created_at >= :corte"""
     params = {"user_id": user_id, "corte": corte}
 
+    # Conta sessões, mensagens e conversas com atividade no período selecionado pelo dashboard.
     total_sessoes = _agregado(
         "SELECT COUNT(*) AS total FROM chat_sessions WHERE user_id = :user_id",
         {"user_id": user_id},
@@ -50,6 +53,7 @@ def relatorio_chat(user_id: str, dias: int = 30) -> dict:
     sessoes_ativas = _agregado(
         f"SELECT COUNT(DISTINCT cs.id) AS total {base}", params, "total"
     )
+    # Agrupamentos por emissor e por dia formam as séries de uso exibidas nos gráficos de chat.
     por_role = {
         r["role"]: r["total"]
         for r in executar_linha(
@@ -64,6 +68,7 @@ def relatorio_chat(user_id: str, dias: int = 30) -> dict:
             {base} GROUP BY date(m.created_at) ORDER BY dia""",
         **params,
     )
+    # Likes e dislikes medem a avaliação das respostas sem expor conteúdo das mensagens.
     feedback = _linha(
         """SELECT COALESCE(SUM(CASE WHEN is_liked = 1 THEN 1 ELSE 0 END), 0) AS likes,
                   COALESCE(SUM(CASE WHEN is_liked = 0 THEN 1 ELSE 0 END), 0) AS dislikes
@@ -94,10 +99,12 @@ def buscar_mensagens(user_id: str, termo: str, limite: int = 50, deslocamento: i
     SQLite:     consulta direta equivalente (dev/teste).
     Retorna {"items": [...], "total": int}.
     """
+    # Remove espaços e evita consultas abrangentes quando o usuário não informou um termo útil.
     termo_limpo = (termo or "").strip()
     if not termo_limpo:
         return {"items": [], "total": 0}
 
+    # Produção usa procedure paginada; o fallback mantém a mesma estrutura de resposta em SQLite.
     if nome_dialeto() in ("postgresql", "mysql"):
         linhas = executar_procedure(
             "fn_buscar_mensagens",
@@ -118,6 +125,7 @@ def buscar_mensagens(user_id: str, termo: str, limite: int = 50, deslocamento: i
         "limite": limite,
         "deslocamento": deslocamento,
     }
+    # As duas consultas usam o mesmo filtro: uma calcula o total e a outra retorna a página solicitada.
     total = executar_linha(
         """SELECT COUNT(*) AS total
            FROM messages m JOIN chat_sessions cs ON cs.id = m.session_id
@@ -136,11 +144,13 @@ def buscar_mensagens(user_id: str, termo: str, limite: int = 50, deslocamento: i
 
 
 def _linha(sql_inline: str, **params) -> dict | None:
+    # Converte uma consulta de agregação em único dicionário, ou None se não houver resultado.
     rows = executar_linha(sql_inline, **params)
     return rows[0] if rows else None
 
 
 def _agregado(sql_inline: str, params: dict, coluna: str):
+    # Extrai uma coluna agregada com valor zero como padrão para métricas sem dados.
     linha = _linha(sql_inline, **params)
     if not linha:
         return 0

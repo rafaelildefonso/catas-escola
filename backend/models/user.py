@@ -13,6 +13,7 @@ def utcnow():
 
 
 class User(db.Model):
+    # Conta de autenticação; o perfil de uso fica na tabela profiles.
     __tablename__ = "users"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()))

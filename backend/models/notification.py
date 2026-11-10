@@ -5,6 +5,7 @@ from extensions import db
 
 
 class Notification(db.Model):
+    # Notificação entregue ou pendente para um perfil.
     __tablename__ = "notifications"
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))

@@ -20,6 +20,7 @@ def atualizar_por_mensagem_e_usuario(message_id: str, user_id: str, **campos) ->
     if not campos:
         return buscar_por_mensagem_e_usuario(message_id, user_id)
 
+    # A atualização usa bindings para os valores e preserva o filtro pela chave lógica do feedback.
     sets = ", ".join(f"{k} = :{k}" for k in campos)
     params = {"message_id": message_id, "user_id": user_id, **campos}
     db.session.execute(
@@ -72,6 +73,7 @@ def preferencias_do_usuario(user_id: str) -> dict:
     negative_reasons = {}
     total = 0
 
+    # Agrupa motivos por polaridade para que o serviço possa personalizar respostas futuras.
     for row in rows:
         cnt = row["cnt"]
         total += cnt

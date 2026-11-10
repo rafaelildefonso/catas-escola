@@ -9,6 +9,7 @@ def utcnow():
 
 
 class UserDevice(db.Model):
+    # Dispositivo conhecido pelo usuário, utilizado por automações e integrações.
     __tablename__ = "user_devices"
 
     id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
