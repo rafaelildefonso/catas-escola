@@ -88,7 +88,7 @@ Configurando deploy, banco ou integracoes?
 |---------|-----|
 | Repositorio | https://github.com/seu-usuario/catas |
 | API Docs | http://localhost:8000/docs |
-| Produção | https://catas.app |
+| Produção | https://catas-ai.vercel.app |
 
 ---
 

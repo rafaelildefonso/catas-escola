@@ -158,14 +158,14 @@ def test_checkout_nunca_aceita_origin_externo_como_retorno(monkeypatch):
     monkeypatch.setattr(settings, "STRIPE_SUCCESS_URL_CONFIGURED", False)
     monkeypatch.setattr(settings, "STRIPE_CANCEL_URL_CONFIGURED", False)
     monkeypatch.setattr(
-        settings, "STRIPE_SUCCESS_URL", "https://catas.app/?billing=success"
+        settings, "STRIPE_SUCCESS_URL", "https://catas-ai.vercel.app/?billing=success"
     )
     monkeypatch.setattr(
-        settings, "STRIPE_CANCEL_URL", "https://catas.app/?billing=cancelled"
+        settings, "STRIPE_CANCEL_URL", "https://catas-ai.vercel.app/?billing=cancelled"
     )
 
     assert BillingService._checkout_return_url("success", "https://evil.example") == (
-        "https://catas.app/?billing=success&session_id={CHECKOUT_SESSION_ID}"
+        "https://catas-ai.vercel.app/?billing=success&session_id={CHECKOUT_SESSION_ID}"
     )
 
 

@@ -10,7 +10,7 @@
 **Nome:** CATAS (Context Aware Task Automation System)  
 **Tipo:** Plataforma SaaS de Automação Inteligente  
 **Stack:** Flask (Backend) + FastAPI (Worker) + Flutter (Frontend)  
-**Deploy:** https://catas.app | API: https://catas-ai.onrender.com/api/v1
+**Deploy:** https://catas-ai.vercel.app | API: https://catas-ai.onrender.com/api/v1
 
 ### Objetivo
 
@@ -436,7 +436,7 @@ python -m pytest tests/test_auth_user.py -v
 ### Produção
 
 - **Backend:** Render (https://catas-ai.onrender.com)
-- **Frontend:** Vercel (https://catas.app)
+- **Frontend:** Vercel (https://catas-ai.vercel.app)
 - **Database:** Supabase (PostgreSQL)
 - **Auth:** Firebase Auth
 - **Pagamentos:** Stripe

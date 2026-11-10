@@ -56,7 +56,7 @@ def create_app():
     if is_dev:
         CORS(app, supports_credentials=True, allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
     else:
-        CORS(app, origins=["https://catas.app", "https://www.catas.app"], supports_credentials=True, allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
+        CORS(app, origins=["https://catas-ai.vercel.app", "https://www.catas-ai.vercel.app"], supports_credentials=True, allow_headers=["Content-Type", "Authorization"], methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"])
     db.init_app(app)
 
     from routes import registrar_rotas

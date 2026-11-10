@@ -10,8 +10,8 @@ def test_retorno_oauth_usa_rota_de_integracoes_do_flutter(monkeypatch):
 
 
 def test_retorno_oauth_preserva_parametro_de_erro(monkeypatch):
-    monkeypatch.setenv("FRONTEND_URL", "https://catas.app")
+    monkeypatch.setenv("FRONTEND_URL", "https://catas-ai.vercel.app")
 
     url = montar_url_retorno_integracoes(error="callback_failed")
 
-    assert url == "https://catas.app/app/integrations"
+    assert url == "https://catas-ai.vercel.app/app/integrations"

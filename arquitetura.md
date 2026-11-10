@@ -371,8 +371,8 @@ services:
 
 | Ambiente | Stack | URL |
 |----------|-------|-----|
-| **Produção** | Render + Supabase | https://catas.app |
-| **Staging** | Render | https://staging.catas.app |
+| **Produção** | Render + Supabase | https://catas-ai.vercel.app |
+| **Staging** | Render | https://staging.catas-ai.vercel.app |
 | **Desenvolvimento** | Local | localhost:8000 |
 
 ### 6.3 CI/CD

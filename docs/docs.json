@@ -51,7 +51,7 @@
     "primary": {
       "type": "button",
       "label": "Abrir Dashboard",
-      "href": "https://catas.app/dashboard"
+      "href": "https://catas-ai.vercel.app/dashboard"
     }
   },
   "footer": {

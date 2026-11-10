@@ -11,7 +11,7 @@
 
 Agente de Automação Inteligente baseado em Linguagem Natural que **executa ações** no mundo real através de uma interface de chat multiplataforma.
 
-**Produção:** https://catas.app | **API:** https://catas-ai.onrender.com/api/v1
+**Produção:** https://catas-ai.vercel.app | **API:** https://catas-ai.onrender.com/api/v1
 
 ---
 
@@ -56,7 +56,7 @@ Agente de Automação Inteligente baseado em Linguagem Natural que **executa aç
 | Backend | Python 3.11+, Flask + SQLAlchemy | 3.0+ / 2.0+ |
 | Worker | Python 3.11+, FastAPI + uvicorn | latest |
 | AI | Groq (gpt-oss 20b/120b), Gemini 2.5, OpenAI | multi-provider |
-| Database | PostgreSQL (Supabase) ou SQLite (dev) | - |
+| Database | SQLite | - |
 | Auth | Firebase Auth + JWT | - |
 | Pagamentos | Stripe (Basic/Pro/Max) | - |
 | Container | Docker + Docker Compose | Python 3.11-slim |
@@ -336,7 +336,7 @@ flutter test
 
 | Serviço | URL | Stack |
 |---------|-----|-------|
-| **App** | https://catas.app | Flutter Web |
+| **App** | https://catas-ai.vercel.app | Flutter Web |
 | **API** | https://catas-ai.onrender.com/api/v1 | Flask + Gunicorn |
 | **Worker** | https://catas-ai.onrender.com | FastAPI |
 | **Database** | Supabase | PostgreSQL |
@@ -360,7 +360,7 @@ flutter test
 - FastAPI (Worker)
 - Gunicorn (Server)
 - PostgreSQL/SQLite (Database)
-- Firebase Auth (Autenticação)
+- Firebase FCM (Push notification)
 - Groq/Gemini/OpenAI (IA)
 - Stripe (Pagamentos)
 - Docker (Containerização)
@@ -375,7 +375,6 @@ flutter test
 ### Infra
 - Render (Deploy)
 - Vercel (Frontend)
-- Supabase (Database + Auth)
 - Firebase (Auth + Push)
 - Stripe (Pagamentos)
 

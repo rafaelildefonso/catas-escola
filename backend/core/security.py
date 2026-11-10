@@ -18,7 +18,7 @@ def get_current_user():
         DEV_USER_ID = os.getenv("DEV_USER_ID", "dev-user-0000-0000-0000-000000000001")
         user = {
             "id": DEV_USER_ID,
-            "email": "developer@catas.app",
+            "email": "developer@catas-ai.vercel.app",
             "token": "dev-token",
         }
         g.current_user = user

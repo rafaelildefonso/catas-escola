@@ -13,7 +13,7 @@ def _default_frontend_url() -> str:
     """
     if os.getenv("ENVIRONMENT", "development").lower() == "development":
         return "http://localhost:52159"
-    return "https://catas.app"
+    return "https://catas-ai.vercel.app"
 
 
 def _frontend_url_from_env() -> str:
