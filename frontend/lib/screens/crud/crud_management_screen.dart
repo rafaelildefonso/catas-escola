@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../data/crud_api_service.dart';
+import '../../components/catas_page.dart';
+import '../../core/design_tokens.dart';
 
 class _EntityConfig {
   final String nome;
@@ -39,7 +41,12 @@ const _entities = <_EntityConfig>[
     icone: Icons.person,
     campoExibicao: 'email',
     campos: [
-      _FieldConfig(chave: 'email', rotulo: 'Email', obrigatorio: true, tipo: TextInputType.emailAddress),
+      _FieldConfig(
+        chave: 'email',
+        rotulo: 'Email',
+        obrigatorio: true,
+        tipo: TextInputType.emailAddress,
+      ),
       _FieldConfig(chave: 'subscription_tier', rotulo: 'Plano'),
       _FieldConfig(chave: 'language', rotulo: 'Idioma'),
       _FieldConfig(chave: 'industry', rotulo: 'Segmento'),
@@ -61,8 +68,16 @@ const _entities = <_EntityConfig>[
     icone: Icons.message,
     campoExibicao: 'content',
     campos: [
-      _FieldConfig(chave: 'session_id', rotulo: 'Session ID', obrigatorio: true),
-      _FieldConfig(chave: 'role', rotulo: 'Role (user/assistant/system)', obrigatorio: true),
+      _FieldConfig(
+        chave: 'session_id',
+        rotulo: 'Session ID',
+        obrigatorio: true,
+      ),
+      _FieldConfig(
+        chave: 'role',
+        rotulo: 'Role (user/assistant/system)',
+        obrigatorio: true,
+      ),
       _FieldConfig(chave: 'content', rotulo: 'Conteúdo'),
     ],
   ),
@@ -95,7 +110,11 @@ const _entities = <_EntityConfig>[
     campoExibicao: 'step_name',
     campos: [
       _FieldConfig(chave: 'run_id', rotulo: 'Run ID', obrigatorio: true),
-      _FieldConfig(chave: 'step_index', rotulo: 'Índice', tipo: TextInputType.number),
+      _FieldConfig(
+        chave: 'step_index',
+        rotulo: 'Índice',
+        tipo: TextInputType.number,
+      ),
       _FieldConfig(chave: 'status', rotulo: 'Status'),
     ],
   ),
@@ -115,7 +134,11 @@ const _entities = <_EntityConfig>[
     icone: Icons.feedback,
     campoExibicao: 'reason',
     campos: [
-      _FieldConfig(chave: 'message_id', rotulo: 'Message ID', obrigatorio: true),
+      _FieldConfig(
+        chave: 'message_id',
+        rotulo: 'Message ID',
+        obrigatorio: true,
+      ),
       _FieldConfig(chave: 'is_liked', rotulo: 'Gostou? (true/false)'),
       _FieldConfig(chave: 'reason', rotulo: 'Motivo'),
     ],
@@ -160,7 +183,10 @@ class _CrudManagementScreenState extends State<CrudManagementScreen>
           controller: _tabController,
           isScrollable: true,
           tabAlignment: TabAlignment.start,
-          labelStyle: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+          labelStyle: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
           unselectedLabelStyle: GoogleFonts.inter(fontSize: 12),
           indicatorSize: TabBarIndicatorSize.label,
           tabs: _entities.map((e) => Tab(text: e.nome)).toList(),
@@ -196,12 +222,25 @@ class _EntityCrudViewState extends State<_EntityCrudView> {
   }
 
   Future<void> _carregar() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final data = await _service.listar();
-      if (mounted) setState(() { _items = data; _loading = false; });
+      if (mounted) {
+        setState(() {
+          _items = data;
+          _loading = false;
+        });
+      }
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _loading = false;
+        });
+      }
     }
   }
 
@@ -212,10 +251,8 @@ class _EntityCrudViewState extends State<_EntityCrudView> {
   Future<void> _mostrarFormulario(Map<String, dynamic>? item) async {
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (ctx) => _CrudFormDialog(
-        config: widget.config,
-        dadosIniciais: item,
-      ),
+      builder: (ctx) =>
+          _CrudFormDialog(config: widget.config, dadosIniciais: item),
     );
     if (result != null) {
       try {
@@ -240,11 +277,18 @@ class _EntityCrudViewState extends State<_EntityCrudView> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirmar exclusão'),
-        content: Text('Deletar "${item[widget.config.campoExibicao] ?? item['id']}"?'),
+        content: Text(
+          'Deletar "${item[widget.config.campoExibicao] ?? item['id']}"?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancelar'),
+          ),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            style: FilledButton.styleFrom(
+              backgroundColor: context.catasTokens.danger,
+            ),
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Deletar'),
           ),
@@ -256,9 +300,9 @@ class _EntityCrudViewState extends State<_EntityCrudView> {
         await _service.deletar(item['id']);
         _carregar();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Deletado com sucesso')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Deletado com sucesso')));
         }
       } catch (e) {
         if (mounted) {
@@ -271,18 +315,39 @@ class _EntityCrudViewState extends State<_EntityCrudView> {
   }
 
   Widget _buildItemTile(Map<String, dynamic> item) {
-    final display = item[widget.config.campoExibicao]?.toString() ?? item['id']?.toString() ?? '---';
+    final display =
+        item[widget.config.campoExibicao]?.toString() ??
+        item['id']?.toString() ??
+        '---';
     final subtitle = item.entries
-        .where((e) => e.key != 'id' && e.key != widget.config.campoExibicao && e.value != null)
+        .where(
+          (e) =>
+              e.key != 'id' &&
+              e.key != widget.config.campoExibicao &&
+              e.value != null,
+        )
         .take(3)
-        .map((e) => '${e.key}: ${e.value.toString().length > 40 ? '${e.value.toString().substring(0, 40)}...' : e.value}')
+        .map(
+          (e) =>
+              '${e.key}: ${e.value.toString().length > 40 ? '${e.value.toString().substring(0, 40)}...' : e.value}',
+        )
         .join(', ');
 
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+      color: context.catasTokens.surfaceRaised,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(context.catasTokens.radiusMedium),
+        side: BorderSide(color: context.catasTokens.borderSubtle),
+      ),
       child: ListTile(
-        title: Text(display, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-        subtitle: subtitle.isNotEmpty ? Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis) : null,
+        title: Text(
+          display,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+        ),
+        subtitle: subtitle.isNotEmpty
+            ? Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis)
+            : null,
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -291,7 +356,11 @@ class _EntityCrudViewState extends State<_EntityCrudView> {
               onPressed: () => _editar(item),
             ),
             IconButton(
-              icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+              icon: Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: context.catasTokens.danger,
+              ),
               onPressed: () => _deletar(item),
             ),
           ],
@@ -305,18 +374,14 @@ class _EntityCrudViewState extends State<_EntityCrudView> {
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
-            const SizedBox(height: 12),
-            Text('Erro ao carregar dados', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            Text(_error!, style: GoogleFonts.inter(fontSize: 12, color: Colors.grey)),
-            const SizedBox(height: 16),
-            FilledButton.tonal(onPressed: _carregar, child: const Text('Tentar novamente')),
-          ],
+      return CatasEmptyState(
+        icon: Icons.error_outline_rounded,
+        title: 'Erro ao carregar dados',
+        message: _error!,
+        action: FilledButton.icon(
+          onPressed: _carregar,
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Tentar novamente'),
         ),
       );
     }
@@ -330,16 +395,15 @@ class _EntityCrudViewState extends State<_EntityCrudView> {
         child: const Icon(Icons.add),
       ),
       body: _items.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(widget.config.icone, size: 64, color: Colors.grey.withValues(alpha: 0.3)),
-                  const SizedBox(height: 12),
-                  Text('Nenhum registro encontrado', style: GoogleFonts.inter()),
-                  const SizedBox(height: 16),
-                  FilledButton.tonal(onPressed: _criar, child: const Text('Adicionar')),
-                ],
+          ? CatasEmptyState(
+              icon: widget.config.icone,
+              title: 'Nenhum registro encontrado',
+              message:
+                  'Adicione o primeiro item para começar a organizar estes dados.',
+              action: FilledButton.icon(
+                onPressed: _criar,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Adicionar'),
               ),
             )
           : RefreshIndicator(
@@ -380,7 +444,9 @@ class _CrudFormDialogState extends State<_CrudFormDialog> {
 
   @override
   void dispose() {
-    for (final c in _controllers.values) { c.dispose(); }
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -406,7 +472,9 @@ class _CrudFormDialogState extends State<_CrudFormDialog> {
   Widget build(BuildContext context) {
     final isEdit = widget.dadosIniciais != null;
     return AlertDialog(
-      title: Text(isEdit ? 'Editar ${widget.config.nome}' : 'Novo ${widget.config.nome}'),
+      title: Text(
+        isEdit ? 'Editar ${widget.config.nome}' : 'Novo ${widget.config.nome}',
+      ),
       content: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -423,7 +491,9 @@ class _CrudFormDialogState extends State<_CrudFormDialog> {
                     border: const OutlineInputBorder(),
                   ),
                   validator: campo.obrigatorio
-                      ? (v) => (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null
+                      ? (v) => (v == null || v.trim().isEmpty)
+                            ? 'Campo obrigatório'
+                            : null
                       : null,
                 ),
               );
@@ -432,8 +502,14 @@ class _CrudFormDialogState extends State<_CrudFormDialog> {
         ),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-        FilledButton(onPressed: _salvar, child: Text(isEdit ? 'Atualizar' : 'Criar')),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: _salvar,
+          child: Text(isEdit ? 'Atualizar' : 'Criar'),
+        ),
       ],
     );
   }

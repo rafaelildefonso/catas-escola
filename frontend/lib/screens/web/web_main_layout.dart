@@ -18,6 +18,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/picked_attachment.dart';
 import '../../l10n/app_localizations.dart';
+import '../../core/design_tokens.dart';
 
 class WebMainLayout extends StatefulWidget {
   final Widget child;
@@ -350,7 +351,9 @@ class _WebMainLayoutState extends State<WebMainLayout> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Text('Aceitar e continuar'),
                       ),
@@ -377,28 +380,46 @@ class _WebMainLayoutState extends State<WebMainLayout> {
     AppPage currentPage,
     AuthProvider auth,
   ) {
+    final tokens = context.catasTokens;
     return Container(
       height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.outline.withValues(alpha: 0.1),
-          ),
-        ),
+        color: tokens.surfaceRaised,
+        border: Border(bottom: BorderSide(color: tokens.borderSubtle)),
       ),
       child: Row(
         children: [
           // Page title
           Text(
-            getLocalizedPageTitle(context, currentPage),
+            currentPage == AppPage.chat
+                ? 'CATAS'
+                : getLocalizedPageTitle(context, currentPage),
             style: GoogleFonts.inter(
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: theme.colorScheme.onSurface,
             ),
           ),
+
+          if (currentPage == AppPage.chat &&
+              auth.subscriptionTier != 'free' &&
+              !AppConfig.isDemoMode) ...[
+            Container(
+              width: 1,
+              height: 20,
+              margin: const EdgeInsets.symmetric(horizontal: 14),
+              color: theme.colorScheme.outline.withValues(alpha: 0.2),
+            ),
+            Flexible(
+              child: ModelSelectorWidget(
+                horizontalPadding: 14,
+                iconSpacing: 6,
+                onUpgradeRequired: (context, model) =>
+                    _showUpgradeModal(context, model),
+              ),
+            ),
+          ],
 
           const Spacer(),
 
@@ -422,21 +443,10 @@ class _WebMainLayoutState extends State<WebMainLayout> {
           ),
           const SizedBox(width: 8),
 
-          // Model selector (only on chat page)
           if (currentPage == AppPage.chat &&
               auth.subscriptionTier != 'free' &&
-              !AppConfig.isDemoMode) ...[
-            Flexible(
-              child: ModelSelectorWidget(
-                horizontalPadding: 16,
-                iconSpacing: 6,
-                onUpgradeRequired: (context, model) =>
-                    _showUpgradeModal(context, model),
-              ),
-            ),
-            const SizedBox(width: 16),
+              !AppConfig.isDemoMode)
             Flexible(child: _buildCreditsBadge(context, theme, auth)),
-          ],
         ],
       ),
     );
@@ -450,15 +460,17 @@ class _WebMainLayoutState extends State<WebMainLayout> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-        border: Border.all(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: context.catasTokens.surfaceMuted,
+        border: Border.all(color: context.catasTokens.borderSubtle),
+        borderRadius: BorderRadius.circular(context.catasTokens.radiusMedium),
       ),
       child: Row(
         children: [
-          Icon(Icons.grade_rounded, size: 16, color: Colors.amber[400]),
+          Icon(
+            Icons.grade_rounded,
+            size: 16,
+            color: context.catasTokens.warning,
+          ),
           const SizedBox(width: 6),
           Text(
             auth.quotaRemaining != null && auth.monthlyQuotaLimit != null

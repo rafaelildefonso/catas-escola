@@ -336,5 +336,20 @@
   "dashboardWeeklyDaySun": "Sun",
   "dashboardAutomationsExecuted": "Automations Executed",
   "dashboardLast7Days": "Last 7 days",
-  "dashboardTasks": "tasks"
+  "dashboardTasks": "tasks",
+  "dashboardExecutionsInPeriod": "Executions in period",
+  "dashboardSuccessRate": "Success rate",
+  "dashboardBasedOnExecutions": "based on executions",
+  "dashboardNoExecutionsShort": "No executions yet",
+  "dashboardNoExecutions": "No automations have run in this period yet. Your first execution will appear here.",
+  "dashboardExecutionsSummary": "{count} automations ran in this period.",
+  "@dashboardExecutionsSummary": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "dashboardConnectedIntegrations": "Connected integrations",
+  "dashboardConnectedIntegrationsSubtitle": "Integrations connected to your account",
+  "dashboardNoIntegrations": "No integrations are connected yet. Connect a tool to start automating.",
+  "dashboardNoActivity": "No automation activity was recorded in the last 7 days."
 }

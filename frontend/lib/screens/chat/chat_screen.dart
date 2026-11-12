@@ -40,6 +40,7 @@ import '../../components/chat/mention_menu.dart';
 import '../integracoes/integrations_screen.dart'
     show IntegrationItem, IntegrationCategory;
 import '../../components/catas_dialog.dart';
+import '../../core/design_tokens.dart';
 import '../../core/router.dart';
 import '../../data/suggested_prompts.dart';
 
@@ -641,13 +642,30 @@ class _ChatScreenState extends State<ChatScreen> {
       final RenderBox button = buttonContext.findRenderObject() as RenderBox;
       final RenderBox overlay =
           Overlay.of(context).context.findRenderObject() as RenderBox;
-      final Offset globalOffset = button.localToGlobal(
+      final Offset buttonOffset = button.localToGlobal(
         Offset.zero,
         ancestor: overlay,
       );
+
+      // Keep the options visually attached to the button. The composer sits
+      // near the bottom of the viewport, so a simple top-left anchor makes
+      // the menu's overflow correction move it much farther away than needed.
+      const menuWidth = 200.0;
+      const menuHeight = 216.0;
+      const menuGap = 8.0;
+      final viewport = overlay.size;
+      final opensToRight =
+          buttonOffset.dx + button.size.width + menuGap + menuWidth <=
+          viewport.width;
+      final menuLeft = opensToRight
+          ? buttonOffset.dx + button.size.width + menuGap
+          : buttonOffset.dx - menuWidth - menuGap;
+      final menuTop = (buttonOffset.dy + (button.size.height - menuHeight) / 2)
+          .clamp(8.0, viewport.height - menuHeight - 8.0);
+
       CatasOptionsMenu.show(
         context: context,
-        position: globalOffset,
+        position: Offset(menuLeft, menuTop),
         items: const [
           CatasOptionItem(
             value: 'camera',
@@ -865,7 +883,9 @@ class _ChatScreenState extends State<ChatScreen> {
       final text = _controller.text;
       final isEmpty = text.trim().isEmpty;
       if (isEmpty != _inputVazio) {
-        setState(() { _inputVazio = isEmpty; });
+        setState(() {
+          _inputVazio = isEmpty;
+        });
       }
       // Salva o rascunho no provider
       context.read<ChatProvider>().setMessageDraft(text);
@@ -1010,70 +1030,75 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     SizedBox(
                       width: double.infinity,
-                        child: messages.isEmpty
-                            ? (isLoading
-                                  ? _buildHistorySkeleton()
-                                  : (!kIsWeb &&
-                                        chatProvider.currentSessionId == null)
-                                  // Mobile empty state: greeting + chips
-                                  ? _buildMobileEmptyState(auth, getGreeting())
-                                  : Center(
-                                      child: Text(
-                                        l10n.noMessages,
-                                        style: GoogleFonts.inter(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurfaceVariant
-                                              .withValues(alpha: 0.5),
-                                        ),
+                      child: messages.isEmpty
+                          ? (isLoading
+                                ? _buildHistorySkeleton()
+                                : (!kIsWeb &&
+                                      chatProvider.currentSessionId == null)
+                                // Mobile empty state: greeting + chips
+                                ? _buildMobileEmptyState(auth, getGreeting())
+                                : Center(
+                                    child: Text(
+                                      l10n.noMessages,
+                                      style: GoogleFonts.inter(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant
+                                            .withValues(alpha: 0.5),
                                       ),
-                                    ))
-                            : ListView.separated(
-                                controller: _scrollController,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 24,
-                                ),
-                                itemCount:
-                                    messages.length +
-                                    (isLoading ? 1 : 0) +
-                                    (chatProvider.isLoadingMoreMessages
-                                        ? 1
-                                        : 0),
-                                separatorBuilder: (c, i) =>
-                                    const SizedBox(height: 24),
-                                itemBuilder: (context, index) {
-                                  if (chatProvider.isLoadingMoreMessages) {
-                                    if (index == 0) {
-                                      return const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                        child: Center(
-                                          child: SizedBox(
-                                            width: 24,
-                                            height: 24,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
+                                    ),
+                                  ))
+                          : ListView.separated(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 24,
+                              ),
+                              itemCount:
+                                  messages.length +
+                                  (isLoading ? 1 : 0) +
+                                  (chatProvider.isLoadingMoreMessages ? 1 : 0),
+                              separatorBuilder: (c, i) =>
+                                  const SizedBox(height: 24),
+                              itemBuilder: (context, index) {
+                                if (chatProvider.isLoadingMoreMessages) {
+                                  if (index == 0) {
+                                    return const Padding(
+                                      padding: EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 24,
+                                          height: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
                                           ),
                                         ),
-                                      );
-                                    }
-                                    index--;
+                                      ),
+                                    );
                                   }
-                                  if (index == messages.length) {
-                                    return _buildLoadingIndicator();
-                                  }
-                                  final message = messages[index];
-                                  return _buildMessageRow(
-                                    message,
-                                    index,
-                                    messages,
-                                    isLoading,
-                                  );
-                                },
-                              ),
+                                  index--;
+                                }
+                                if (index == messages.length) {
+                                  return _buildLoadingIndicator();
+                                }
+                                final message = messages[index];
+                                return Center(
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 900,
+                                    ),
+                                    child: _buildMessageRow(
+                                      message,
+                                      index,
+                                      messages,
+                                      isLoading,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),
@@ -1085,184 +1110,123 @@ class _ChatScreenState extends State<ChatScreen> {
               link: _mentionLayerLink,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 28),
-                                 color: Colors.transparent, // Floating feel
+                color: Colors.transparent, // Floating feel
 
                 alignment: Alignment.center,
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width * 0.5,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        // .withValues(alpha: 0.65),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: inputBorderColor, width: 1.5),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
-                            blurRadius: 16,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(32),
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            left: 6,
-                            right: 6,
-                            top: 4,
-                            bottom: 4,
-                          ),
-                          child:
-                              auth.subscriptionTier == 'free' &&
-                                  !isOnboardingSession
-                              ? Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 16,
-                                  ),
-                                  child: Column(
-                                    children: [
-                                      Text(
-                                        l10n.aiExclusive,
-                                        textAlign: TextAlign.center,
-                                        style: GoogleFonts.inter(
-                                          fontSize: 14,
-                                          color: colorScheme.onSurfaceVariant,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      FilledButton.icon(
-                                        onPressed: () =>
-                                            context.go(AppRoutes.pricing),
-                                        icon: const Icon(
-                                          Icons.bolt_rounded,
-                                          size: 20,
-                                        ),
-                                        label: Text(l10n.unlockAccess),
-                                        style: FilledButton.styleFrom(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 24,
-                                            vertical: 12,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )
-                              : Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 900),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? const Color(0xFF17171A)
+                          : Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: inputBorderColor),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.10),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          left: 6,
+                          right: 6,
+                          top: 4,
+                          bottom: 4,
+                        ),
+                        child:
+                            auth.subscriptionTier == 'free' &&
+                                !isOnboardingSession
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                  vertical: 16,
+                                ),
+                                child: Column(
                                   children: [
-                                    if (chatProvider.attachments.isNotEmpty)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          left: 12,
-                                          top: 8,
-                                          bottom: 4,
-                                          right: 12,
-                                        ),
-                                        child: Wrap(
-                                          spacing: 8,
-                                          runSpacing: 8,
-                                          children: chatProvider.attachments
-                                              .map(
-                                                (attachment) =>
-                                                    PickedAttachmentCard(
-                                                      attachment: attachment,
-                                                      onRemove: () =>
-                                                          chatProvider
-                                                              .removeAttachment(
-                                                                attachment.id,
-                                                              ),
-                                                    ),
-                                              )
-                                              .toList(),
+                                    Text(
+                                      l10n.aiExclusive,
+                                      textAlign: TextAlign.center,
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 12),
+                                    FilledButton.icon(
+                                      onPressed: () =>
+                                          context.go(AppRoutes.pricing),
+                                      icon: const Icon(
+                                        Icons.bolt_rounded,
+                                        size: 20,
+                                      ),
+                                      label: Text(l10n.unlockAccess),
+                                      style: FilledButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 12,
                                         ),
                                       ),
-                                    Column(
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: kIsWeb
-                                                  ? KeyboardListener(
-                                                      focusNode: FocusNode(),
-                                                      onKeyEvent: (KeyEvent event) {
-                                                        if (event
-                                                                is KeyDownEvent &&
-                                                            event.logicalKey ==
-                                                                LogicalKeyboardKey
-                                                                    .enter) {
-                                                          if (!HardwareKeyboard
-                                                              .instance
-                                                              .isShiftPressed) {
-                                                            _sendMessage();
-                                                          }
-                                                        }
-                                                      },
-                                                      child: TextField(
-                                                        controller: _controller,
-                                                        focusNode: _focusNode,
-                                                        style:
-                                                            GoogleFonts.inter(
-                                                              fontSize: 15,
-                                                            ),
-                                                        enabled: !isLoading,
-                                                        minLines: 1,
-                                                        maxLines: 5,
-                                                        textInputAction:
-                                                            TextInputAction
-                                                                .newline,
-                                                        maxLength:
-                                                            _maxInputLength,
-                                                        cursorColor: Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary,
-                                                        decoration: InputDecoration(
-                                                          hintText:
-                                                              l10n.askAnything,
-                                                          filled: false,
-                                                          counterText: '',
-                                                          border:
-                                                              InputBorder.none,
-                                                          disabledBorder:
-                                                              InputBorder.none,
-                                                          focusedBorder:
-                                                              InputBorder.none,
-                                                          errorBorder:
-                                                              InputBorder.none,
-                                                          focusedErrorBorder:
-                                                              InputBorder.none,
-                                                          enabledBorder:
-                                                              InputBorder.none,
-                                                          hintStyle: GoogleFonts.inter(
-                                                            color:
-                                                                Theme.of(
-                                                                      context,
-                                                                    )
-                                                                    .colorScheme
-                                                                    .onSurfaceVariant
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.6,
-                                                                    ),
-                                                          ),
-                                                          contentPadding:
-                                                              const EdgeInsets.symmetric(
-                                                                vertical: 14,
-                                                                horizontal: 16,
-                                                              ),
-                                                          isDense: true,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (chatProvider.attachments.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        left: 12,
+                                        top: 8,
+                                        bottom: 4,
+                                        right: 12,
+                                      ),
+                                      child: Wrap(
+                                        spacing: 8,
+                                        runSpacing: 8,
+                                        children: chatProvider.attachments
+                                            .map(
+                                              (attachment) =>
+                                                  PickedAttachmentCard(
+                                                    attachment: attachment,
+                                                    onRemove: () => chatProvider
+                                                        .removeAttachment(
+                                                          attachment.id,
                                                         ),
-                                                        onSubmitted: (_) =>
-                                                            _sendMessage(),
-                                                      ),
-                                                    )
-                                                  : TextField(
+                                                  ),
+                                            )
+                                            .toList(),
+                                      ),
+                                    ),
+                                  Column(
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: kIsWeb
+                                                ? KeyboardListener(
+                                                    focusNode: FocusNode(),
+                                                    onKeyEvent: (KeyEvent event) {
+                                                      if (event
+                                                              is KeyDownEvent &&
+                                                          event.logicalKey ==
+                                                              LogicalKeyboardKey
+                                                                  .enter) {
+                                                        if (!HardwareKeyboard
+                                                            .instance
+                                                            .isShiftPressed) {
+                                                          _sendMessage();
+                                                        }
+                                                      }
+                                                    },
+                                                    child: TextField(
                                                       controller: _controller,
                                                       focusNode: _focusNode,
                                                       style: GoogleFonts.inter(
@@ -1274,6 +1238,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                                       textInputAction:
                                                           TextInputAction
                                                               .newline,
+                                                      maxLength:
+                                                          _maxInputLength,
                                                       cursorColor: Theme.of(
                                                         context,
                                                       ).colorScheme.primary,
@@ -1281,6 +1247,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                                         hintText:
                                                             l10n.askAnything,
                                                         filled: false,
+                                                        counterText: '',
                                                         border:
                                                             InputBorder.none,
                                                         disabledBorder:
@@ -1312,234 +1279,294 @@ class _ChatScreenState extends State<ChatScreen> {
                                                       onSubmitted: (_) =>
                                                           _sendMessage(),
                                                     ),
-                                            ),
-                                          ],
-                                        ),
-                                        Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.end,
-                                          children: [
-                                            // Attach Button
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 2,
-                                              ),
-                                              child: Builder(
-                                                builder: (ctx) => IconButton(
-                                                  onPressed: isLoading
-                                                      ? null
-                                                      : () =>
-                                                            _showAttachmentMenu(
-                                                              ctx,
-                                                            ),
-                                                  icon: Icon(
-                                                    Icons.add_rounded,
-                                                    size: 24,
-                                                    color: isLoading
-                                                        ? colorScheme
-                                                              .onSurfaceVariant
-                                                              .withValues(
-                                                                alpha: 0.4,
-                                                              )
-                                                        : colorScheme
-                                                              .onSurfaceVariant,
-                                                  ),
-                                                  tooltip: 'Abrir Anexos',
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: 8),
-                                            // Integrations Button
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 2,
-                                              ),
-                                              child: IconButton(
-                                                onPressed:
-                                                    _showIntegrationOptions,
-                                                icon: Icon(
-                                                  Icons.device_hub,
-                                                  size: 20,
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
-                                                ),
-                                                tooltip: 'Abrir Integrações',
-                                              ),
-                                            ),
-                                            Expanded(
-                                              child:
-                                                  (currentLength >
-                                                      _maxInputLength * 0.5)
-                                                  ? Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                            right: 12,
-                                                            bottom: 8,
-                                                          ),
-                                                      child: Text(
-                                                        '$currentLength / $_maxInputLength',
-                                                        textAlign:
-                                                            TextAlign.right,
-                                                        style: GoogleFonts.inter(
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: progress > 0.7
-                                                              ? inputBorderColor
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.9,
-                                                                    )
-                                                              : colorScheme
-                                                                    .onSurfaceVariant
-                                                                    .withValues(
-                                                                      alpha:
-                                                                          0.4,
-                                                                    ),
-                                                        ),
-                                                      ),
-                                                    )
-                                                  : const SizedBox(),
-                                            ),
-                                            // Stop/Send/Mic Button
-                                            Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 3,
-                                                right: 3,
-                                              ),
-                                              child: isLoading
-                                                  // Botão de Stop durante loading
-                                                  ? Container(
-                                                      width: 40,
-                                                      height: 40,
-                                                      decoration: BoxDecoration(
-                                                        color: Colors.red[400],
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: IconButton(
-                                                        onPressed: () async {
-                                                          final provider =
-                                                              context
-                                                                  .read<
-                                                                    ChatProvider
-                                                                  >();
-                                                          bool shouldStop =
-                                                              true;
-
-                                                          // Se estiver em fase crítica de automação, pede confirmação
-                                                          if (provider.thinkingStage ==
-                                                                  ThinkingStage
-                                                                      .planning ||
-                                                              provider.thinkingStage ==
-                                                                  ThinkingStage
-                                                                      .executing) {
-                                                            final confirmed = await showCatasDialog<bool>(
-                                                              context: context,
-                                                              title:
-                                                                  "Parar agora?",
-                                                              message:
-                                                                  "Uma automação está sendo preparada ou executada. Parar agora cancelará todo o progresso.",
-                                                              actionsBuilder: (context) => [
-                                                                CatasDialogAction(
-                                                                  label:
-                                                                      "Continuar",
-                                                                  onPressed: () =>
-                                                                      Navigator.pop(
-                                                                        context,
-                                                                        false,
-                                                                      ),
-                                                                  isSecondary:
-                                                                      true,
-                                                                ),
-                                                                CatasDialogAction(
-                                                                  label:
-                                                                      "Parar Tudo",
-                                                                  isDestructive:
-                                                                      true,
-                                                                  onPressed: () =>
-                                                                      Navigator.pop(
-                                                                        context,
-                                                                        true,
-                                                                      ),
-                                                                ),
-                                                              ],
-                                                            );
-                                                            shouldStop =
-                                                                confirmed ??
-                                                                false;
-                                                          }
-
-                                                          if (shouldStop) {
-                                                            provider
-                                                                .stopGeneration();
-                                                            _showSnack(
-                                                              l10n.generationInterrupted,
-                                                            );
-                                                          }
-                                                        },
-                                                        iconSize: 24,
-                                                        icon: const Icon(
-                                                          Icons.stop_rounded,
-                                                          size: 20,
-                                                          color: Colors.white,
-                                                        ),
-                                                        tooltip:
-                                                            l10n.stopGeneration,
-                                                      ),
-                                                    )
-                                                  // Botão de envio ou microfone
-                                                  : !_inputVazio
-                                                  ? Container(
-                                                      width: 40,
-                                                      height: 40,
-                                                      decoration: BoxDecoration(
-                                                        color: Theme.of(
-                                                          context,
-                                                        ).colorScheme.primary,
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: IconButton(
-                                                        onPressed: _sendMessage,
-                                                        iconSize: 24,
-                                                        icon: Icon(
-                                                          Icons
-                                                              .arrow_upward_rounded,
-                                                          size: 20,
-                                                          color:
-                                                              Theme.of(context)
-                                                                  .colorScheme
-                                                                  .onPrimary,
-                                                        ),
-                                                      ),
-                                                    )
-                                                  : IconButton(
-                                                      onPressed: () => {
-                                                        _showSnack(
-                                                          l10n.audioComingSoon,
-                                                        ),
-                                                      },
-                                                      iconSize: 24,
-                                                      icon: Icon(
-                                                        Icons.mic_none_rounded,
+                                                  )
+                                                : TextField(
+                                                    controller: _controller,
+                                                    focusNode: _focusNode,
+                                                    style: GoogleFonts.inter(
+                                                      fontSize: 15,
+                                                    ),
+                                                    enabled: !isLoading,
+                                                    minLines: 1,
+                                                    maxLines: 5,
+                                                    textInputAction:
+                                                        TextInputAction.newline,
+                                                    cursorColor: Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary,
+                                                    decoration: InputDecoration(
+                                                      hintText:
+                                                          l10n.askAnything,
+                                                      filled: false,
+                                                      border: InputBorder.none,
+                                                      disabledBorder:
+                                                          InputBorder.none,
+                                                      focusedBorder:
+                                                          InputBorder.none,
+                                                      errorBorder:
+                                                          InputBorder.none,
+                                                      focusedErrorBorder:
+                                                          InputBorder.none,
+                                                      enabledBorder:
+                                                          InputBorder.none,
+                                                      hintStyle: GoogleFonts.inter(
                                                         color: Theme.of(context)
                                                             .colorScheme
-                                                            .onSurfaceVariant,
+                                                            .onSurfaceVariant
+                                                            .withValues(
+                                                              alpha: 0.6,
+                                                            ),
                                                       ),
-                                                      tooltip: l10n.recordAudio,
+                                                      contentPadding:
+                                                          const EdgeInsets.symmetric(
+                                                            vertical: 14,
+                                                            horizontal: 16,
+                                                          ),
+                                                      isDense: true,
                                                     ),
+                                                    onSubmitted: (_) =>
+                                                        _sendMessage(),
+                                                  ),
+                                          ),
+                                        ],
+                                      ),
+                                      Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          // Attach Button
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 2,
                                             ),
-                                          ],
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                        ),
+                                            child: Builder(
+                                              builder: (ctx) => IconButton(
+                                                onPressed: isLoading
+                                                    ? null
+                                                    : () => _showAttachmentMenu(
+                                                        ctx,
+                                                      ),
+                                                icon: Icon(
+                                                  Icons.add_rounded,
+                                                  size: 24,
+                                                  color: isLoading
+                                                      ? colorScheme
+                                                            .onSurfaceVariant
+                                                            .withValues(
+                                                              alpha: 0.4,
+                                                            )
+                                                      : colorScheme
+                                                            .onSurfaceVariant,
+                                                ),
+                                                tooltip: 'Abrir Anexos',
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          // Integrations Button
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 2,
+                                            ),
+                                            child: IconButton(
+                                              onPressed:
+                                                  _showIntegrationOptions,
+                                              icon: Icon(
+                                                Icons.device_hub,
+                                                size: 20,
+                                                color: colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                              tooltip: 'Abrir Integrações',
+                                            ),
+                                          ),
+                                          Expanded(
+                                            child:
+                                                (currentLength >
+                                                    _maxInputLength * 0.5)
+                                                ? Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                          right: 12,
+                                                          bottom: 8,
+                                                        ),
+                                                    child: Text(
+                                                      '$currentLength / $_maxInputLength',
+                                                      textAlign:
+                                                          TextAlign.right,
+                                                      style: GoogleFonts.inter(
+                                                        fontSize: 11,
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        color: progress > 0.7
+                                                            ? inputBorderColor
+                                                                  .withValues(
+                                                                    alpha: 0.9,
+                                                                  )
+                                                            : colorScheme
+                                                                  .onSurfaceVariant
+                                                                  .withValues(
+                                                                    alpha: 0.4,
+                                                                  ),
+                                                      ),
+                                                    ),
+                                                  )
+                                                : const SizedBox(),
+                                          ),
+                                          // Stop/Send/Mic Button
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              bottom: 3,
+                                              right: 3,
+                                            ),
+                                            child: isLoading
+                                                // Botão de Stop durante loading
+                                                ? Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.red[400],
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: IconButton(
+                                                      onPressed: () async {
+                                                        final provider = context
+                                                            .read<
+                                                              ChatProvider
+                                                            >();
+                                                        bool shouldStop = true;
+
+                                                        // Se estiver em fase crítica de automação, pede confirmação
+                                                        if (provider.thinkingStage ==
+                                                                ThinkingStage
+                                                                    .planning ||
+                                                            provider.thinkingStage ==
+                                                                ThinkingStage
+                                                                    .executing) {
+                                                          final confirmed = await showCatasDialog<bool>(
+                                                            context: context,
+                                                            title:
+                                                                "Parar agora?",
+                                                            message:
+                                                                "Uma automação está sendo preparada ou executada. Parar agora cancelará todo o progresso.",
+                                                            actionsBuilder: (context) => [
+                                                              CatasDialogAction(
+                                                                label:
+                                                                    "Continuar",
+                                                                onPressed: () =>
+                                                                    Navigator.pop(
+                                                                      context,
+                                                                      false,
+                                                                    ),
+                                                                isSecondary:
+                                                                    true,
+                                                              ),
+                                                              CatasDialogAction(
+                                                                label:
+                                                                    "Parar Tudo",
+                                                                isDestructive:
+                                                                    true,
+                                                                onPressed: () =>
+                                                                    Navigator.pop(
+                                                                      context,
+                                                                      true,
+                                                                    ),
+                                                              ),
+                                                            ],
+                                                          );
+                                                          shouldStop =
+                                                              confirmed ??
+                                                              false;
+                                                        }
+
+                                                        if (shouldStop) {
+                                                          provider
+                                                              .stopGeneration();
+                                                          _showSnack(
+                                                            l10n.generationInterrupted,
+                                                          );
+                                                        }
+                                                      },
+                                                      iconSize: 24,
+                                                      icon: const Icon(
+                                                        Icons.stop_rounded,
+                                                        size: 20,
+                                                        color: Colors.white,
+                                                      ),
+                                                      tooltip:
+                                                          l10n.stopGeneration,
+                                                    ),
+                                                  )
+                                                // Botão de envio ou microfone
+                                                : !_inputVazio
+                                                ? Container(
+                                                    width: 40,
+                                                    height: 40,
+                                                    decoration: BoxDecoration(
+                                                      color: Theme.of(
+                                                        context,
+                                                      ).colorScheme.primary,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: IconButton(
+                                                      onPressed: _sendMessage,
+                                                      iconSize: 24,
+                                                      icon: Icon(
+                                                        Icons
+                                                            .arrow_upward_rounded,
+                                                        size: 20,
+                                                        color: Theme.of(
+                                                          context,
+                                                        ).colorScheme.onPrimary,
+                                                      ),
+                                                    ),
+                                                  )
+                                                : IconButton(
+                                                    onPressed: () => {
+                                                      _showSnack(
+                                                        l10n.audioComingSoon,
+                                                      ),
+                                                    },
+                                                    iconSize: 24,
+                                                    icon: Icon(
+                                                      Icons.mic_none_rounded,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                                    tooltip: l10n.recordAudio,
+                                                  ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                       ),
                     ),
+                  ),
                 ),
               ),
             ),
+
+            if (kIsWeb && !isCenteredEmptyState)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Semantics(
+                  label: 'Aviso sobre respostas da inteligência artificial',
+                  child: Text(
+                    'O CATAS pode cometer erros. Revise ações importantes.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.72,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
 
             // Prompt chips (web only, below input)
             if (isCenteredEmptyState && auth.subscriptionTier != 'free')
@@ -1829,17 +1856,21 @@ class _ChatScreenState extends State<ChatScreen> {
   // Removido _examplePrompts estático em favor do SuggestedPromptsData
 
   Widget _buildEmptyState(AuthProvider auth, String greeting) {
+    final theme = Theme.of(context);
+    final tokens = context.catasTokens;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
               greeting,
               style: GoogleFonts.inter(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+                fontSize: 28,
+                letterSpacing: -0.7,
+                fontWeight: FontWeight.w700,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1847,8 +1878,9 @@ class _ChatScreenState extends State<ChatScreen> {
             Text(
               AppLocalizations.of(context)!.howCanIHelp,
               style: GoogleFonts.inter(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 15,
+                height: 1.5,
+                color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1860,6 +1892,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // Mobile empty state: greeting + chips (layout original do mobile)
   Widget _buildMobileEmptyState(AuthProvider auth, String greeting) {
+    final theme = Theme.of(context);
+    final tokens = context.catasTokens;
     return Column(
       children: [
         Expanded(
@@ -1869,11 +1903,26 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    margin: const EdgeInsets.only(bottom: 18),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(tokens.radiusLarge),
+                    ),
+                    child: Icon(
+                      Icons.auto_awesome_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 24,
+                    ),
+                  ),
                   Text(
                     greeting,
                     style: GoogleFonts.inter(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 27,
+                      letterSpacing: -0.7,
+                      fontWeight: FontWeight.w700,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1881,8 +1930,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   Text(
                     AppLocalizations.of(context)!.howCanIHelp,
                     style: GoogleFonts.inter(
-                      fontSize: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 15,
+                      height: 1.5,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -1924,39 +1974,41 @@ class _ChatScreenState extends State<ChatScreen> {
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.5,
       child: AnimatedOpacity(
-      opacity: _inputVazio ? 1.0 : 0.0,
-      duration: const Duration(milliseconds: 300),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final width = constraints.maxWidth.isFinite
-                ? constraints.maxWidth
-                : double.infinity;
-            return SizedBox(
-              width: width,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  spacing: 12,
-                  children: [
-                    ..._shuffledPrompts.map(
-                      (item) =>
-                          _buildPromptSuggestions(item.prompt, item.logos),
-                    ),
-                    _buildSeeMorePromptsChip(),
-                  ],
+        opacity: _inputVazio ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 300),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth.isFinite
+                  ? constraints.maxWidth
+                  : double.infinity;
+              return SizedBox(
+                width: width,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    spacing: 12,
+                    children: [
+                      ..._shuffledPrompts.map(
+                        (item) =>
+                            _buildPromptSuggestions(item.prompt, item.logos),
+                      ),
+                      _buildSeeMorePromptsChip(),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildPromptSuggestions(String prompt, List<LogoId> integrations) {
+    final theme = Theme.of(context);
+    final tokens = context.catasTokens;
     return InkWell(
       onTap: () {
         _controller.text = prompt;
@@ -1968,13 +2020,9 @@ class _ChatScreenState extends State<ChatScreen> {
         width: 200,
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.1),
-          ),
+          color: tokens.surfaceRaised,
+          borderRadius: BorderRadius.circular(tokens.radiusMedium),
+          border: Border.all(color: tokens.borderSubtle),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -1987,7 +2035,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   fontWeight: FontWeight.w500,
                   fontSize: 12,
                   height: 1.3,
-                  color: Theme.of(context).colorScheme.onSurface,
+                  color: theme.colorScheme.onSurface,
                 ),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
@@ -2013,9 +2061,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildSeeMorePromptsChip() {
     final l10n = AppLocalizations.of(context)!;
+    final tokens = context.catasTokens;
     return InkWell(
       onTap: () async {
-        final result = await context.push<String>('/prompts');
+        final result = await context.push<String>(AppRoutes.suggestedPrompts);
         if (result != null && result.isNotEmpty) {
           setState(() {
             _controller.text = result;
@@ -2029,15 +2078,9 @@ class _ChatScreenState extends State<ChatScreen> {
         width: 140,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Theme.of(
-            context,
-          ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: Theme.of(
-              context,
-            ).colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
+          color: tokens.surfaceMuted,
+          borderRadius: BorderRadius.circular(tokens.radiusMedium),
+          border: Border.all(color: tokens.borderSubtle),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -2074,6 +2117,7 @@ class _ChatScreenState extends State<ChatScreen> {
     bool isLoading,
   ) {
     final l10n = AppLocalizations.of(context)!;
+    final tokens = context.catasTokens;
     Offset? tapPosition;
 
     if (message.isUser) {
@@ -2094,15 +2138,16 @@ class _ChatScreenState extends State<ChatScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Container(
-                constraints: const BoxConstraints(maxWidth: 600),
+                constraints: const BoxConstraints(maxWidth: 640),
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
+                  color: tokens.surfaceMuted,
+                  border: Border.all(color: tokens.borderSubtle),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -2157,62 +2202,43 @@ class _ChatScreenState extends State<ChatScreen> {
       return SizedBox(
         width: double.infinity,
         child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (message.attachmentUrls != null &&
-                          message.attachmentUrls!.isNotEmpty)
-                        _buildAttachments(message.attachmentUrls!),
-                      if (message.chunks.isNotEmpty)
-                        for (int i = 0; i < message.chunks.length; i++) ...[
-                          SelectionArea(
-                            child: MarkdownBody(
-                              data: message.chunks[i].text,
-                              styleSheet: MarkdownStyleSheet(
-                                p: GoogleFonts.inter(
-                                  height: 1.6,
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.9),
-                                ),
-                              ),
-                            ),
-                          ),
-                          if (message.chunks[i].components != null &&
-                              message.chunks[i].components!.isNotEmpty)
-                            AIComponentFactory(
-                              components: message.chunks[i].components!,
-                              isEnabled:
-                                  !isLoading &&
-                                  index == messages.length - 1 &&
-                                  i == message.chunks.length - 1,
-                              onComponentResponse: (type, data) {
-                                final chatProv = Provider.of<ChatProvider>(
-                                  context,
-                                  listen: false,
-                                );
-                                chatProv.sendComponentResponse(type, data);
-                              },
-                            ),
-                          if (i < message.chunks.length - 1)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              child: Divider(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurface.withValues(alpha: 0.1),
-                                thickness: 1,
-                              ),
-                            ),
-                        ]
-                      else ...[
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Semantics(
+                image: true,
+                label: 'CATAS',
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  margin: const EdgeInsets.only(top: 2, right: 14),
+                  padding: const EdgeInsets.all(5),
+                  decoration: BoxDecoration(
+                    color: tokens.surfaceMuted,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: tokens.borderSubtle),
+                  ),
+                  child: Image.asset(
+                    Theme.of(context).brightness == Brightness.dark
+                        ? 'assets/icons/app_icon_transparent_white.png'
+                        : 'assets/icons/app_icon_transparent.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (message.attachmentUrls != null &&
+                        message.attachmentUrls!.isNotEmpty)
+                      _buildAttachments(message.attachmentUrls!),
+                    if (message.chunks.isNotEmpty)
+                      for (int i = 0; i < message.chunks.length; i++) ...[
                         SelectionArea(
                           child: MarkdownBody(
-                            data: message.text,
+                            data: message.chunks[i].text,
                             styleSheet: MarkdownStyleSheet(
                               p: GoogleFonts.inter(
                                 height: 1.6,
@@ -2223,12 +2249,14 @@ class _ChatScreenState extends State<ChatScreen> {
                             ),
                           ),
                         ),
-                        if (message.components != null &&
-                            message.components!.isNotEmpty)
+                        if (message.chunks[i].components != null &&
+                            message.chunks[i].components!.isNotEmpty)
                           AIComponentFactory(
-                            components: message.components!,
+                            components: message.chunks[i].components!,
                             isEnabled:
-                                !isLoading && index == messages.length - 1,
+                                !isLoading &&
+                                index == messages.length - 1 &&
+                                i == message.chunks.length - 1,
                             onComponentResponse: (type, data) {
                               final chatProv = Provider.of<ChatProvider>(
                                 context,
@@ -2237,258 +2265,217 @@ class _ChatScreenState extends State<ChatScreen> {
                               chatProv.sendComponentResponse(type, data);
                             },
                           ),
-                      ],
-                      if (message.actionTriggered &&
-                          message.actionDetails != null &&
-                          (message.components == null ||
-                              message.components!.isEmpty))
-                        Container(
-                          margin: const EdgeInsets.only(top: 12),
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.1),
-                                Theme.of(
-                                  context,
-                                ).colorScheme.primary.withValues(alpha: 0.05),
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            border: Border.all(
+                        if (i < message.chunks.length - 1)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Divider(
                               color: Theme.of(
                                 context,
-                              ).colorScheme.primary.withValues(alpha: 0.3),
-                              width: 1.5,
+                              ).colorScheme.onSurface.withValues(alpha: 0.1),
+                              thickness: 1,
                             ),
-                            borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green.withValues(
-                                        alpha: 0.2,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.check_circle,
-                                      size: 16,
-                                      color: Colors.green,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    message.status == 'running'
-                                        ? 'Automação iniciada'
-                                        : l10n.actionExecuted,
-                                    style: GoogleFonts.inter(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              // Tool Name
-                              if (message.actionDetails!['tool'] != null)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .surfaceContainerHighest
-                                        .withValues(alpha: 0.5),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.integration_instructions,
-                                        size: 14,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .onSurface
-                                            .withValues(alpha: 0.7),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        message.actionDetails!['tool'],
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              // Payload Visual Feedback (Slot Filling)
-                              if (message.actionDetails!['payload'] != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 12),
-                                  child: _buildPayloadDetails(
-                                    message.actionDetails!['payload'],
-                                    context,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        )
-                      else if (message.actionTriggered &&
-                          (message.components == null ||
-                              message.components!.isEmpty))
-                        Container(
-                          margin: const EdgeInsets.only(top: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.outline,
+                      ]
+                    else ...[
+                      SelectionArea(
+                        child: MarkdownBody(
+                          data: message.text,
+                          styleSheet: MarkdownStyleSheet(
+                            p: GoogleFonts.inter(
+                              height: 1.6,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurface.withValues(alpha: 0.9),
                             ),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.bolt,
-                                size: 16,
-                                color: Colors.amber,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                message.status == 'running'
-                                    ? 'Automação iniciada'
-                                    : l10n.actionExecuted,
-                                style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
                           ),
                         ),
-
-                      // --- Inline Action Buttons (web) ---
-                      if (kIsWeb)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            children: [
-                              const SizedBox(width: 8),
-                              _buildInlineActionButton(
-                                icon: Icons.copy_all_outlined,
-                                tooltip: l10n.copy,
-                                onTap: () => _copyToClipboard(message.text),
-                              ),
-                              const SizedBox(width: 8),
-                              _buildInlineActionButton(
-                                icon: Icons.share_outlined,
-                                tooltip: l10n.share,
-                                onTap: () async {
-                                  await SharePlus.instance.share(
-                                    ShareParams(text: message.text),
-                                  );
-                                },
-                              ),
-                              const Spacer(),
-                              if (message.isFinalResponse &&
-                                  message.canReceiveFeedback) ...[
-                                IconButton(
-                                  onPressed: () {
-                                    final chatProv = Provider.of<ChatProvider>(
-                                      context,
-                                      listen: false,
-                                    );
-                                    chatProv.sendFeedback(message, true);
-                                  },
-                                  icon: Icon(
-                                    message.isLiked == true
-                                        ? Icons.thumb_up
-                                        : Icons.thumb_up_outlined,
-                                    size: 18,
+                      ),
+                      if (message.components != null &&
+                          message.components!.isNotEmpty)
+                        AIComponentFactory(
+                          components: message.components!,
+                          isEnabled: !isLoading && index == messages.length - 1,
+                          onComponentResponse: (type, data) {
+                            final chatProv = Provider.of<ChatProvider>(
+                              context,
+                              listen: false,
+                            );
+                            chatProv.sendComponentResponse(type, data);
+                          },
+                        ),
+                    ],
+                    if (message.actionTriggered &&
+                        message.actionDetails != null &&
+                        (message.components == null ||
+                            message.components!.isEmpty))
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.1),
+                              Theme.of(
+                                context,
+                              ).colorScheme.primary.withValues(alpha: 0.05),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          border: Border.all(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary.withValues(alpha: 0.3),
+                            width: 1.5,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: tokens.success.withValues(
+                                      alpha: 0.14,
+                                    ),
+                                    shape: BoxShape.circle,
                                   ),
-                                  color: message.isLiked == true
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                  tooltip: l10n.like,
+                                  child: Icon(
+                                    Icons.check_circle,
+                                    size: 16,
+                                    color: tokens.success,
+                                  ),
                                 ),
-                                IconButton(
-                                  onPressed: () {
-                                    final chatProv = Provider.of<ChatProvider>(
+                                const SizedBox(width: 8),
+                                Text(
+                                  message.status == 'running'
+                                      ? 'Automação iniciada'
+                                      : l10n.actionExecuted,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                    color: Theme.of(
                                       context,
-                                      listen: false,
-                                    );
-                                    chatProv.sendFeedback(message, false);
-                                  },
-                                  icon: Icon(
-                                    message.isLiked == false
-                                        ? Icons.thumb_down
-                                        : Icons.thumb_down_outlined,
-                                    size: 18,
+                                    ).colorScheme.primary,
                                   ),
-                                  color: message.isLiked == false
-                                      ? Theme.of(context).colorScheme.error
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                  tooltip: l10n.dislike,
                                 ),
                               ],
-                            ],
-                          ),
-                        ),
-                      // --- Feedback (mobile: only for final responses) ---
-                      if (!kIsWeb &&
-                          message.isFinalResponse &&
-                          message.canReceiveFeedback)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            children: [
-                              // --- Ações (web e mobile: sempre visíveis) ---
-                              Padding(
-                                padding: const EdgeInsets.only(left: 8, top: 8),
+                            ),
+                            const SizedBox(height: 12),
+                            // Tool Name
+                            if (message.actionDetails!['tool'] != null)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .surfaceContainerHighest
+                                      .withValues(alpha: 0.5),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
                                 child: Row(
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    _buildInlineActionButton(
-                                      icon: Icons.copy_all_outlined,
-                                      tooltip: l10n.copy,
-                                      onTap: () =>
-                                          _copyToClipboard(message.text),
+                                    Icon(
+                                      Icons.integration_instructions,
+                                      size: 14,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.7),
                                     ),
-                                    const SizedBox(width: 8),
-                                    _buildInlineActionButton(
-                                      icon: Icons.share_outlined,
-                                      tooltip: l10n.share,
-                                      onTap: () async {
-                                        await SharePlus.instance.share(
-                                          ShareParams(text: message.text),
-                                        );
-                                      },
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      message.actionDetails!['tool'],
+                                      style: GoogleFonts.inter(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurface,
+                                      ),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Spacer(),
+                            // Payload Visual Feedback (Slot Filling)
+                            if (message.actionDetails!['payload'] != null)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: _buildPayloadDetails(
+                                  message.actionDetails!['payload'],
+                                  context,
+                                ),
+                              ),
+                          ],
+                        ),
+                      )
+                    else if (message.actionTriggered &&
+                        (message.components == null ||
+                            message.components!.isEmpty))
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.bolt,
+                              size: 16,
+                              color: Colors.amber,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              message.status == 'running'
+                                  ? 'Automação iniciada'
+                                  : l10n.actionExecuted,
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                    // --- Inline Action Buttons (web) ---
+                    if (kIsWeb)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            _buildInlineActionButton(
+                              icon: Icons.copy_all_outlined,
+                              tooltip: l10n.copy,
+                              onTap: () => _copyToClipboard(message.text),
+                            ),
+                            const SizedBox(width: 8),
+                            _buildInlineActionButton(
+                              icon: Icons.share_outlined,
+                              tooltip: l10n.share,
+                              onTap: () async {
+                                await SharePlus.instance.share(
+                                  ShareParams(text: message.text),
+                                );
+                              },
+                            ),
+                            const Spacer(),
+                            if (message.isFinalResponse &&
+                                message.canReceiveFeedback) ...[
                               IconButton(
                                 onPressed: () {
                                   final chatProv = Provider.of<ChatProvider>(
@@ -2532,14 +2519,92 @@ class _ChatScreenState extends State<ChatScreen> {
                                 tooltip: l10n.dislike,
                               ),
                             ],
-                          ),
+                          ],
                         ),
-                    ],
-                  ),
+                      ),
+                    // --- Feedback (mobile: only for final responses) ---
+                    if (!kIsWeb &&
+                        message.isFinalResponse &&
+                        message.canReceiveFeedback)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          children: [
+                            // --- Ações (web e mobile: sempre visíveis) ---
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8, top: 8),
+                              child: Row(
+                                children: [
+                                  _buildInlineActionButton(
+                                    icon: Icons.copy_all_outlined,
+                                    tooltip: l10n.copy,
+                                    onTap: () => _copyToClipboard(message.text),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  _buildInlineActionButton(
+                                    icon: Icons.share_outlined,
+                                    tooltip: l10n.share,
+                                    onTap: () async {
+                                      await SharePlus.instance.share(
+                                        ShareParams(text: message.text),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              onPressed: () {
+                                final chatProv = Provider.of<ChatProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                chatProv.sendFeedback(message, true);
+                              },
+                              icon: Icon(
+                                message.isLiked == true
+                                    ? Icons.thumb_up
+                                    : Icons.thumb_up_outlined,
+                                size: 18,
+                              ),
+                              color: message.isLiked == true
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              tooltip: l10n.like,
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                final chatProv = Provider.of<ChatProvider>(
+                                  context,
+                                  listen: false,
+                                );
+                                chatProv.sendFeedback(message, false);
+                              },
+                              icon: Icon(
+                                message.isLiked == false
+                                    ? Icons.thumb_down
+                                    : Icons.thumb_down_outlined,
+                                size: 18,
+                              ),
+                              color: message.isLiked == false
+                                  ? Theme.of(context).colorScheme.error
+                                  : Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                              tooltip: l10n.dislike,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
       );
     }
   }
@@ -2550,21 +2615,20 @@ class _ChatScreenState extends State<ChatScreen> {
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.catasTokens;
     return Tooltip(
       message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
-        child: Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(6),
-            border: Border.all(
-              color: colorScheme.outline.withValues(alpha: 0.15),
-            ),
+      child: IconButton(
+        onPressed: onTap,
+        icon: Icon(icon, size: 17),
+        color: colorScheme.onSurfaceVariant,
+        style: IconButton.styleFrom(
+          minimumSize: const Size(44, 44),
+          backgroundColor: tokens.surfaceMuted,
+          side: BorderSide(color: tokens.borderSubtle),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.radiusSmall),
           ),
-          child: Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
         ),
       ),
     );
@@ -2578,6 +2642,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (payload.isEmpty) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
+    final tokens = context.catasTokens;
     final isComplete = !payload.values.any(
       (v) => v == null || v == "" || v == "null",
     );
@@ -2586,12 +2651,12 @@ class _ChatScreenState extends State<ChatScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(8),
+        color: tokens.surfaceRaised,
+        borderRadius: BorderRadius.circular(tokens.radiusSmall),
         border: Border.all(
           color: isComplete
-              ? Colors.green.withValues(alpha: 0.3)
-              : Colors.amber.withValues(alpha: 0.5),
+              ? tokens.success.withValues(alpha: 0.32)
+              : tokens.warning.withValues(alpha: 0.38),
         ),
       ),
       child: Column(
@@ -2602,7 +2667,7 @@ class _ChatScreenState extends State<ChatScreen> {
               Icon(
                 isComplete ? Icons.check_circle_outline : Icons.pending_actions,
                 size: 14,
-                color: isComplete ? Colors.green : Colors.amber.shade700,
+                color: isComplete ? tokens.success : tokens.warning,
               ),
               const SizedBox(width: 6),
               Text(
@@ -2610,7 +2675,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isComplete ? Colors.green : Colors.amber.shade700,
+                  color: isComplete ? tokens.success : tokens.warning,
                 ),
               ),
             ],
@@ -2633,8 +2698,8 @@ class _ChatScreenState extends State<ChatScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isMissing
-                          ? Colors.amber.withValues(alpha: 0.5)
-                          : Colors.green.withValues(alpha: 0.5),
+                          ? tokens.warning.withValues(alpha: 0.55)
+                          : tokens.success.withValues(alpha: 0.55),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -2660,7 +2725,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                   ? FontStyle.italic
                                   : FontStyle.normal,
                               color: isMissing
-                                  ? Colors.amber.shade700
+                                  ? tokens.warning
                                   : theme.colorScheme.onSurface,
                             ),
                           ),

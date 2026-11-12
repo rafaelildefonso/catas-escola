@@ -9,6 +9,7 @@ import 'package:skeletonizer/skeletonizer.dart';
 import 'package:catas/screens/integracoes/integration_details_screen.dart';
 import 'package:catas/components/upgrade_modal.dart';
 import 'package:catas/l10n/app_localizations.dart';
+import 'package:catas/components/catas_page.dart';
 
 enum IntegrationCategory {
   all('integrationsCategoryAll'),
@@ -190,101 +191,105 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
       });
     }
 
-    return SizedBox(
-      width: double.infinity,
+    return CatasPage(
+      title: 'Integrações',
+      description:
+          'Conecte as ferramentas que o CATAS pode usar para executar tarefas.',
       child: Column(
-          children: [
-            // Abas de categoria
-            Container(
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                border: Border(
-                  bottom: BorderSide(
-                    color: colorScheme.onSurface.withValues(alpha: 0.1),
-                    width: 1,
-                  ),
+        children: [
+          // Abas de categoria
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: colorScheme.onSurface.withValues(alpha: 0.1),
+                  width: 1,
                 ),
               ),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                labelColor: colorScheme.primary,
-                tabAlignment: TabAlignment.start,
-                unselectedLabelColor: colorScheme.onSurface.withValues(
-                  alpha: 0.5,
-                ),
-                indicatorColor: colorScheme.primary,
-                indicatorWeight: 2,
-                labelStyle: GoogleFonts.inter(
+            ),
+            child: TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              labelColor: colorScheme.primary,
+              tabAlignment: TabAlignment.start,
+              unselectedLabelColor: colorScheme.onSurface.withValues(
+                alpha: 0.5,
+              ),
+              indicatorColor: colorScheme.primary,
+              indicatorWeight: 2,
+              labelStyle: GoogleFonts.inter(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              tabs: IntegrationCategory.values
+                  .map((c) => Tab(text: c.getLabel(context)))
+                  .toList(),
+            ),
+          ),
+          // Caixa de pesquisa
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            child: TextField(
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+              style: GoogleFonts.inter(fontSize: 14),
+              decoration: InputDecoration(
+                hintText: l10n.integrationsSearchHint,
+                hintStyle: GoogleFonts.inter(
                   fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
-                tabs: IntegrationCategory.values
-                    .map((c) => Tab(text: c.getLabel(context)))
-                    .toList(),
-              ),
-            ),
-            // Caixa de pesquisa
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-              child: TextField(
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
-                style: GoogleFonts.inter(fontSize: 14),
-                decoration: InputDecoration(
-                  hintText: l10n.integrationsSearchHint,
-                  hintStyle: GoogleFonts.inter(
-                    fontSize: 13,
-                    color: colorScheme.onSurface.withValues(alpha: 0.6),
+                prefixIcon: Icon(
+                  Icons.search,
+                  size: 20,
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.4,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 0,
+                  vertical: 0,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    size: 20,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 0,
-                    vertical: 0,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: colorScheme.onSurface.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: colorScheme.onSurface.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: colorScheme.primary.withValues(alpha: 0.6),
-                      width: 1.4,
-                    ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary.withValues(alpha: 0.6),
+                    width: 1.4,
                   ),
                 ),
               ),
             ),
-            // Conteúdo das abas
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: IntegrationCategory.values.map((category) {
-                  final items = _filterByCategory(category);
-                  return _buildGrid(context, items, provider, tier);
-                }).toList(),
-              ),
+          ),
+          // Conteúdo das abas
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: IntegrationCategory.values.map((category) {
+                final items = _filterByCategory(category);
+                return _buildGrid(context, items, provider, tier);
+              }).toList(),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -314,7 +319,7 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
               padding: const EdgeInsets.all(16),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: crossAxisCount,
-                childAspectRatio: 0.72,
+                childAspectRatio: 0.9,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
               ),
@@ -450,7 +455,9 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
                   ? 'Chega em breve'
                   : connected
                   ? l10n.integrationsConnected
-                  : (isAllowed ? l10n.integrationsDisconnected : l10n.integrationsBlocked),
+                  : (isAllowed
+                        ? l10n.integrationsDisconnected
+                        : l10n.integrationsBlocked),
               style: GoogleFonts.inter(
                 fontSize: 11,
                 color: connected
@@ -467,10 +474,10 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
                     ? null
                     : (!isAllowed
                           ? () => UpgradeModal.show(
-                                context,
-                                "Integração $title",
-                                _getRequiredTier(providerName),
-                              )
+                              context,
+                              "Integração $title",
+                              _getRequiredTier(providerName),
+                            )
                           : () {
                               provider.toggleConnection(providerName);
                             }),
@@ -512,7 +519,11 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            isComingSoon ? 'Chega em breve' : (connected ? l10n.integrationsDisconnect : l10n.integrationsConnect),
+                            isComingSoon
+                                ? 'Chega em breve'
+                                : (connected
+                                      ? l10n.integrationsDisconnect
+                                      : l10n.integrationsConnect),
                             style: GoogleFonts.inter(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,

@@ -336,5 +336,20 @@
   "dashboardWeeklyDaySun": "Dom",
   "dashboardAutomationsExecuted": "Automações Executadas",
   "dashboardLast7Days": "Últimos 7 dias",
-  "dashboardTasks": "tarefas"
+  "dashboardTasks": "tarefas",
+  "dashboardExecutionsInPeriod": "Execuções no período",
+  "dashboardSuccessRate": "Taxa de sucesso",
+  "dashboardBasedOnExecutions": "com base nas execuções",
+  "dashboardNoExecutionsShort": "Ainda sem execuções",
+  "dashboardNoExecutions": "Nenhuma automação foi executada neste período. A primeira execução aparecerá aqui.",
+  "dashboardExecutionsSummary": "{count} automações foram executadas neste período.",
+  "@dashboardExecutionsSummary": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "dashboardConnectedIntegrations": "Integrações conectadas",
+  "dashboardConnectedIntegrationsSubtitle": "Ferramentas conectadas à sua conta",
+  "dashboardNoIntegrations": "Nenhuma integração está conectada. Conecte uma ferramenta para começar a automatizar.",
+  "dashboardNoActivity": "Ainda não há atividade de automação registrada nos últimos 7 dias."
 }

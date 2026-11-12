@@ -13,6 +13,7 @@ import '../../main.dart' show navigatorKey;
 import '../../providers/demo_automations_provider.dart';
 import '../../providers/demo_autoplay_controller.dart';
 import '../../providers/chat_provider.dart';
+import '../../core/design_tokens.dart';
 
 class AutomationDetailScreen extends StatefulWidget {
   final String runId;
@@ -188,7 +189,7 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
               title: "Início",
               subtitle: "Gatilho detectado",
               icon: Icons.play_arrow_rounded,
-              color: Colors.blue,
+              color: Theme.of(context).colorScheme.primary,
               isStart: true,
             ),
             for (int i = 0; i < steps.length; i++) ...[
@@ -201,7 +202,7 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
                 title: "Fim",
                 subtitle: "Automação finalizada",
                 icon: Icons.check_circle_rounded,
-                color: Colors.green,
+                color: context.catasTokens.success,
                 isEnd: true,
               ),
             ],
@@ -215,7 +216,7 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
     return Container(
       width: 2,
       height: 40,
-      color: Colors.grey.withValues(alpha: 0.3),
+      color: context.catasTokens.borderStrong,
     );
   }
 
@@ -231,8 +232,8 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
       width: 240,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(16),
+        color: context.catasTokens.surfaceRaised,
+        borderRadius: BorderRadius.circular(context.catasTokens.radiusMedium),
         border: Border.all(color: color.withValues(alpha: 0.5), width: 2),
       ),
       child: Row(
@@ -393,15 +394,16 @@ class _AutomationDetailScreenState extends State<AutomationDetailScreen> {
   }
 
   Color _getStepColor(String status) {
+    final tokens = context.catasTokens;
     switch (status) {
       case 'success':
-        return Colors.green;
+        return tokens.success;
       case 'error':
-        return Colors.red;
+        return tokens.danger;
       case 'running':
-        return Colors.blue;
+        return tokens.info;
       default:
-        return Colors.grey;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 

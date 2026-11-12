@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../data/suggested_prompts.dart';
 import '../components/brand_logo.dart';
+import '../core/design_tokens.dart';
 
 class SuggestedPromptsScreen extends StatefulWidget {
   const SuggestedPromptsScreen({super.key});
@@ -61,15 +62,20 @@ class _SuggestedPromptsScreenState extends State<SuggestedPromptsScreen> {
                       category,
                       style: GoogleFonts.inter(
                         fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                        color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: isSelected
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
                       ),
                     ),
                     selected: isSelected,
                     onSelected: (selected) {
                       setState(() => _selectedCategory = category);
                     },
-                    backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                    backgroundColor: colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.5),
                     selectedColor: colorScheme.primary,
                     checkmarkColor: colorScheme.onPrimary,
                     side: BorderSide.none,
@@ -81,18 +87,22 @@ class _SuggestedPromptsScreenState extends State<SuggestedPromptsScreen> {
               }).toList(),
             ),
           ),
-          
+
           const Divider(height: 1),
-          
+
           // Grid
           Expanded(
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final width = constraints.maxWidth;
                 int crossAxisCount = 1;
-                if (width > 1200) crossAxisCount = 4;
-                else if (width > 800) crossAxisCount = 3;
-                else if (width > 600) crossAxisCount = 2;
+                if (width > 1200) {
+                  crossAxisCount = 4;
+                } else if (width > 800) {
+                  crossAxisCount = 3;
+                } else if (width > 600) {
+                  crossAxisCount = 2;
+                }
 
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
@@ -118,6 +128,7 @@ class _SuggestedPromptsScreenState extends State<SuggestedPromptsScreen> {
 
   Widget _buildPromptCard(BuildContext context, SuggestedPrompt prompt) {
     final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.catasTokens;
 
     return InkWell(
       onTap: () {
@@ -128,11 +139,9 @@ class _SuggestedPromptsScreenState extends State<SuggestedPromptsScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: colorScheme.outline.withValues(alpha: 0.1),
-          ),
+          color: tokens.surfaceRaised,
+          borderRadius: BorderRadius.circular(tokens.radiusMedium),
+          border: Border.all(color: tokens.borderSubtle),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,14 +177,18 @@ class _SuggestedPromptsScreenState extends State<SuggestedPromptsScreen> {
             ),
             const SizedBox(height: 12),
             Row(
-              children: prompt.logos.map((logoId) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Logo(
-                  logoId: logoId,
-                  size: 20,
-                  onErrorIcon: const Icon(Icons.auto_awesome, size: 16),
-                ),
-              )).toList(),
+              children: prompt.logos
+                  .map(
+                    (logoId) => Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Logo(
+                        logoId: logoId,
+                        size: 20,
+                        onErrorIcon: const Icon(Icons.auto_awesome, size: 16),
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),

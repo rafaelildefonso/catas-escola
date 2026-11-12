@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../core/design_tokens.dart';
+
 class CatasDialog extends StatelessWidget {
   final String title;
   final String? message;
@@ -21,28 +23,24 @@ class CatasDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final tokens = context.catasTokens;
 
     return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+      filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
       child: Dialog(
         backgroundColor: Colors.transparent,
         elevation: 0,
         child: Container(
-          constraints: const BoxConstraints(maxWidth: 320),
+          constraints: const BoxConstraints(maxWidth: 440),
           decoration: BoxDecoration(
-            color: isDark 
-                ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.9)
-                : theme.colorScheme.surface.withValues(alpha: 0.95),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: theme.colorScheme.outline.withValues(alpha: isDark ? 0.2 : 0.1),
-            ),
+            color: tokens.surfaceRaised.withValues(alpha: 0.97),
+            borderRadius: BorderRadius.circular(tokens.radiusLarge),
+            border: Border.all(color: tokens.borderSubtle),
             boxShadow: [
               BoxShadow(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Colors.black.withValues(alpha: 0.18),
+                blurRadius: 32,
+                offset: const Offset(0, 16),
               ),
             ],
           ),
@@ -50,10 +48,7 @@ class CatasDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (icon != null) ...[
-                icon!,
-                const SizedBox(height: 16),
-              ],
+              if (icon != null) ...[icon!, const SizedBox(height: 16)],
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -116,8 +111,11 @@ class CatasDialogAction extends StatelessWidget {
         onPressed: onPressed,
         style: TextButton.styleFrom(
           foregroundColor: theme.colorScheme.onSurfaceVariant,
+          minimumSize: const Size(48, 44),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
         child: Text(
           label,
@@ -129,8 +127,11 @@ class CatasDialogAction extends StatelessWidget {
     return FilledButton(
       onPressed: onPressed,
       style: FilledButton.styleFrom(
-        backgroundColor: isDestructive ? theme.colorScheme.error.withValues(alpha: 0.2) : theme.colorScheme.primary,
-        foregroundColor: isDestructive ? theme.colorScheme.error : theme.colorScheme.onPrimary,
+        backgroundColor: isDestructive
+            ? context.catasTokens.danger
+            : theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
+        minimumSize: const Size(48, 44),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 0,
@@ -149,7 +150,8 @@ Future<T?> showCatasDialog<T>({
   String? message,
   Widget? content,
   Widget? icon,
-  required List<CatasDialogAction> Function(BuildContext context) actionsBuilder,
+  required List<CatasDialogAction> Function(BuildContext context)
+  actionsBuilder,
 }) {
   return showDialog<T>(
     context: context,

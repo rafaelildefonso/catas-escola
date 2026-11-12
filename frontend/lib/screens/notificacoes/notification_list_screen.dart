@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/automation_labels.dart';
 import '../../core/router.dart';
 import '../../data/notifications_repository.dart';
+import '../../components/catas_page.dart';
 
 class NotificationListScreen extends StatefulWidget {
   const NotificationListScreen({super.key, this.returnLocation});
@@ -99,15 +100,35 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
             : RefreshIndicator(
                 onRefresh: _reload,
                 child: _error != null
-                    ? ListView(children: [ListTile(title: Text(_error!))])
+                    ? ListView(
+                        padding: const EdgeInsets.all(24),
+                        children: [
+                          CatasEmptyState(
+                            icon: Icons.error_outline_rounded,
+                            title: 'Não foi possível carregar',
+                            message: _error!,
+                            action: FilledButton.icon(
+                              onPressed: _reload,
+                              icon: const Icon(Icons.refresh_rounded),
+                              label: const Text('Tentar novamente'),
+                            ),
+                          ),
+                        ],
+                      )
                     : _items.isEmpty
                     ? ListView(
                         children: const [
-                          SizedBox(height: 120),
-                          Center(child: Text('Nenhuma notificação')),
+                          SizedBox(height: 96),
+                          CatasEmptyState(
+                            icon: Icons.notifications_none_rounded,
+                            title: 'Tudo em dia',
+                            message:
+                                'Novidades sobre suas automações vão aparecer aqui.',
+                          ),
                         ],
                       )
                     : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
                         itemCount: _items.length,
                         itemBuilder: (context, index) {
                           final item = _items[index];
@@ -124,17 +145,71 @@ class _NotificationListScreenState extends State<NotificationListScreen> {
                             label: isRead
                                 ? 'Notificação lida'
                                 : 'Notificação não lida',
-                            child: ListTile(
-                              minVerticalPadding: 12,
-                              leading: Icon(
-                                isRead
-                                    ? Icons.notifications_none
-                                    : Icons.notifications_active,
-                              ),
-                              title: Text(item['title']?.toString() ?? ''),
-                              subtitle: Text(item['body']?.toString() ?? ''),
-                              trailing: Text(dateLabel),
+                            child: CatasSurface(
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.all(14),
                               onTap: () => _open(item),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          (isRead
+                                                  ? Theme.of(context)
+                                                        .colorScheme
+                                                        .surfaceContainerHighest
+                                                  : Theme.of(
+                                                      context,
+                                                    ).colorScheme.primary)
+                                              .withValues(
+                                                alpha: isRead ? 0.65 : 0.1,
+                                              ),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      isRead
+                                          ? Icons.notifications_none_rounded
+                                          : Icons.notifications_active_rounded,
+                                      color: isRead
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item['title']?.toString() ?? '',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.titleSmall,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(item['body']?.toString() ?? ''),
+                                      ],
+                                    ),
+                                  ),
+                                  if (dateLabel.isNotEmpty) ...[
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      dateLabel,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.labelSmall,
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
                           );
                         },

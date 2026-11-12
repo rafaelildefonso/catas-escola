@@ -10,6 +10,7 @@ import '../../components/chat/options_button.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/automations_provider.dart';
 import '../../l10n/app_localizations.dart';
+import '../../components/catas_page.dart';
 
 class AutomationsScreen extends StatefulWidget {
   const AutomationsScreen({super.key});
@@ -32,7 +33,10 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
     final auth = context.read<AuthProvider>();
     if (!mounted) return;
     if (auth.userId != null) {
-      await context.read<AutomationsProvider>().fetchRuns(auth.userId!, refresh: true);
+      await context.read<AutomationsProvider>().fetchRuns(
+        auth.userId!,
+        refresh: true,
+      );
     }
   }
 
@@ -41,18 +45,23 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
       UpgradeModal.show(context, "Ativar Automações", "Basic");
       return;
     }
-    
+
     if (run.automationId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Esta execução não está vinculada a uma automação salva e não pode ser pausada."),
+          content: Text(
+            "Esta execução não está vinculada a uma automação salva e não pode ser pausada.",
+          ),
           duration: Duration(seconds: 3),
         ),
       );
       return;
     }
 
-    context.read<AutomationsProvider>().toggleAutomationStatus(run.automationId!, value);
+    context.read<AutomationsProvider>().toggleAutomationStatus(
+      run.automationId!,
+      value,
+    );
 
     final l10n = AppLocalizations.of(context)!;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -91,18 +100,14 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
         final l10n = AppLocalizations.of(dialogCtx)!;
         return AlertDialog(
           title: Text(l10n.deleteAutomationTitle),
-          content: Text(
-            '${l10n.deleteChatContent} "${run.inputSummary}"?',
-          ),
+          content: Text('${l10n.deleteChatContent} "${run.inputSummary}"?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogCtx, false),
               child: Text(l10n.actionCancel),
             ),
             FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.redAccent,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
               onPressed: () => Navigator.pop(dialogCtx, true),
               child: Text(l10n.actionDelete),
             ),
@@ -122,26 +127,40 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
     final provider = context.watch<AutomationsProvider>();
     final userTier = auth.subscriptionTier ?? 'free';
 
-    return SizedBox(
-      width: double.infinity,
+    return CatasPage(
+      title: 'Automações',
+      description:
+          'Acompanhe execuções, revise resultados e gerencie seus fluxos.',
+      actions: [
+        OutlinedButton.icon(
+          onPressed: () => context.push(AppRoutes.suggestedPrompts),
+          icon: const Icon(Icons.auto_awesome_outlined, size: 18),
+          label: const Text('Ver ideias'),
+        ),
+        FilledButton.icon(
+          onPressed: () => context.go(AppRoutes.chat),
+          icon: const Icon(Icons.add_rounded, size: 18),
+          label: const Text('Nova automação'),
+        ),
+      ],
       child: Column(
-          children: [
-            _buildPromptsCtaBanner(),
-            Expanded(
-              child: Skeletonizer(
-                enabled: provider.isLoading,
-                child: RefreshIndicator(
-                  onRefresh: () => _loadInitialData(),
-                  child: provider.isLoading
-                      ? _buildSkeletonList()
-                      : (provider.runs.isEmpty
+        children: [
+          _buildPromptsCtaBanner(),
+          Expanded(
+            child: Skeletonizer(
+              enabled: provider.isLoading,
+              child: RefreshIndicator(
+                onRefresh: () => _loadInitialData(),
+                child: provider.isLoading
+                    ? _buildSkeletonList()
+                    : (provider.runs.isEmpty
                           ? _buildEmptyState()
                           : _buildContent(provider, auth, userTier)),
-                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -151,18 +170,9 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            colorScheme.primaryContainer.withValues(alpha: 0.8),
-            colorScheme.tertiaryContainer.withValues(alpha: 0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
+        color: colorScheme.primary.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.16)),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -176,7 +186,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: colorScheme.surface.withValues(alpha: 0.5),
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.auto_awesome,
@@ -218,14 +228,14 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
               ],
             );
           }
-          
+
           return Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: colorScheme.surface.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   Icons.auto_awesome,
@@ -315,12 +325,18 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
       automationName: 'Carregando nome da automação...',
       runType: 'temporal',
       inputSummary: 'Carregando detalhes da automação salva no sistema...',
-      inputPayload: {'modules': ['google', 'whatsapp', 'slack']},
+      inputPayload: {
+        'modules': ['google', 'whatsapp', 'slack'],
+      },
       createdAt: DateTime.now(),
     );
   }
 
-  Widget _buildContent(AutomationsProvider provider, AuthProvider auth, String userTier) {
+  Widget _buildContent(
+    AutomationsProvider provider,
+    AuthProvider auth,
+    String userTier,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         bool isDesktop = constraints.maxWidth > 800;
@@ -371,12 +387,16 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
 
   Widget _buildEmptyState() {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.auto_awesome, size: 64, color: colorScheme.onSurface.withValues(alpha: 0.1)),
+          Icon(
+            Icons.auto_awesome,
+            size: 64,
+            color: colorScheme.onSurface.withValues(alpha: 0.1),
+          ),
           const SizedBox(height: 16),
           Text(
             "Nenhuma automação encontrada",
@@ -385,7 +405,9 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
           const SizedBox(height: 8),
           Text(
             "Crie uma nova automação via chat para começar.",
-            style: GoogleFonts.inter(color: colorScheme.onSurface.withValues(alpha: 0.5)),
+            style: GoogleFonts.inter(
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
           ),
         ],
       ),
@@ -394,7 +416,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
 
   Widget _buildLoadMoreButton(AutomationsProvider provider, String userId) {
     if (!provider.hasMore) return const SizedBox.shrink();
-    
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
@@ -413,7 +435,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
     AutomationRun run,
   ) {
     final l10n = AppLocalizations.of(context)!;
-    
+
     // Se a automação estiver pausada, mostramos pausado independente do status da RUN
     if (run.automationStatus == 'paused') {
       return (
@@ -454,7 +476,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
   List<LogoId> _extractLogos(AutomationRun run) {
     final List<LogoId> logos = [];
     final payload = run.inputPayload;
-    
+
     final modules = payload['modules'];
     if (modules is List) {
       for (var m in modules) {
@@ -467,7 +489,7 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
         if (mod.contains('notion')) logos.add(LogoId.notion);
       }
     }
-    
+
     if (logos.isEmpty) {
       final type = payload['action_type']?.toString().toLowerCase() ?? '';
       if (type.contains('gmail')) logos.add(LogoId.googleGmail);
@@ -490,18 +512,20 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
     final statusInfo = _getStatusInfo(context, run);
     final logos = _extractLogos(run);
 
-    final dateStr = "${run.createdAt.day.toString().padLeft(2, '0')}/${run.createdAt.month.toString().padLeft(2, '0')}/${run.createdAt.year}";
-    final timeStr = "${run.createdAt.hour.toString().padLeft(2, '0')}:${run.createdAt.minute.toString().padLeft(2, '0')}";
+    final dateStr =
+        "${run.createdAt.day.toString().padLeft(2, '0')}/${run.createdAt.month.toString().padLeft(2, '0')}/${run.createdAt.year}";
+    final timeStr =
+        "${run.createdAt.hour.toString().padLeft(2, '0')}:${run.createdAt.minute.toString().padLeft(2, '0')}";
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.secondaryContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: colorScheme.onSurface.withValues(alpha: 0.05),
-        ),
+        color: theme.brightness == Brightness.dark
+            ? const Color(0xFF111113)
+            : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.16)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -510,7 +534,9 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
             children: [
               Expanded(
                 child: Text(
-                  run.inputSummary.isEmpty ? "Automação sem título" : run.inputSummary,
+                  run.inputSummary.isEmpty
+                      ? "Automação sem título"
+                      : run.inputSummary,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
@@ -526,7 +552,9 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                 padding: const EdgeInsets.all(4),
                 items: [
                   OptionsMenuItem(
-                    value: run.automationStatus != 'paused' ? 'pause' : 'activate',
+                    value: run.automationStatus != 'paused'
+                        ? 'pause'
+                        : 'activate',
                     icon: run.automationStatus != 'paused'
                         ? Icons.pause_circle_outline
                         : Icons.play_circle_fill_outlined,
@@ -574,36 +602,75 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                             l10n.automationIntegrations,
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: colorScheme.onSurface.withValues(alpha: 0.5),
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.5,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 6),
                           Row(
                             children: logos.isEmpty
-                                ? [Icon(Icons.hub_outlined, size: 20, color: colorScheme.onSurface.withValues(alpha: 0.2))]
-                                : logos.map((logo) => Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: Logo(
-                                        logoId: logo,
-                                        size: 20,
-                                        onErrorIcon: const Icon(Icons.auto_awesome, size: 20),
+                                ? [
+                                    Icon(
+                                      Icons.hub_outlined,
+                                      size: 20,
+                                      color: colorScheme.onSurface.withValues(
+                                        alpha: 0.2,
                                       ),
-                                    )).toList(),
+                                    ),
+                                  ]
+                                : logos
+                                      .map(
+                                        (logo) => Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: Logo(
+                                            logoId: logo,
+                                            size: 20,
+                                            onErrorIcon: const Icon(
+                                              Icons.auto_awesome,
+                                              size: 20,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                           ),
                         ],
                       ),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       height: 32,
-                      decoration: BoxDecoration(color: statusInfo.color, borderRadius: BorderRadius.circular(20)),
+                      decoration: BoxDecoration(
+                        color: statusInfo.color,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Container(width: 6, height: 6, decoration: BoxDecoration(color: statusInfo.textColor, shape: BoxShape.circle)),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: statusInfo.textColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
                           const SizedBox(width: 6),
-                          Text(statusInfo.label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: statusInfo.textColor)),
+                          Text(
+                            statusInfo.label,
+                            style: GoogleFonts.inter(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: statusInfo.textColor,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -611,16 +678,25 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                     SizedBox(
                       height: 32,
                       child: FilledButton(
-                        onPressed: () => context.push(AppRoutes.automationDetailPath(run.id)),
+                        onPressed: () => context.push(
+                          AppRoutes.automationDetailPath(run.id),
+                        ),
                         style: FilledButton.styleFrom(
-                          backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
+                          backgroundColor: colorScheme.onSurface.withValues(
+                            alpha: 0.1,
+                          ),
                           foregroundColor: colorScheme.onSurface,
                           padding: const EdgeInsets.symmetric(horizontal: 16),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
                         child: Text(
                           l10n.automationViewDetails,
-                          style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                          style: GoogleFonts.inter(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ),
@@ -642,15 +718,35 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         height: 32,
-                        decoration: BoxDecoration(color: statusInfo.color, borderRadius: BorderRadius.circular(20)),
+                        decoration: BoxDecoration(
+                          color: statusInfo.color,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Container(width: 6, height: 6, decoration: BoxDecoration(color: statusInfo.textColor, shape: BoxShape.circle)),
+                            Container(
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                color: statusInfo.textColor,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
                             const SizedBox(width: 6),
-                            Text(statusInfo.label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: statusInfo.textColor)),
+                            Text(
+                              statusInfo.label,
+                              style: GoogleFonts.inter(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: statusInfo.textColor,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -659,30 +755,53 @@ class _AutomationsScreenState extends State<AutomationsScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: logos.isEmpty
-                        ? [Icon(Icons.hub_outlined, size: 20, color: colorScheme.onSurface.withValues(alpha: 0.2))]
-                        : logos.map((logo) => Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Logo(
-                                logoId: logo,
-                                size: 20,
-                                onErrorIcon: const Icon(Icons.auto_awesome, size: 20),
+                        ? [
+                            Icon(
+                              Icons.hub_outlined,
+                              size: 20,
+                              color: colorScheme.onSurface.withValues(
+                                alpha: 0.2,
                               ),
-                            )).toList(),
+                            ),
+                          ]
+                        : logos
+                              .map(
+                                (logo) => Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: Logo(
+                                    logoId: logo,
+                                    size: 20,
+                                    onErrorIcon: const Icon(
+                                      Icons.auto_awesome,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton(
-                      onPressed: () => context.push(AppRoutes.automationDetailPath(run.id)),
+                      onPressed: () =>
+                          context.push(AppRoutes.automationDetailPath(run.id)),
                       style: FilledButton.styleFrom(
-                        backgroundColor: colorScheme.onSurface.withValues(alpha: 0.1),
+                        backgroundColor: colorScheme.onSurface.withValues(
+                          alpha: 0.1,
+                        ),
                         foregroundColor: colorScheme.onSurface,
                         padding: const EdgeInsets.symmetric(vertical: 10),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
                       child: Text(
                         l10n.automationViewDetails,
-                        style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),

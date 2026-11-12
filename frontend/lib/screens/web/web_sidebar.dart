@@ -9,6 +9,7 @@ import '../../core/router.dart';
 import '../../components/chat/options_button.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import '../../l10n/app_localizations.dart';
+import '../../core/design_tokens.dart';
 
 class WebSidebar extends StatefulWidget {
   final Function(AppPage) onNavigate;
@@ -54,6 +55,7 @@ class _WebSidebarState extends State<WebSidebar> {
     final nav = context.watch<NavigationProvider>();
     final chat = context.watch<ChatProvider>();
     final auth = context.watch<AuthProvider>();
+    final tokens = context.catasTokens;
 
     if (chat.sessions.isEmpty &&
         !chat.isLoadingSessions &&
@@ -66,15 +68,18 @@ class _WebSidebarState extends State<WebSidebar> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
-      width: _isCollapsed ? 70 : 280,
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.1),
+      width: _isCollapsed ? 72 : 264,
+      decoration: BoxDecoration(
+        color: tokens.surfaceRaised,
+        border: Border(right: BorderSide(color: tokens.borderSubtle)),
+      ),
       child: Column(
         children: [
           // Header
           Container(
             padding: EdgeInsets.fromLTRB(
               _isCollapsed ? 0 : 16,
-              20,
+              18,
               _isCollapsed ? 0 : 16,
               16,
             ),
@@ -93,21 +98,23 @@ class _WebSidebarState extends State<WebSidebar> {
                             theme.brightness == Brightness.dark
                                 ? 'assets/icons/app_icon_transparent_white.png'
                                 : 'assets/icons/app_icon_transparent.png',
-                            width: 40,
-                            height: 40,
+                            width: 34,
+                            height: 34,
                           ),
                           const SizedBox(width: 8),
                           Text(
                             "CATAS",
                             style: GoogleFonts.inter(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
                               color: theme.colorScheme.onSurface,
                             ),
                           ),
                         ],
                       ),
-                    Flexible(
+                    SizedBox(
+                      width: 44,
+                      height: 44,
                       child: Tooltip(
                         message: _isCollapsed
                             ? 'Expandir menu'
@@ -117,27 +124,12 @@ class _WebSidebarState extends State<WebSidebar> {
                           label: _isCollapsed
                               ? 'Expandir menu lateral'
                               : 'Recolher menu lateral',
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: FilledButton(
-                              onPressed: () =>
-                                  setState(() => _isCollapsed = !_isCollapsed),
-                              style: FilledButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                alignment: Alignment.center,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                backgroundColor: theme.colorScheme.surface,
-                                foregroundColor: theme.colorScheme.onSurface,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Icon(
-                                _isCollapsed ? Icons.menu : Icons.menu_open,
-                                size: 18,
-                              ),
+                          child: IconButton(
+                            onPressed: () =>
+                                setState(() => _isCollapsed = !_isCollapsed),
+                            icon: Icon(
+                              _isCollapsed ? Icons.menu : Icons.menu_open,
+                              size: 18,
                             ),
                           ),
                         ),
@@ -145,7 +137,7 @@ class _WebSidebarState extends State<WebSidebar> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
                 Tooltip(
                   message: 'Novo chat',
                   child: Semantics(
@@ -180,7 +172,7 @@ class _WebSidebarState extends State<WebSidebar> {
                               if (!_isCollapsed) ...[
                                 const SizedBox(width: 8),
                                 const Text(
-                                  "Novo Chat",
+                                  "Nova conversa",
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -196,6 +188,13 @@ class _WebSidebarState extends State<WebSidebar> {
                 ),
               ],
             ),
+          ),
+          _buildNavItem(
+            context,
+            icon: Icons.chat_bubble_outline_rounded,
+            label: "Chat",
+            page: AppPage.chat,
+            isSelected: nav.currentPage == AppPage.chat,
           ),
           _buildNavItem(
             context,
@@ -241,7 +240,13 @@ class _WebSidebarState extends State<WebSidebar> {
           ),
 
           // Divider only when expanded
-          if (!_isCollapsed) const Divider(height: 24),
+          if (!_isCollapsed)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Divider(
+                color: theme.colorScheme.outline.withValues(alpha: 0.14),
+              ),
+            ),
 
           // Recent chats - only show when expanded
           if (!_isCollapsed) ...[
@@ -251,11 +256,12 @@ class _WebSidebarState extends State<WebSidebar> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Chats Recentes",
+                    "RECENTES",
                     style: GoogleFonts.inter(
                       color: theme.colorScheme.onSurfaceVariant,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                      letterSpacing: 0.7,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                 ],
@@ -448,14 +454,19 @@ class _WebSidebarState extends State<WebSidebar> {
           },
           child: Container(
             constraints: const BoxConstraints(minHeight: 48),
+            margin: EdgeInsets.symmetric(
+              horizontal: _isCollapsed ? 10 : 12,
+              vertical: 2,
+            ),
             padding: EdgeInsets.symmetric(
-              horizontal: _isCollapsed ? 0 : 20,
-              vertical: 12,
+              horizontal: _isCollapsed ? 0 : 12,
+              vertical: 11,
             ),
             decoration: BoxDecoration(
               color: isSelected
-                  ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                  ? theme.colorScheme.primary.withValues(alpha: 0.12)
                   : null,
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               mainAxisAlignment: _isCollapsed

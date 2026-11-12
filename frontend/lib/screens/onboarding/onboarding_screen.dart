@@ -37,7 +37,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       pains: [
         'Leads do Zap/VivaReal se perdem',
         'Esqueço de dar follow-up',
-        'Muitos leads, pouco tempo'
+        'Muitos leads, pouco tempo',
       ],
     ),
     _IndustryData(
@@ -47,7 +47,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       pains: [
         'Relatórios manuais toda semana',
         'Dados espalhados in planilhas',
-        'Esqueço de enviar report ao cliente'
+        'Esqueço de enviar report ao cliente',
       ],
     ),
     _IndustryData(
@@ -57,7 +57,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       pains: [
         'Resumo de processos demora horas',
         'Prazos processuais passam batendo',
-        'Muitos PDFs para organizar'
+        'Muitos PDFs para organizar',
       ],
     ),
     _IndustryData(
@@ -67,7 +67,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       pains: [
         'Processos manuais repetitivos',
         'Falta de integração entre ferramentas',
-        'Dificuldade em organizar dados'
+        'Dificuldade em organizar dados',
       ],
     ),
   ];
@@ -126,7 +126,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_isFinishing) return;
 
     final industry = _selectedIndustry ?? 'other';
-    final role = _selectedPains.isNotEmpty ? _selectedPains.join(', ') : 'Usuário';
+    final role = _selectedPains.isNotEmpty
+        ? _selectedPains.join(', ')
+        : 'Usuário';
 
     debugPrint('🏁 [_finish] Iniciando finalização do onboarding...');
     setState(() => _isFinishing = true);
@@ -152,10 +154,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       return;
     }
 
-    debugPrint('🏁 [_finish] completeOnboarding finalizado. Verificando estado...');
-    debugPrint('🏁 [_finish] onboardingCompleted=${authProvider.onboardingCompleted}');
-    debugPrint('🏁 [_finish] profile.industry=${authProvider.profile?.industry}');
-    
+    debugPrint(
+      '🏁 [_finish] completeOnboarding finalizado. Verificando estado...',
+    );
+    debugPrint(
+      '🏁 [_finish] onboardingCompleted=${authProvider.onboardingCompleted}',
+    );
+    debugPrint(
+      '🏁 [_finish] profile.industry=${authProvider.profile?.industry}',
+    );
+
     // Aguarda um frame para garantir que o GoRouter processou a notificação
     await Future.delayed(const Duration(milliseconds: 100));
 
@@ -245,7 +253,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             LinearProgressIndicator(
               value: (_page + 1) / 4,
-              backgroundColor: colorScheme.surfaceVariant,
+              backgroundColor: colorScheme.surfaceContainerHighest,
               minHeight: 4,
             ),
             Expanded(
@@ -261,25 +269,25 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ],
               ),
             ),
-                  Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: FilledButton(
-                        onPressed: _canGoNext() ? _nextPage : null,
-                        child: Text(
-                          _page < 3
-                              ? 'Continuar'
-                              : (_setupStep < 3 ? 'Processando...' : 'Começar Agora'),
-                          style: GoogleFonts.inter(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton(
+                  onPressed: _canGoNext() ? _nextPage : null,
+                  child: Text(
+                    _page < 3
+                        ? 'Continuar'
+                        : (_setupStep < 3 ? 'Processando...' : 'Começar Agora'),
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -347,16 +355,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
-                      color: isSelected ? colorScheme.primaryContainer : colorScheme.surface,
+                      color: isSelected
+                          ? colorScheme.primaryContainer
+                          : colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.outlineVariant,
                         width: isSelected ? 2 : 1,
                       ),
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: colorScheme.primary.withOpacity(0.15),
+                            color: colorScheme.primary.withValues(alpha: 0.15),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -368,7 +380,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         Icon(
                           industry.icon,
                           size: isWeb ? 36 : 32,
-                          color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                          color: isSelected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurface,
                         ),
                         const SizedBox(height: 12),
                         Text(
@@ -376,8 +390,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           textAlign: TextAlign.center,
                           style: GoogleFonts.inter(
                             fontSize: isWeb ? 15 : 14,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                            color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                            color: isSelected
+                                ? colorScheme.onPrimaryContainer
+                                : colorScheme.onSurface,
                           ),
                         ),
                       ],
@@ -396,7 +414,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
     final isWeb = kIsWeb || size.width > 900;
-    final currentIndustry = _industries.firstWhere((i) => i.key == _selectedIndustry, orElse: () => _industries.last);
+    final currentIndustry = _industries.firstWhere(
+      (i) => i.key == _selectedIndustry,
+      orElse: () => _industries.last,
+    );
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -426,7 +447,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           Expanded(
             child: Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: isWeb ? 600 : double.infinity),
+                constraints: BoxConstraints(
+                  maxWidth: isWeb ? 600 : double.infinity,
+                ),
                 child: ListView(
                   children: [
                     Wrap(
@@ -448,8 +471,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           },
                           labelStyle: GoogleFonts.inter(
                             fontSize: isWeb ? 14 : 13,
-                            color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
-                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected
+                                ? colorScheme.onPrimaryContainer
+                                : colorScheme.onSurface,
+                            fontWeight: isSelected
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                           backgroundColor: colorScheme.surface,
                           selectedColor: colorScheme.primaryContainer,
@@ -457,7 +484,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                             side: BorderSide(
-                              color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
+                              color: isSelected
+                                  ? colorScheme.primary
+                                  : colorScheme.outlineVariant,
                               width: isSelected ? 2 : 1,
                             ),
                           ),
@@ -558,16 +587,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     decoration: BoxDecoration(
-                      color: isSelected ? colorScheme.primaryContainer.withOpacity(0.4) : colorScheme.surface,
+                      color: isSelected
+                          ? colorScheme.primaryContainer.withValues(alpha: 0.4)
+                          : colorScheme.surface,
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? colorScheme.primary : colorScheme.outlineVariant,
+                        color: isSelected
+                            ? colorScheme.primary
+                            : colorScheme.outlineVariant,
                         width: isSelected ? 2 : 1,
                       ),
                       boxShadow: [
                         if (isSelected)
                           BoxShadow(
-                            color: colorScheme.primary.withOpacity(0.15),
+                            color: colorScheme.primary.withValues(alpha: 0.15),
                             blurRadius: 8,
                             offset: const Offset(0, 3),
                           ),
@@ -583,13 +616,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 Logo(
                                   logoId: tool.logoId!,
                                   size: isWeb ? 36 : 32,
-                                  onErrorIcon: Icon(tool.icon, size: isWeb ? 36 : 32, color: isSelected ? colorScheme.primary : tool.color),
+                                  onErrorIcon: Icon(
+                                    tool.icon,
+                                    size: isWeb ? 36 : 32,
+                                    color: isSelected
+                                        ? colorScheme.primary
+                                        : tool.color,
+                                  ),
                                 )
                               else
                                 Icon(
                                   tool.icon,
                                   size: isWeb ? 36 : 32,
-                                  color: isSelected ? colorScheme.primary : tool.color,
+                                  color: isSelected
+                                      ? colorScheme.primary
+                                      : tool.color,
                                 ),
                               const SizedBox(height: 12),
                               Text(
@@ -597,8 +638,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 textAlign: TextAlign.center,
                                 style: GoogleFonts.inter(
                                   fontSize: isWeb ? 15 : 14,
-                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                  color: isSelected ? colorScheme.onPrimaryContainer : colorScheme.onSurface,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: isSelected
+                                      ? colorScheme.onPrimaryContainer
+                                      : colorScheme.onSurface,
                                 ),
                               ),
                             ],
@@ -630,7 +675,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final size = MediaQuery.of(context).size;
     final isWeb = kIsWeb || size.width > 900;
-    final industryLabel = _industries.firstWhere((i) => i.key == _selectedIndustry, orElse: () => _industries.last).label;
+    final industryLabel = _industries
+        .firstWhere(
+          (i) => i.key == _selectedIndustry,
+          orElse: () => _industries.last,
+        )
+        .label;
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -666,10 +716,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
           const SizedBox(height: 32),
           ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: isWeb ? 400 : double.infinity),
+            constraints: BoxConstraints(
+              maxWidth: isWeb ? 400 : double.infinity,
+            ),
             child: Column(
               children: [
-                _buildLoadingStep('Aprendendo sobre sua rotina...', _setupStep >= 1),
+                _buildLoadingStep(
+                  'Aprendendo sobre sua rotina...',
+                  _setupStep >= 1,
+                ),
                 _buildLoadingStep('Conectando módulos...', _setupStep >= 2),
                 _buildLoadingStep('Preparando o chat...', _setupStep >= 3),
               ],
@@ -695,7 +750,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             label,
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: completed ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
+              color: completed
+                  ? colorScheme.onSurface
+                  : colorScheme.onSurfaceVariant,
               fontWeight: completed ? FontWeight.bold : FontWeight.normal,
             ),
           ),
@@ -734,4 +791,3 @@ class _ToolData {
     this.logoId,
   });
 }
-

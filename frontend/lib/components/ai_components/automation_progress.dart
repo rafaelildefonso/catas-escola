@@ -43,22 +43,24 @@ class AutomationProgressComponent extends StatelessWidget {
 
         return Container(
           width: double.infinity,
-          margin: const EdgeInsets.symmetric(vertical: 8),
+          margin: const EdgeInsets.only(top: 16, bottom: 8),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(16),
+            color: Theme.of(context).brightness == Brightness.dark
+                ? const Color(0xFF151518)
+                : const Color(0xFFFAFAFB),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isCompleted
-                  ? Colors.green.withValues(alpha: 0.3)
+                  ? const Color(0xFF22C55E).withValues(alpha: 0.28)
                   : Theme.of(
                       context,
-                    ).colorScheme.outline.withValues(alpha: 0.1),
+                    ).colorScheme.outline.withValues(alpha: 0.18),
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
               ),
             ],
           ),
@@ -77,7 +79,7 @@ class AutomationProgressComponent extends StatelessWidget {
                 _buildLoading(context)
               else
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   child: Column(
                     children: steps
                         .map((step) => _buildStepItem(context, step, phase))
@@ -232,7 +234,7 @@ class AutomationProgressComponent extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
       child: Row(
         children: [
           icon,
@@ -244,8 +246,8 @@ class AutomationProgressComponent extends StatelessWidget {
                 Text(
                   title,
                   style: GoogleFonts.inter(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
                     color: cs.onSurface,
                   ),
                 ),
@@ -254,12 +256,12 @@ class AutomationProgressComponent extends StatelessWidget {
                   subtitle,
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w400,
                     color: isCompleted
                         ? Colors.green
                         : isFailed
                         ? cs.error
-                        : cs.primary,
+                        : cs.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -347,40 +349,61 @@ class AutomationProgressComponent extends StatelessWidget {
       child: RepaintBoundary(
         child: Padding(
           key: ValueKey('step-${step['step_index']}'),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 6),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: showSpinner
-                          ? Colors.blue.withValues(alpha: 0.1)
-                          : showCheck
-                          ? Colors.green.withValues(alpha: 0.1)
-                          : Colors.grey.withValues(alpha: 0.05),
-                      shape: BoxShape.circle,
-                    ),
-                    child: logoId != null
-                        ? Logo(
-                            logoId: logoId,
-                            size: 18,
-                            onErrorIcon: Icon(
-                              Icons.circle_rounded,
-                              size: 18,
-                              color: iconColor,
-                            ),
-                          )
-                        : Icon(
-                            Icons.circle_rounded,
-                            size: 18,
-                            color: iconColor,
+                  SizedBox(
+                    width: 20,
+                    child: Column(
+                      children: [
+                        if (idx > 0)
+                          Container(
+                            width: 1,
+                            height: 8,
+                            color: cs.outline.withValues(alpha: 0.24),
                           ),
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          width: 20,
+                          height: 20,
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: showSpinner
+                                ? Colors.blue.withValues(alpha: 0.1)
+                                : showCheck
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : Colors.grey.withValues(alpha: 0.05),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: logoId != null
+                              ? Logo(
+                                  logoId: logoId,
+                                  size: 14,
+                                  onErrorIcon: Icon(
+                                    Icons.circle_rounded,
+                                    size: 14,
+                                    color: iconColor,
+                                  ),
+                                )
+                              : Icon(
+                                  Icons.circle_rounded,
+                                  size: 14,
+                                  color: iconColor,
+                                ),
+                        ),
+                        if (idx >= 0)
+                          Container(
+                            width: 1,
+                            height: 8,
+                            color: cs.outline.withValues(alpha: 0.24),
+                          ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       label,

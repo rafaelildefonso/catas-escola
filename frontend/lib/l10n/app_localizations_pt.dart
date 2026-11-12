@@ -805,4 +805,40 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get dashboardTasks => 'tarefas';
+
+  @override
+  String get dashboardExecutionsInPeriod => 'Execuções no período';
+
+  @override
+  String get dashboardSuccessRate => 'Taxa de sucesso';
+
+  @override
+  String get dashboardBasedOnExecutions => 'com base nas execuções';
+
+  @override
+  String get dashboardNoExecutionsShort => 'Ainda sem execuções';
+
+  @override
+  String get dashboardNoExecutions =>
+      'Nenhuma automação foi executada neste período. A primeira execução aparecerá aqui.';
+
+  @override
+  String dashboardExecutionsSummary(int count) {
+    return '$count automações foram executadas neste período.';
+  }
+
+  @override
+  String get dashboardConnectedIntegrations => 'Integrações conectadas';
+
+  @override
+  String get dashboardConnectedIntegrationsSubtitle =>
+      'Ferramentas conectadas à sua conta';
+
+  @override
+  String get dashboardNoIntegrations =>
+      'Nenhuma integração está conectada. Conecte uma ferramenta para começar a automatizar.';
+
+  @override
+  String get dashboardNoActivity =>
+      'Ainda não há atividade de automação registrada nos últimos 7 dias.';
 }

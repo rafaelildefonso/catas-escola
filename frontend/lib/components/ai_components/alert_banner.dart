@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/design_tokens.dart';
+
 class AlertBannerComponent extends StatelessWidget {
   final Map<String, dynamic> data;
   final bool isEnabled;
@@ -19,20 +21,21 @@ class AlertBannerComponent extends StatelessWidget {
     final message = data['message'] as String? ?? '';
     final action = data['action'] as Map<String, dynamic>?;
 
+    final tokens = context.catasTokens;
     Color baseColor;
     IconData icon;
 
     switch (level) {
       case 'warning':
-        baseColor = Colors.orange;
+        baseColor = tokens.warning;
         icon = Icons.warning_amber_rounded;
         break;
       case 'error':
-        baseColor = Theme.of(context).colorScheme.error;
+        baseColor = tokens.danger;
         icon = Icons.error_outline_rounded;
         break;
       case 'success':
-        baseColor = Colors.green;
+        baseColor = tokens.success;
         icon = Icons.check_circle_outline_rounded;
         break;
       default:
@@ -47,11 +50,9 @@ class AlertBannerComponent extends StatelessWidget {
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: baseColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: baseColor.withValues(alpha: 0.3),
-          ),
+          color: baseColor.withValues(alpha: 0.09),
+          borderRadius: BorderRadius.circular(tokens.radiusMedium),
+          border: Border.all(color: baseColor.withValues(alpha: 0.22)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

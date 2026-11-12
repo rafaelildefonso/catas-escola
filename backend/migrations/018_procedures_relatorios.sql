@@ -88,7 +88,7 @@ BEGIN
     FROM (
         SELECT ig.provider AS provider, COUNT(*) AS qtd
         FROM integrations ig
-        WHERE ig.user_id = p_user_id
+        WHERE ig.user_id = p_user_id AND ig.is_connected = 1
         GROUP BY ig.provider
         ORDER BY qtd DESC
         LIMIT 5

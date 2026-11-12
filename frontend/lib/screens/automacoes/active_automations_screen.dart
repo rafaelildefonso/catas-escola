@@ -6,6 +6,7 @@ import '../../core/automation_labels.dart';
 import '../../core/router.dart';
 import '../../data/automations_repository.dart';
 import '../../providers/chat_provider.dart';
+import '../../components/catas_page.dart';
 
 String _triggerLabel(Map<String, dynamic> trigger) {
   switch (trigger['type']) {
@@ -321,11 +322,17 @@ class _ActiveAutomationsScreenState extends State<ActiveAutomationsScreen> {
               onRefresh: _reload,
               child: _automations.isEmpty
                   ? ListView(
-                      children: const [
-                        SizedBox(height: 100),
-                        Center(
-                          child: Text(
-                            'Nenhuma automação ativa. Descreva no chat o que você quer automatizar.',
+                      children: [
+                        const SizedBox(height: 72),
+                        CatasEmptyState(
+                          icon: Icons.account_tree_outlined,
+                          title: 'Nenhuma automação ativa',
+                          message:
+                              'Descreva no chat o que você quer automatizar e o CATAS monta o fluxo para você.',
+                          action: FilledButton.icon(
+                            onPressed: () => _edit(),
+                            icon: const Icon(Icons.add_rounded, size: 18),
+                            label: const Text('Criar pelo chat'),
                           ),
                         ),
                       ],
@@ -339,6 +346,7 @@ class _ActiveAutomationsScreenState extends State<ActiveAutomationsScreen> {
                         );
                         final steps = item['steps'] as List? ?? const [];
                         return Card(
+                          margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                           child: Column(
                             children: [
                               ListTile(

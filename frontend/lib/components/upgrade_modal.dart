@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../core/router.dart';
+import '../core/design_tokens.dart';
 
 class UpgradeModal extends StatelessWidget {
   final String featureName;
@@ -17,15 +18,15 @@ class UpgradeModal extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final tokens = context.catasTokens;
 
     Color tierColor;
-    final isDark = theme.brightness == Brightness.dark;
     switch (requiredTier.toLowerCase()) {
       case 'pro':
         tierColor = colorScheme.primary;
         break;
       case 'max':
-        tierColor = isDark ? Colors.blue[400]! : const Color(0xFF0D47A1);
+        tierColor = tokens.info;
         break;
       default:
         tierColor = Colors.grey;
@@ -34,8 +35,11 @@ class UpgradeModal extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        color: tokens.surfaceRaised,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(tokens.radiusLarge + 4),
+        ),
+        border: Border(top: BorderSide(color: tokens.borderSubtle)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,

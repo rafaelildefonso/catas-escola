@@ -73,10 +73,25 @@ Page<T> _buildPageWithTransition<T>({
     key: state.pageKey,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      return FadeTransition(opacity: animation, child: child);
+      if (MediaQuery.disableAnimationsOf(context)) return child;
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.012),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
     },
-    transitionDuration: const Duration(milliseconds: 250),
-    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionDuration: const Duration(milliseconds: 220),
+    reverseTransitionDuration: const Duration(milliseconds: 160),
   );
 }
 
@@ -168,6 +183,11 @@ GoRouter createRouter(AuthProvider authProvider) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: '/prompts',
+        redirect: (_, _) => AppRoutes.suggestedPrompts,
+      ),
+
       // Rota raiz: busca landing.html e substitui a página (mantém URL /)
       GoRoute(
         path: '/',

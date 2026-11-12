@@ -8,12 +8,16 @@ import '../../providers/chat_provider.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:intl/intl.dart';
 
+import '../../components/catas_page.dart';
+import '../../core/design_tokens.dart';
+
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tokens = context.catasTokens;
     final chat = context.watch<ChatProvider>();
     final l10n = AppLocalizations.of(context)!;
 
@@ -36,27 +40,22 @@ class HistoryScreen extends StatelessWidget {
                   context.read<ChatProvider>().setSearchQuery(value),
               style: GoogleFonts.inter(fontSize: 14),
               decoration: InputDecoration(
-                hintText: l10n.drawerNoResults, // Reusing drawerNoResults or adding new one
+                hintText: l10n
+                    .drawerNoResults, // Reusing drawerNoResults or adding new one
                 prefixIcon: const Icon(Icons.search, size: 20),
                 filled: true,
-                fillColor: theme.colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.4,
-                ),
+                fillColor: tokens.surfaceRaised,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 0,
                   vertical: 0,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                  ),
+                  borderRadius: BorderRadius.circular(tokens.radiusMedium),
+                  borderSide: BorderSide(color: tokens.borderSubtle),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(20),
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.outline.withValues(alpha: 0.1),
-                  ),
+                  borderRadius: BorderRadius.circular(tokens.radiusMedium),
+                  borderSide: BorderSide(color: tokens.borderSubtle),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
@@ -97,22 +96,10 @@ class HistoryScreen extends StatelessWidget {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(
-                                  Icons.history_rounded,
-                                  size: 64,
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.2,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  l10n.historyEmpty,
-                                  style: GoogleFonts.inter(
-                                    color: theme.colorScheme.onSurfaceVariant
-                                        .withValues(alpha: 0.5),
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w500,
-                                  ),
+                                CatasEmptyState(
+                                  icon: Icons.history_rounded,
+                                  title: 'Ainda não há conversas',
+                                  message: l10n.historyEmpty,
                                 ),
                               ],
                             ),
@@ -164,9 +151,9 @@ class HistoryScreen extends StatelessWidget {
                             date: session.updatedAt,
                             onTap: () async {
                               await chat.switchSession(session.id);
-                                if (context.mounted) {
-                                  context.go(AppRoutes.chatSession(session.id));
-                                }
+                              if (context.mounted) {
+                                context.go(AppRoutes.chatSession(session.id));
+                              }
                             },
                           );
                         },
@@ -199,15 +186,13 @@ class HistoryScreen extends StatelessWidget {
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: theme.colorScheme.outline.withValues(alpha: 0.1),
-        ),
+        borderRadius: BorderRadius.circular(context.catasTokens.radiusMedium),
+        side: BorderSide(color: context.catasTokens.borderSubtle),
       ),
-      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+      color: context.catasTokens.surfaceRaised,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(context.catasTokens.radiusMedium),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

@@ -69,7 +69,7 @@ def estatisticas_dashboard(user_id: str, dias: int = 7) -> dict:
     )
     # Mostra quais provedores o usuário conectou com maior frequência, limitado aos cinco primeiros.
     top_integracoes = executar_linha(
-        "SELECT provider, COUNT(*) AS total FROM integrations WHERE user_id = :user_id GROUP BY provider ORDER BY total DESC LIMIT 5",
+        "SELECT provider, COUNT(*) AS total FROM integrations WHERE user_id = :user_id AND is_connected = 1 GROUP BY provider ORDER BY total DESC LIMIT 5",
         user_id=user_id,
     )
 

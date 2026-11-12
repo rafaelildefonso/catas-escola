@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../components/relatorios/report_export_delivery.dart';
+import '../../components/catas_page.dart';
 import '../../core/router.dart';
 import '../../data/generated_reports_repository.dart';
 import '../../providers/generated_reports_provider.dart';
@@ -27,45 +28,43 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget build(BuildContext context) {
     final state = context.watch<GeneratedReportsProvider>();
     final theme = Theme.of(context);
-    return RefreshIndicator(
-      onRefresh: state.load,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 24, 20, 36),
-        children: [
-          Text(
-            'Relatórios',
-            style: theme.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Relatórios criados pelas suas automações ficam guardados aqui.',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 20),
-          _HowItWorksCard(onCreate: () => context.go(AppRoutes.chat)),
-          const SizedBox(height: 24),
-          if (state.isLoading && state.reports.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(32),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (state.error != null && state.reports.isEmpty)
-            _ErrorState(message: state.error!, onRetry: state.load)
-          else if (state.reports.isEmpty)
-            const _EmptyReportsState()
-          else ...[
-            Text(
-              '${state.reports.length} relatório(s)',
-              style: theme.textTheme.labelLarge,
-            ),
-            const SizedBox(height: 10),
-            ...state.reports.map((report) => _ReportCard(report: report)),
+    return CatasPage(
+      title: 'Relatórios',
+      description:
+          'Relatórios criados pelas suas automações ficam organizados aqui.',
+      actions: [
+        FilledButton.icon(
+          onPressed: () => context.go(AppRoutes.chat),
+          icon: const Icon(Icons.add_rounded, size: 18),
+          label: const Text('Criar relatório'),
+        ),
+      ],
+      child: RefreshIndicator(
+        onRefresh: state.load,
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            _HowItWorksCard(onCreate: () => context.go(AppRoutes.chat)),
+            const SizedBox(height: 24),
+            if (state.isLoading && state.reports.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (state.error != null && state.reports.isEmpty)
+              _ErrorState(message: state.error!, onRetry: state.load)
+            else if (state.reports.isEmpty)
+              const _EmptyReportsState()
+            else ...[
+              Text(
+                '${state.reports.length} relatório(s)',
+                style: theme.textTheme.labelLarge,
+              ),
+              const SizedBox(height: 10),
+              ...state.reports.map((report) => _ReportCard(report: report)),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -8,8 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:catas/l10n/app_localizations.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/auth_provider.dart';
-import '../../providers/navigation_provider.dart';
-
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,21 +20,18 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _loadingMessage;
   bool _isSignUpMode = false;
   bool _aceitouTermos = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
-
-  final _pageController = PageController();
-  Timer? _carouselTimer;
-  int _currentSlide = 0;
 
   static const _desktopBreakpoint = 900.0;
 
   @override
   void initState() {
     super.initState();
-    _startCarousel();
   }
 
   @override
@@ -45,22 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _pageController.dispose();
-    _carouselTimer?.cancel();
     super.dispose();
-  }
-
-  void _startCarousel() {
-    _carouselTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted) return;
-      final next = (_currentSlide + 1) % 4;
-      _currentSlide = next;
-      _pageController.animateToPage(
-        next,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    });
   }
 
   void _navigateToPage(String path) {
@@ -87,7 +66,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _loadingMessage = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.loginEmailFailed), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(l10n.loginEmailFailed),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -99,7 +81,8 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text(
-              'Para criar sua conta, leia e aceite o Termo de Uso e o Termo de Consentimento.'),
+            'Para criar sua conta, leia e aceite o Termo de Uso e o Termo de Consentimento.',
+          ),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -122,7 +105,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _loadingMessage = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.signUpFailed), behavior: SnackBarBehavior.floating),
+        SnackBar(
+          content: Text(l10n.signUpFailed),
+          behavior: SnackBarBehavior.floating,
+        ),
       );
     }
   }
@@ -140,30 +126,21 @@ class _LoginScreenState extends State<LoginScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final isDesktop = constraints.maxWidth >= _desktopBreakpoint;
-            final gradient = LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colorScheme.primary.withValues(alpha: 0.05),
-                colorScheme.primary.withValues(alpha: 0.4),
-                colorScheme.secondary.withValues(alpha: 0.05),
-              ],
-            );
-
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: Container(decoration: BoxDecoration(gradient: gradient)),
-                ),
-                Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-                    child: isDesktop
-                        ? _buildDesktopCard(colorScheme, l10n, isDarkMode)
-                        : _buildMobileCard(colorScheme, l10n, isDarkMode),
+            return ColoredBox(
+              color: isDarkMode
+                  ? const Color(0xFF09090B)
+                  : const Color(0xFFF7F7F8),
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 40,
                   ),
+                  child: isDesktop
+                      ? _buildDesktopCard(colorScheme, l10n, isDarkMode)
+                      : _buildMobileCard(colorScheme, l10n, isDarkMode),
                 ),
-              ],
+              ),
             );
           },
         ),
@@ -173,14 +150,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ─── DESKTOP CARD (login + carousel lado a lado) ────────
 
-  Widget _buildDesktopCard(ColorScheme colorScheme, AppLocalizations l10n, bool isDarkMode) {
+  Widget _buildDesktopCard(
+    ColorScheme colorScheme,
+    AppLocalizations l10n,
+    bool isDarkMode,
+  ) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 1100),
       padding: const EdgeInsets.all(36),
       decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.05)),
+        color: isDarkMode ? const Color(0xFF111113) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.16)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDarkMode ? 0.18 : 0.06),
+            blurRadius: 32,
+            offset: const Offset(0, 16),
+          ),
+        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,8 +182,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(width: 28),
           Expanded(
-            flex: 8,
-            child: _buildImageCarousel(colorScheme),
+            flex: 7,
+            child: _buildProductPreview(colorScheme, isDarkMode),
           ),
         ],
       ),
@@ -204,14 +192,18 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ─── MOBILE CARD ────────────────────────────────────────
 
-  Widget _buildMobileCard(ColorScheme colorScheme, AppLocalizations l10n, bool isDarkMode) {
+  Widget _buildMobileCard(
+    ColorScheme colorScheme,
+    AppLocalizations l10n,
+    bool isDarkMode,
+  ) {
     return Container(
       constraints: const BoxConstraints(maxWidth: 400),
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: colorScheme.onSurface.withValues(alpha: 0.05)),
+        color: isDarkMode ? const Color(0xFF111113) : Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.16)),
       ),
       child: _buildLoginContent(colorScheme, l10n, isDarkMode),
     );
@@ -219,47 +211,60 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ─── SHARED LOGIN CONTENT ─────────────────────────────────
 
-  Widget _buildLoginContent(ColorScheme colorScheme, AppLocalizations l10n, bool isDarkMode) {
+  Widget _buildLoginContent(
+    ColorScheme colorScheme,
+    AppLocalizations l10n,
+    bool isDarkMode,
+  ) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Center(
-          child: SizedBox(
-            child: Image.asset(
+        Row(
+          children: [
+            Image.asset(
               isDarkMode
                   ? 'assets/icons/app_icon_transparent_white.png'
                   : 'assets/icons/app_icon_transparent.png',
-              width: 100,
-              height: 100,
+              width: 42,
+              height: 42,
               fit: BoxFit.contain,
             ),
+            const SizedBox(width: 10),
+            Text(
+              'CATAS',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                letterSpacing: -0.4,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+        Text(
+          _isSignUpMode ? 'Crie sua conta' : 'Bem-vindo de volta',
+          style: GoogleFonts.inter(
+            fontSize: 27,
+            height: 1.15,
+            letterSpacing: -0.7,
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
-        Center(
-          child: Text(
-            l10n.loginSubtitle,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
-              fontSize: 15,
-              color: colorScheme.onSurface.withValues(alpha: 0.7),
-              fontWeight: FontWeight.w500,
-            ),
+        Text(
+          _isSignUpMode
+              ? 'Comece a transformar pedidos em automações reais.'
+              : 'Entre para continuar suas conversas e automações.',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            height: 1.5,
+            color: colorScheme.onSurfaceVariant,
           ),
         ),
-        const SizedBox(height: 2),
-        Center(
-          child: Text(
-            l10n.loginSubtitleExecution,
-            style: GoogleFonts.outfit(
-              fontSize: 20,
-              color: colorScheme.primary,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 28),
 
         _buildEmailForm(colorScheme, l10n),
 
@@ -273,126 +278,225 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildEmailForm(ColorScheme colorScheme, AppLocalizations l10n) {
     return Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              controller: _emailController,
-              enabled: !_isLoading,
-              keyboardType: TextInputType.emailAddress,
-              decoration: InputDecoration(
-                hintText: l10n.emailHint,
-                labelText: l10n.email,
-                prefixIcon: Icon(Icons.email_outlined, color: colorScheme.primary),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
-                ),
-                filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      key: _formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _emailController,
+            enabled: !_isLoading,
+            keyboardType: TextInputType.emailAddress,
+            autofillHints: const [AutofillHints.email],
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+            decoration: InputDecoration(
+              hintText: l10n.emailHint,
+              labelText: l10n.email,
+              prefixIcon: Icon(
+                Icons.email_outlined,
+                color: colorScheme.primary,
               ),
-              style: GoogleFonts.inter(fontSize: 15),
-              validator: (value) {
-                if (value == null || value.isEmpty) return 'Digite seu email';
-                if (!value.contains('@')) return 'Email inválido';
-                return null;
-              },
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+              ),
+              filled: true,
+              fillColor: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.7,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
             ),
+            style: GoogleFonts.inter(fontSize: 15),
+            validator: (value) {
+              if (value == null || value.isEmpty) return 'Digite seu email';
+              if (!value.contains('@')) return 'Email inválido';
+              return null;
+            },
+          ),
+          const SizedBox(height: 14),
+          TextFormField(
+            controller: _passwordController,
+            enabled: !_isLoading,
+            obscureText: _obscurePassword,
+            autofillHints: _isSignUpMode
+                ? const [AutofillHints.newPassword]
+                : const [AutofillHints.password],
+            textInputAction: _isSignUpMode
+                ? TextInputAction.next
+                : TextInputAction.done,
+            onFieldSubmitted: (_) {
+              if (_isSignUpMode) {
+                FocusScope.of(context).nextFocus();
+              } else {
+                _loginWithEmail();
+              }
+            },
+            decoration: InputDecoration(
+              hintText: l10n.passwordHint,
+              labelText: l10n.password,
+              prefixIcon: Icon(Icons.lock_outlined, color: colorScheme.primary),
+              suffixIcon: IconButton(
+                onPressed: () =>
+                    setState(() => _obscurePassword = !_obscurePassword),
+                tooltip: _obscurePassword ? 'Mostrar senha' : 'Ocultar senha',
+                icon: Icon(
+                  _obscurePassword
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
+                ),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(
+                  color: colorScheme.outline.withValues(alpha: 0.2),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+              ),
+              filled: true,
+              fillColor: colorScheme.surfaceContainerHighest.withValues(
+                alpha: 0.7,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 16,
+              ),
+            ),
+            style: GoogleFonts.inter(fontSize: 15),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Digite sua senha';
+              }
+              if (value.length < 8) {
+                return 'Mínimo 8 caracteres';
+              }
+              if (!RegExp(r'[a-z]').hasMatch(value)) {
+                return 'Precisa de uma letra minúscula';
+              }
+              if (!RegExp(r'[A-Z]').hasMatch(value)) {
+                return 'Precisa de uma letra maiúscula';
+              }
+              if (!RegExp(r'[0-9]').hasMatch(value)) {
+                return 'Precisa de um dígito';
+              }
+              if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(value)) {
+                return 'Precisa de um caractere especial';
+              }
+              return null;
+            },
+          ),
+          if (_isSignUpMode) ...[
             const SizedBox(height: 14),
             TextFormField(
-              controller: _passwordController,
+              controller: _confirmPasswordController,
               enabled: !_isLoading,
-              obscureText: true,
+              obscureText: _obscureConfirmPassword,
+              autofillHints: const [AutofillHints.newPassword],
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) => _signUpWithEmail(),
               decoration: InputDecoration(
-                hintText: l10n.passwordHint,
-                labelText: l10n.password,
-                prefixIcon: Icon(Icons.lock_outlined, color: colorScheme.primary),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                hintText: 'Repita a senha',
+                labelText: 'Confirmar senha',
+                prefixIcon: Icon(
+                  Icons.lock_outlined,
+                  color: colorScheme.primary,
+                ),
+                suffixIcon: IconButton(
+                  onPressed: () => setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
+                  ),
+                  tooltip: _obscureConfirmPassword
+                      ? 'Mostrar senha'
+                      : 'Ocultar senha',
+                  icon: Icon(
+                    _obscureConfirmPassword
+                        ? Icons.visibility_outlined
+                        : Icons.visibility_off_outlined,
+                  ),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
+                  borderSide: BorderSide(
+                    color: colorScheme.outline.withValues(alpha: 0.2),
+                  ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 1.5,
+                  ),
                 ),
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.7,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
               ),
               style: GoogleFonts.inter(fontSize: 15),
               validator: (value) {
-                if (value == null || value.isEmpty) return 'Digite sua senha';
-                if (value.length < 8) return 'Mínimo 8 caracteres';
-                if (!RegExp(r'[a-z]').hasMatch(value)) return 'Precisa de uma letra minúscula';
-                if (!RegExp(r'[A-Z]').hasMatch(value)) return 'Precisa de uma letra maiúscula';
-                if (!RegExp(r'[0-9]').hasMatch(value)) return 'Precisa de um dígito';
-                if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(value)) return 'Precisa de um caractere especial';
+                if (value == null || value.isEmpty) {
+                  return 'Confirme sua senha';
+                }
+                if (value != _passwordController.text) {
+                  return 'Senhas não conferem';
+                }
                 return null;
               },
             ),
-            if (_isSignUpMode) ...[
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: _confirmPasswordController,
-                enabled: !_isLoading,
-                obscureText: true,
-                decoration: InputDecoration(
-                  hintText: 'Repita a senha',
-                  labelText: 'Confirmar senha',
-                  prefixIcon: Icon(Icons.lock_outlined, color: colorScheme.primary),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: colorScheme.outline.withValues(alpha: 0.2)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(color: colorScheme.primary, width: 1.5),
-                  ),
-                  filled: true,
-                  fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.7),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                ),
-                style: GoogleFonts.inter(fontSize: 15),
-                validator: (value) {
-                  if (value == null || value.isEmpty) return 'Confirme sua senha';
-                  if (value != _passwordController.text) return 'Senhas não conferem';
-                  return null;
-                },
-              ),
-            ],
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: _isLoading
-                  ? _buildLoadingIndicator(colorScheme, l10n)
-                  : _buildGradientButton(
-                      onPressed: _isSignUpMode ? _signUpWithEmail : _loginWithEmail,
-                      label: _isSignUpMode ? l10n.signUp : l10n.signIn,
-                      colorScheme: colorScheme,
-                    ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: TextButton(
-                onPressed: _isLoading
-                    ? null
-                    : () => setState(() => _isSignUpMode = !_isSignUpMode),
-                child: Text(
-                  _isSignUpMode ? l10n.alreadyHaveAccount : l10n.dontHaveAccount,
-                  style: GoogleFonts.inter(fontSize: 13, color: colorScheme.primary),
-                ),
-              ),
-            ),
           ],
-        ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: _isLoading
+                ? _buildLoadingIndicator(colorScheme, l10n)
+                : _buildGradientButton(
+                    onPressed: _isSignUpMode
+                        ? _signUpWithEmail
+                        : _loginWithEmail,
+                    label: _isSignUpMode ? l10n.signUp : l10n.signIn,
+                    colorScheme: colorScheme,
+                  ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: _isLoading
+                  ? null
+                  : () => setState(() => _isSignUpMode = !_isSignUpMode),
+              child: Text(
+                _isSignUpMode ? l10n.alreadyHaveAccount : l10n.dontHaveAccount,
+                style: GoogleFonts.inter(
+                  fontSize: 13,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -403,36 +507,16 @@ class _LoginScreenState extends State<LoginScreen> {
     required String label,
     required ColorScheme colorScheme,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colorScheme.primary, colorScheme.primary.withValues(alpha: 0.85)],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(14),
-          child: Center(
-            child: Text(
-              label,
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.w700,
-                fontSize: 16,
-                color: colorScheme.onPrimary,
-              ),
-            ),
+    return SizedBox(
+      height: 50,
+      child: FilledButton(
+        onPressed: onPressed,
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
+            color: colorScheme.onPrimary,
           ),
         ),
       ),
@@ -441,7 +525,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // ─── LOADING ──────────────────────────────────────────────
 
-  Widget _buildLoadingIndicator(ColorScheme colorScheme, AppLocalizations l10n) {
+  Widget _buildLoadingIndicator(
+    ColorScheme colorScheme,
+    AppLocalizations l10n,
+  ) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -450,7 +537,10 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 8),
           Text(
             _loadingMessage!,
-            style: GoogleFonts.inter(fontSize: 13, color: colorScheme.onSurface.withValues(alpha: 0.7)),
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
         ],
       ],
@@ -471,16 +561,15 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: BoxDecoration(
         color: colorScheme.primary.withValues(alpha: 0.04),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: colorScheme.outline.withValues(alpha: 0.2),
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Checkbox(
             value: _aceitouTermos,
-            onChanged: (value) => setState(() => _aceitouTermos = value ?? false),
+            onChanged: (value) =>
+                setState(() => _aceitouTermos = value ?? false),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
             visualDensity: VisualDensity.compact,
           ),
@@ -495,9 +584,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: 1.5,
                   ),
                   children: [
-                    const TextSpan(
-                      text: 'Declaro que li e aceito o ',
-                    ),
+                    const TextSpan(text: 'Declaro que li e aceito o '),
                     TextSpan(
                       text: l10n.termsOfService,
                       style: TextStyle(
@@ -545,14 +632,20 @@ class _LoginScreenState extends State<LoginScreen> {
           TextSpan(text: l10n.termsAgreementPrefix),
           TextSpan(
             text: l10n.termsOfService,
-            style: TextStyle(color: colorScheme.primary, decoration: TextDecoration.underline),
+            style: TextStyle(
+              color: colorScheme.primary,
+              decoration: TextDecoration.underline,
+            ),
             recognizer: TapGestureRecognizer()
               ..onTap = () => _navigateToPage('/terms'),
           ),
           TextSpan(text: l10n.andLabel),
           TextSpan(
             text: l10n.privacyPolicy,
-            style: TextStyle(color: colorScheme.primary, decoration: TextDecoration.underline),
+            style: TextStyle(
+              color: colorScheme.primary,
+              decoration: TextDecoration.underline,
+            ),
             recognizer: TapGestureRecognizer()
               ..onTap = () => _navigateToPage('/privacy'),
           ),
@@ -562,147 +655,237 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // ─── IMAGE CAROUSEL ───────────────────────────────────────
-
-  Widget _buildImageCarousel(ColorScheme colorScheme) {
-    final slides = [
-      _ImageSlide(
-        gradientColors: [
-          colorScheme.primary.withValues(alpha: 0.25),
-          colorScheme.primaryContainer.withValues(alpha: 0.4),
-          colorScheme.surface,
-        ],
-        title: 'Descreva em linguagem natural',
-        description: 'Explique o que você quer automatizar como se estivesse falando com um assistente.',
-      ),
-      _ImageSlide(
-        gradientColors: [
-          colorScheme.secondary.withValues(alpha: 0.25),
-          colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-          colorScheme.surface,
-        ],
-        title: 'IA processa e cria fluxos',
-        description: 'O motor de IA interpreta sua intenção e monta a lógica automaticamente.',
-      ),
-      _ImageSlide(
-        gradientColors: [
-          Colors.amber.withValues(alpha: 0.2),
-          Colors.orange.withValues(alpha: 0.15),
-          colorScheme.surface,
-        ],
-        title: 'Automações prontas em segundos',
-        description: 'Seu fluxo de trabalho é criado e ativado instantaneamente.',
-      ),
-      _ImageSlide(
-        gradientColors: [
-          Colors.green.withValues(alpha: 0.2),
-          Colors.teal.withValues(alpha: 0.15),
-          colorScheme.surface,
-        ],
-        title: 'Monitore resultados em tempo real',
-        description: 'Acompanhe métricas e ajuste fluxos com comandos simples.',
-      ),
-    ];
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: PageView.builder(
-              controller: _pageController,
-              onPageChanged: (index) => setState(() => _currentSlide = index),
-              itemCount: slides.length,
-              itemBuilder: (context, index) {
-                final slide = slides[index];
-                return Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: slide.gradientColors,
+  Widget _buildProductPreview(ColorScheme colorScheme, bool isDarkMode) {
+    final surface = isDarkMode ? const Color(0xFF17171A) : Colors.white;
+    return Semantics(
+      label: 'Exemplo de automação executada pelo CATAS',
+      child: Container(
+        padding: const EdgeInsets.all(28),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF0D0D0F) : const Color(0xFFF7F7F8),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: colorScheme.outline.withValues(alpha: 0.16),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                'ASSISTENTE DE AUTOMAÇÕES',
+                style: GoogleFonts.inter(
+                  fontSize: 10,
+                  letterSpacing: 0.7,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: colorScheme.outline.withValues(alpha: 0.16),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Do pedido à execução,\nsem trocar de aplicativo.',
+                    style: GoogleFonts.inter(
+                      fontSize: 28,
+                      height: 1.15,
+                      letterSpacing: -0.8,
+                      fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
                     ),
-                    border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
                   ),
-                  child: Stack(
+                  const SizedBox(height: 10),
+                  Text(
+                    'Converse com o CATAS, revise o plano e acompanhe cada etapa em tempo real.',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      height: 1.5,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 28),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                constraints: const BoxConstraints(maxWidth: 390),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? const Color(0xFF242428)
+                      : const Color(0xFFEDEEF0),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Text(
+                  'Organize os contatos da planilha e envie um resumo por e-mail.',
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: colorScheme.outline.withValues(alpha: 0.16),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Center(
-                        child: Icon(
-                          Icons.image_outlined,
-                          size: 80,
-                          color: colorScheme.primary.withValues(alpha: 0.2),
+                      Icon(
+                        Icons.bolt_rounded,
+                        color: colorScheme.primary,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Automação concluída',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      Positioned(
-                        left: 24,
-                        right: 24,
-                        bottom: 24,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              slide.title,
-                              style: GoogleFonts.inter(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                color: colorScheme.onSurface,
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              slide.description,
-                              style: GoogleFonts.inter(
-                                fontSize: 13,
-                                color: colorScheme.onSurface.withValues(alpha: 0.7),
-                                height: 1.4,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+                      const Spacer(),
+                      Text(
+                        '3 etapas',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ],
                   ),
-                );
-              },
+                  const SizedBox(height: 16),
+                  _previewStep(
+                    colorScheme,
+                    Icons.table_chart_outlined,
+                    'Planilha lida',
+                    '42 contatos',
+                  ),
+                  _previewStep(
+                    colorScheme,
+                    Icons.auto_awesome_outlined,
+                    'Dados organizados',
+                    'Concluído',
+                  ),
+                  _previewStep(
+                    colorScheme,
+                    Icons.mail_outline_rounded,
+                    'Resumo enviado',
+                    'Gmail',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 8,
+              children: const [
+                _TrustItem(
+                  icon: Icons.lock_outline_rounded,
+                  label: 'Dados protegidos',
+                ),
+                _TrustItem(
+                  icon: Icons.visibility_outlined,
+                  label: 'Ações revisáveis',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _previewStep(
+    ColorScheme colorScheme,
+    IconData icon,
+    String label,
+    String detail,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: colorScheme.primary),
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Text(label)),
+          const Icon(
+            Icons.check_circle_rounded,
+            size: 16,
+            color: Color(0xFF22C55E),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            detail,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(slides.length, (i) {
-            return AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              margin: const EdgeInsets.symmetric(horizontal: 5),
-              width: _currentSlide == i ? 24 : 8,
-              height: 8,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: _currentSlide == i
-                    ? colorScheme.primary
-                    : colorScheme.outline.withValues(alpha: 0.3),
-              ),
-            );
-          }),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-class _ImageSlide {
-  final List<Color> gradientColors;
-  final String title;
-  final String description;
+class _TrustItem extends StatelessWidget {
+  final IconData icon;
+  final String label;
 
-  const _ImageSlide({
-    required this.gradientColors,
-    required this.title,
-    required this.description,
-  });
+  const _TrustItem({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -1621,6 +1621,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'tasks'**
   String get dashboardTasks;
+
+  /// No description provided for @dashboardExecutionsInPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Executions in period'**
+  String get dashboardExecutionsInPeriod;
+
+  /// No description provided for @dashboardSuccessRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Success rate'**
+  String get dashboardSuccessRate;
+
+  /// No description provided for @dashboardBasedOnExecutions.
+  ///
+  /// In en, this message translates to:
+  /// **'based on executions'**
+  String get dashboardBasedOnExecutions;
+
+  /// No description provided for @dashboardNoExecutionsShort.
+  ///
+  /// In en, this message translates to:
+  /// **'No executions yet'**
+  String get dashboardNoExecutionsShort;
+
+  /// No description provided for @dashboardNoExecutions.
+  ///
+  /// In en, this message translates to:
+  /// **'No automations have run in this period yet. Your first execution will appear here.'**
+  String get dashboardNoExecutions;
+
+  /// No description provided for @dashboardExecutionsSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} automations ran in this period.'**
+  String dashboardExecutionsSummary(int count);
+
+  /// No description provided for @dashboardConnectedIntegrations.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected integrations'**
+  String get dashboardConnectedIntegrations;
+
+  /// No description provided for @dashboardConnectedIntegrationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations connected to your account'**
+  String get dashboardConnectedIntegrationsSubtitle;
+
+  /// No description provided for @dashboardNoIntegrations.
+  ///
+  /// In en, this message translates to:
+  /// **'No integrations are connected yet. Connect a tool to start automating.'**
+  String get dashboardNoIntegrations;
+
+  /// No description provided for @dashboardNoActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'No automation activity was recorded in the last 7 days.'**
+  String get dashboardNoActivity;
 }
 
 class _AppLocalizationsDelegate

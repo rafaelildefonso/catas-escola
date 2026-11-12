@@ -34,6 +34,7 @@ class _ProductivityChartState extends State<ProductivityChart> {
 
     final l10n = AppLocalizations.of(context)!;
     final animMs = kIsWeb ? 300 : 600;
+    final hasActivity = widget.weeklyData.any((value) => value > 0);
     final maxY = widget.weeklyData.isEmpty
         ? 10.0
         : (widget.weeklyData.reduce((a, b) => a > b ? a : b) * 1.3).clamp(
@@ -44,14 +45,10 @@ class _ProductivityChartState extends State<ProductivityChart> {
     return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark
-                ? theme.colorScheme.secondaryContainer
-                : theme.colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(12),
+            color: isDark ? const Color(0xFF111113) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isDark
-                  ? theme.colorScheme.outlineVariant
-                  : theme.colorScheme.outline.withValues(alpha: 0.15),
+              color: theme.colorScheme.outline.withValues(alpha: 0.16),
             ),
           ),
           child: Column(
@@ -82,190 +79,167 @@ class _ProductivityChartState extends State<ProductivityChart> {
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: emerald.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.trending_up_rounded,
-                          size: 14,
-                          color: emerald,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          l10n.automationActive,
-                          style: GoogleFonts.inter(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: emerald,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 24),
 
-              // Chart
-              SizedBox(
-                height: 200,
-                child: LineChart(
-                  LineChartData(
-                    gridData: FlGridData(
-                      show: true,
-                      drawVerticalLine: false,
-                      horizontalInterval: maxY / 4,
-                      getDrawingHorizontalLine: (value) => FlLine(
-                        color: theme.colorScheme.outline.withValues(
-                          alpha: 0.06,
-                        ),
-                        strokeWidth: 1,
-                      ),
-                    ),
-                    titlesData: FlTitlesData(
-                      leftTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 35,
-                          interval: maxY / 4,
-                          getTitlesWidget: (value, meta) {
-                            return Text(
-                              value.toInt().toString(),
-                              style: GoogleFonts.inter(
-                                fontSize: 10,
-                                color: theme.colorScheme.onSurfaceVariant
-                                    .withValues(alpha: 0.5),
-                              ),
-                            );
-                          },
+              if (!hasActivity)
+                _EmptyChartState(message: l10n.dashboardNoActivity)
+              else
+                // Chart
+                SizedBox(
+                  height: 200,
+                  child: LineChart(
+                    LineChartData(
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        horizontalInterval: maxY / 4,
+                        getDrawingHorizontalLine: (value) => FlLine(
+                          color: theme.colorScheme.outline.withValues(
+                            alpha: 0.06,
+                          ),
+                          strokeWidth: 1,
                         ),
                       ),
-                      bottomTitles: AxisTitles(
-                        sideTitles: SideTitles(
-                          showTitles: true,
-                          reservedSize: 28,
-                          getTitlesWidget: (value, meta) {
-                            final i = value.toInt();
-                            if (i < 0 || i >= widget.dayLabels.length) {
-                              return const SizedBox();
-                            }
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                widget.dayLabels[i],
+                      titlesData: FlTitlesData(
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 35,
+                            interval: maxY / 4,
+                            getTitlesWidget: (value, meta) {
+                              return Text(
+                                value.toInt().toString(),
                                 style: GoogleFonts.inter(
-                                  fontSize: 11,
-                                  fontWeight: touchedIndex == i
-                                      ? FontWeight.w700
-                                      : FontWeight.w400,
-                                  color: touchedIndex == i
-                                      ? emerald
-                                      : theme.colorScheme.onSurfaceVariant
-                                            .withValues(alpha: 0.6),
+                                  fontSize: 10,
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
                                 ),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      topTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                      rightTitles: const AxisTitles(
-                        sideTitles: SideTitles(showTitles: false),
-                      ),
-                    ),
-                    borderData: FlBorderData(show: false),
-                    minX: 0,
-                    maxX: (widget.weeklyData.length - 1).toDouble(),
-                    minY: 0,
-                    maxY: maxY,
-                    lineTouchData: LineTouchData(
-                      handleBuiltInTouches: true,
-                      touchCallback: (event, response) {
-                        if (response?.lineBarSpots != null &&
-                            response!.lineBarSpots!.isNotEmpty) {
-                          setState(() {
-                            touchedIndex =
-                                response.lineBarSpots!.first.spotIndex;
-                          });
-                        } else {
-                          setState(() {
-                            touchedIndex = null;
-                          });
-                        }
-                      },
-                      touchTooltipData: LineTouchTooltipData(
-                        getTooltipColor: (_) => isDark
-                            ? theme.colorScheme.surfaceContainerHighest
-                            : const Color(0xFF1E1E1E),
-                        tooltipBorderRadius: BorderRadius.circular(8),
-                        tooltipPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        getTooltipItems: (spots) {
-                          return spots.map((spot) {
-                            return LineTooltipItem(
-                              '${spot.y.toInt()} ${l10n.dashboardTasks}',
-                              GoogleFonts.inter(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            );
-                          }).toList();
-                        },
-                      ),
-                    ),
-                    lineBarsData: [
-                      LineChartBarData(
-                        spots: widget.weeklyData.asMap().entries.map((entry) {
-                          return FlSpot(entry.key.toDouble(), entry.value);
-                        }).toList(),
-                        isCurved: true,
-                        curveSmoothness: 0.35,
-                        color: emerald,
-                        barWidth: 3,
-                        isStrokeCapRound: true,
-                        dotData: FlDotData(
-                          show: true,
-                          getDotPainter: (spot, percent, barData, index) {
-                            final isTouched = index == touchedIndex;
-                            return FlDotCirclePainter(
-                              radius: isTouched ? 6 : 3,
-                              color: isTouched ? emerald : theme.colorScheme.surface,
-                              strokeWidth: isTouched ? 3 : 2,
-                              strokeColor: emerald,
-                            );
-                          },
-                        ),
-                        belowBarData: BarAreaData(
-                          show: true,
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              emerald.withValues(alpha: 0.25),
-                              emeraldLight.withValues(alpha: 0.0),
-                            ],
+                              );
+                            },
                           ),
                         ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 28,
+                            getTitlesWidget: (value, meta) {
+                              final i = value.toInt();
+                              if (i < 0 || i >= widget.dayLabels.length) {
+                                return const SizedBox();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  widget.dayLabels[i],
+                                  style: GoogleFonts.inter(
+                                    fontSize: 11,
+                                    fontWeight: touchedIndex == i
+                                        ? FontWeight.w700
+                                        : FontWeight.w400,
+                                    color: touchedIndex == i
+                                        ? emerald
+                                        : theme.colorScheme.onSurfaceVariant
+                                              .withValues(alpha: 0.6),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
                       ),
-                    ],
+                      borderData: FlBorderData(show: false),
+                      minX: 0,
+                      maxX: (widget.weeklyData.length - 1).toDouble(),
+                      minY: 0,
+                      maxY: maxY,
+                      lineTouchData: LineTouchData(
+                        handleBuiltInTouches: true,
+                        touchCallback: (event, response) {
+                          if (response?.lineBarSpots != null &&
+                              response!.lineBarSpots!.isNotEmpty) {
+                            setState(() {
+                              touchedIndex =
+                                  response.lineBarSpots!.first.spotIndex;
+                            });
+                          } else {
+                            setState(() {
+                              touchedIndex = null;
+                            });
+                          }
+                        },
+                        touchTooltipData: LineTouchTooltipData(
+                          getTooltipColor: (_) => isDark
+                              ? theme.colorScheme.surfaceContainerHighest
+                              : const Color(0xFF1E1E1E),
+                          tooltipBorderRadius: BorderRadius.circular(8),
+                          tooltipPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          getTooltipItems: (spots) {
+                            return spots.map((spot) {
+                              return LineTooltipItem(
+                                '${spot.y.toInt()} ${l10n.dashboardTasks}',
+                                GoogleFonts.inter(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              );
+                            }).toList();
+                          },
+                        ),
+                      ),
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: widget.weeklyData.asMap().entries.map((entry) {
+                            return FlSpot(entry.key.toDouble(), entry.value);
+                          }).toList(),
+                          isCurved: true,
+                          curveSmoothness: 0.35,
+                          color: emerald,
+                          barWidth: 3,
+                          isStrokeCapRound: true,
+                          dotData: FlDotData(
+                            show: true,
+                            getDotPainter: (spot, percent, barData, index) {
+                              final isTouched = index == touchedIndex;
+                              return FlDotCirclePainter(
+                                radius: isTouched ? 6 : 3,
+                                color: isTouched
+                                    ? emerald
+                                    : theme.colorScheme.surface,
+                                strokeWidth: isTouched ? 3 : 2,
+                                strokeColor: emerald,
+                              );
+                            },
+                          ),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                emerald.withValues(alpha: 0.25),
+                                emeraldLight.withValues(alpha: 0.0),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    duration: const Duration(milliseconds: 800),
+                    curve: Curves.easeInOutCubic,
                   ),
-                  duration: const Duration(milliseconds: 800),
-                  curve: Curves.easeInOutCubic,
                 ),
-              ),
             ],
           ),
         )
@@ -277,5 +251,46 @@ class _ProductivityChartState extends State<ProductivityChart> {
           duration: animMs.ms,
           curve: Curves.easeOutCubic,
         );
+  }
+}
+
+class _EmptyChartState extends StatelessWidget {
+  final String message;
+
+  const _EmptyChartState({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      height: 160,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.35,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.insights_outlined,
+            size: 30,
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

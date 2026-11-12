@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/relatorio_provider.dart';
 import '../../components/relatorios/report_export_menu.dart';
+import '../../components/catas_page.dart';
 
 /// Tela de Relatórios — consome os endpoints de relatório/busca da API
 /// (funcionalidades além do CRUD básico implementadas via procedures).
@@ -77,56 +78,39 @@ class _DataExportScreenState extends State<DataExportScreen>
     final auth = context.watch<AuthProvider>();
     final userId = auth.userId;
 
-    return SizedBox(
-      width: double.infinity,
+    return CatasPage(
+      title: 'Exportar dados',
+      description:
+          'Baixe dados de automações e conversas em CSV, Excel ou PDF.',
       child: Column(
-          children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 20, 16, 2),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Exportar dados',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-                ),
-              ),
+        children: [
+          Padding(
+            padding: EdgeInsets.zero,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: theme.colorScheme.primary,
+              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+              indicatorColor: theme.colorScheme.primary,
+              indicatorSize: TabBarIndicatorSize.label,
+              tabs: const [
+                Tab(text: 'Automações'),
+                Tab(text: 'Conversas'),
+                Tab(text: 'Busca de Mensagens'),
+              ],
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Baixe dados de automações e conversas em CSV, Excel ou PDF.',
-                ),
-              ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildAbaAutomacoes(userId),
+                const _AbaConversas(),
+                _buildAbaBusca(userId),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: theme.colorScheme.primary,
-                unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
-                indicatorColor: theme.colorScheme.primary,
-                indicatorSize: TabBarIndicatorSize.label,
-                tabs: const [
-                  Tab(text: 'Automações'),
-                  Tab(text: 'Conversas'),
-                  Tab(text: 'Busca de Mensagens'),
-                ],
-              ),
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildAbaAutomacoes(userId),
-                  const _AbaConversas(),
-                  _buildAbaBusca(userId),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 

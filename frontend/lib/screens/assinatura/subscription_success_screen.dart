@@ -9,6 +9,8 @@ import 'package:lottie/lottie.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/design_tokens.dart';
+
 class SubscriptionSuccessScreen extends StatefulWidget {
   final String? sessionId;
 
@@ -107,16 +109,16 @@ class _SubscriptionSuccessScreenState extends State<SubscriptionSuccessScreen>
     return false;
   }
 
-  String _getPlanEmoji() {
+  IconData _getPlanIcon() {
     switch (_planName.toLowerCase()) {
       case 'free':
-        return '🚀';
+        return Icons.rocket_launch_rounded;
       case 'pro':
-        return '⚡';
+        return Icons.bolt_rounded;
       case 'max':
-        return '👑';
+        return Icons.workspace_premium_rounded;
       default:
-        return '🎉';
+        return Icons.check_circle_rounded;
     }
   }
 
@@ -152,7 +154,8 @@ class _SubscriptionSuccessScreenState extends State<SubscriptionSuccessScreen>
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final planEmoji = _getPlanEmoji();
+    final tokens = context.catasTokens;
+    final planIcon = _getPlanIcon();
     final title = _isConfirming
         ? 'Confirmando pagamento'
         : _confirmationError == null
@@ -190,7 +193,7 @@ class _SubscriptionSuccessScreenState extends State<SubscriptionSuccessScreen>
                       'assets/animations/success_confetti.json',
                       width: double.infinity,
                       fit: BoxFit.contain,
-                      repeat: true, // Let it sparkle!
+                      repeat: false,
                       onWarning: (warning) {
                         // Ignora aviso se o asset não existir
                       },
@@ -207,22 +210,13 @@ class _SubscriptionSuccessScreenState extends State<SubscriptionSuccessScreen>
                             width: 120,
                             height: 120,
                             decoration: BoxDecoration(
-                              color:
-                                  (Theme.of(context).brightness ==
-                                              Brightness.dark
-                                          ? Colors.green[900]!
-                                          : Colors.green[100]!)
-                                      .withValues(alpha: 0.2),
+                              color: tokens.success.withValues(alpha: 0.14),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
                               Icons.check_circle,
                               size: 80,
-                              color:
-                                  Theme.of(context).brightness ==
-                                      Brightness.dark
-                                  ? Colors.green[400]
-                                  : Colors.green,
+                              color: tokens.success,
                             ),
                           ),
                         );
@@ -248,7 +242,22 @@ class _SubscriptionSuccessScreenState extends State<SubscriptionSuccessScreen>
                             height: 56,
                             child: CircularProgressIndicator(strokeWidth: 4),
                           )
-                        : Text(planEmoji, style: const TextStyle(fontSize: 64)),
+                        : Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: tokens.success.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: tokens.success.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: Icon(
+                              planIcon,
+                              color: tokens.success,
+                              size: 34,
+                            ),
+                          ),
                   ),
                   const SizedBox(height: 16),
                   // Título

@@ -804,4 +804,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardTasks => 'tasks';
+
+  @override
+  String get dashboardExecutionsInPeriod => 'Executions in period';
+
+  @override
+  String get dashboardSuccessRate => 'Success rate';
+
+  @override
+  String get dashboardBasedOnExecutions => 'based on executions';
+
+  @override
+  String get dashboardNoExecutionsShort => 'No executions yet';
+
+  @override
+  String get dashboardNoExecutions =>
+      'No automations have run in this period yet. Your first execution will appear here.';
+
+  @override
+  String dashboardExecutionsSummary(int count) {
+    return '$count automations ran in this period.';
+  }
+
+  @override
+  String get dashboardConnectedIntegrations => 'Connected integrations';
+
+  @override
+  String get dashboardConnectedIntegrationsSubtitle =>
+      'Integrations connected to your account';
+
+  @override
+  String get dashboardNoIntegrations =>
+      'No integrations are connected yet. Connect a tool to start automating.';
+
+  @override
+  String get dashboardNoActivity =>
+      'No automation activity was recorded in the last 7 days.';
 }

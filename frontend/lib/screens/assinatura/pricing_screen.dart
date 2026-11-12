@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../data/billing_repository.dart';
 import '../../providers/auth_provider.dart';
+import '../../components/catas_page.dart';
 
 class PricingScreen extends StatefulWidget {
   const PricingScreen({super.key});
@@ -54,11 +55,13 @@ class _PricingScreenState extends State<PricingScreen>
         Uri.parse(url),
         mode: LaunchMode.externalApplication,
       );
-      if (!launched)
+      if (!launched) {
         throw Exception('Não foi possível abrir a página de pagamento.');
+      }
     } catch (erro) {
-      if (mounted)
+      if (mounted) {
         _showMessage(erro.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _processingTier = null);
     }
@@ -72,11 +75,13 @@ class _PricingScreenState extends State<PricingScreen>
         Uri.parse(url),
         mode: LaunchMode.externalApplication,
       );
-      if (!launched)
+      if (!launched) {
         throw Exception('Não foi possível abrir o portal de cobrança.');
+      }
     } catch (erro) {
-      if (mounted)
+      if (mounted) {
         _showMessage(erro.toString().replaceFirst('Exception: ', ''));
+      }
     } finally {
       if (mounted) setState(() => _openingPortal = false);
     }
@@ -96,84 +101,37 @@ class _PricingScreenState extends State<PricingScreen>
     final currentTier = auth.subscriptionTier ?? 'free';
     final hasBillingAccount = auth.profile?.hasBillingAccount ?? false;
 
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+    return CatasPage(
+      title: 'Planos',
+      description:
+          'Escolha o nível de automação ideal para o seu volume de trabalho.',
+      child: SingleChildScrollView(
+        padding: EdgeInsets.zero,
         child: SizedBox(
           width: double.infinity,
           child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  "Escolha o seu plano",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  "Desbloqueie o poder total da automação inteligente",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 18,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    if (constraints.maxWidth >= 1100) {
-                      return IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: _buildBasicCard(context, currentTier),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: _buildProCard(
-                                context,
-                                colorScheme,
-                                currentTier,
-                              ),
-                            ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: _buildMaxCard(
-                                context,
-                                theme,
-                                colorScheme,
-                                currentTier,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
-                    if (constraints.maxWidth >= 720) {
-                      return Wrap(
-                        spacing: 20,
-                        runSpacing: 20,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  if (constraints.maxWidth >= 1100) {
+                    return IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          SizedBox(
-                            width: (constraints.maxWidth - 20) / 2,
+                          Expanded(
                             child: _buildBasicCard(context, currentTier),
                           ),
-                          SizedBox(
-                            width: (constraints.maxWidth - 20) / 2,
+                          const SizedBox(width: 20),
+                          Expanded(
                             child: _buildProCard(
                               context,
                               colorScheme,
                               currentTier,
                             ),
                           ),
-                          SizedBox(
-                            width: (constraints.maxWidth - 20) / 2,
+                          const SizedBox(width: 20),
+                          Expanded(
                             child: _buildMaxCard(
                               context,
                               theme,
@@ -182,66 +140,92 @@ class _PricingScreenState extends State<PricingScreen>
                             ),
                           ),
                         ],
-                      );
-                    }
-                    return Column(
+                      ),
+                    );
+                  }
+                  if (constraints.maxWidth >= 720) {
+                    return Wrap(
+                      spacing: 20,
+                      runSpacing: 20,
                       children: [
-                        _buildBasicCard(
-                          context,
-                          currentTier,
-                          fullFeatures: true,
+                        SizedBox(
+                          width: (constraints.maxWidth - 20) / 2,
+                          child: _buildBasicCard(context, currentTier),
                         ),
-                        const SizedBox(height: 20),
-                        _buildProCard(
-                          context,
-                          colorScheme,
-                          currentTier,
-                          fullFeatures: true,
+                        SizedBox(
+                          width: (constraints.maxWidth - 20) / 2,
+                          child: _buildProCard(
+                            context,
+                            colorScheme,
+                            currentTier,
+                          ),
                         ),
-                        const SizedBox(height: 20),
-                        _buildMaxCard(
-                          context,
-                          theme,
-                          colorScheme,
-                          currentTier,
-                          fullFeatures: true,
+                        SizedBox(
+                          width: (constraints.maxWidth - 20) / 2,
+                          child: _buildMaxCard(
+                            context,
+                            theme,
+                            colorScheme,
+                            currentTier,
+                          ),
                         ),
                       ],
                     );
-                  },
-                ),
+                  }
+                  return Column(
+                    children: [
+                      _buildBasicCard(context, currentTier, fullFeatures: true),
+                      const SizedBox(height: 20),
+                      _buildProCard(
+                        context,
+                        colorScheme,
+                        currentTier,
+                        fullFeatures: true,
+                      ),
+                      const SizedBox(height: 20),
+                      _buildMaxCard(
+                        context,
+                        theme,
+                        colorScheme,
+                        currentTier,
+                        fullFeatures: true,
+                      ),
+                    ],
+                  );
+                },
+              ),
 
-                const SizedBox(height: 48),
+              const SizedBox(height: 48),
 
-                if (hasBillingAccount) ...[
-                  Align(
-                    alignment: Alignment.center,
-                    child: OutlinedButton.icon(
-                      onPressed: _openingPortal || _processingTier != null
-                          ? null
-                          : _openBillingPortal,
-                      icon: _openingPortal
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
-                          : const Icon(Icons.manage_accounts_outlined),
-                      label: const Text('Gerenciar assinatura'),
-                    ),
+              if (hasBillingAccount) ...[
+                Align(
+                  alignment: Alignment.center,
+                  child: OutlinedButton.icon(
+                    onPressed: _openingPortal || _processingTier != null
+                        ? null
+                        : _openBillingPortal,
+                    icon: _openingPortal
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.manage_accounts_outlined),
+                    label: const Text('Gerenciar assinatura'),
                   ),
-                  const SizedBox(height: 24),
-                ],
-
-                Text(
-                  "Todos os planos incluem suporte via email e renovação automática mensal.",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
-                  ),
                 ),
+                const SizedBox(height: 24),
               ],
+
+              Text(
+                "Todos os planos incluem suporte via email e renovação automática mensal.",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
           ),
         ),
       ),
